@@ -1,0 +1,35 @@
+{
+  "name": "fitundfun",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxtjs/supabase": "^2.0.3",
+    "@vueuse/core": "^14.1.0",
+    "archiver": "^7.0.1",
+    "bcrypt": "^6.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "jszip": "^3.10.1",
+    "lucide-vue-next": "^0.563.0",
+    "nuxt": "^3.15.0",
+    "radix-vue": "^1.9.17",
+    "tailwind-merge": "^3.4.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^3.1.1",
+    "@nuxtjs/tailwindcss": "^6.13.0",
+    "@types/archiver": "^7.0.0",
+    "typescript": "^5.7.0"
+  }
+}

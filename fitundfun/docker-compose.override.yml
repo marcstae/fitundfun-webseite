@@ -1,0 +1,35 @@
+services:
+  web:
+    container_name: fitundfun-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Server (SSR) verwendet kong (Docker-Netzwerk)
+      - NUXT_PUBLIC_SUPABASE_URL=http://kong:8000
+      - NUXT_PUBLIC_SUPABASE_KEY=${ANON_KEY}
+      # Client (Browser) verwendet localhost - wird vom Plugin verwendet
+      - NUXT_PUBLIC_SUPABASE_CLIENT_URL=http://localhost:8000
+      # Service Role Key für Admin-Operationen (Backup/Restore)
+      - SUPABASE_SERVICE_KEY=${SERVICE_ROLE_KEY}
+      - NODE_ENV=production
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      kong:
+        condition: service_started
+
+  # Override Storage um Docker Volume zu verwenden (macOS xattr Problem)
+  storage:
+    volumes:
+      - storage-data:/var/lib/storage
+
+  imgproxy:
+    volumes:
+      - storage-data:/var/lib/storage
+
+volumes:
+  storage-data:

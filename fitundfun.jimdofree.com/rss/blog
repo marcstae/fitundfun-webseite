@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+  <channel xmlns:atom="http://www.w3.org/2005/Atom">
+    <title><![CDATA[fitundfun.jimdofree.com Blog Feed]]></title>
+    <link>https://fitundfun.jimdofree.com/</link>
+    <description><![CDATA[Blog - fit &amp; fun skisport lager in brigels]]></description>
+    <pubDate>Fri, 30 Jan 2026 20:52:07 +0100</pubDate>
+    <generator>Jimdo_Feed</generator>
+    <language>de-de</language>
+    <docs>http://blogs.law.harvard.edu/tech/rss</docs>
+    <atom:link xmlns:atom="http://www.w3.org/2005/Atom" rel="self" href="https://fitundfun.jimdofree.com/rss/blog" type="application/rss+xml"/>
+    <item>
+      <title><![CDATA[fit&fun 2010]]></title>
+      <link>https://fitundfun.jimdofree.com/2010/01/13/fit-fun-2010/</link>
+      <guid>https://fitundfun.jimdofree.com/2010/01/13/fit-fun-2010/</guid>
+      <description><![CDATA[<?xml version="1.0"?>
+<div id="cc-matrix-461525914"/>
+]]></description>
+      <pubDate>Wed, 13 Jan 2010 14:49:06 +0100</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[Das war eine tolle Woche in Brigels!!!! Lager 2009]]></title>
+      <link>https://fitundfun.jimdofree.com/2008/11/02/hurra-der-erste-schnee-ist-da-brigels-bereitet-sich-auf-das-lager-2009-vor</link>
+      <guid>https://fitundfun.jimdofree.com/2008/11/02/hurra-der-erste-schnee-ist-da-brigels-bereitet-sich-auf-das-lager-2009-vor</guid>
+      <description><![CDATA[<?xml version="1.0"?>
+<div id="cc-matrix-59914906"/>
+]]></description>
+      <pubDate>Sun, 08 Feb 2009 12:51:00 +0100</pubDate>
+    </item>
+  </channel>
+</rss>

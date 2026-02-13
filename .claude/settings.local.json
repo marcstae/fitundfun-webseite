@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(npx nuxi@latest init fitundfun --packageManager npm --gitInit false)",
+      "Bash(npx shadcn-vue@latest init -y -d)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(npm --version)",
+      "Bash(npx nuxi typecheck)",
+      "Bash(test:*)"
+    ]
+  }
+}

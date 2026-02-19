@@ -14,10 +14,16 @@ const client = useSupabaseClient()
 
 // Fetch alle Lager
 const { data: lagerList, refresh } = await useAsyncData('admin-lager-list', async () => {
-  const { data } = await client
+  const { data, error } = await client
     .from('lager')
     .select('*')
     .order('jahr', { ascending: false })
+
+  if (error) {
+    console.error('[admin-lager] fetch error', error)
+    return []
+  }
+
   return data || []
 })
 
@@ -71,29 +77,22 @@ const saveLager = async () => {
   isSubmitting.value = true
 
   try {
-    // Wenn als aktuell markiert, alle anderen auf nicht-aktuell setzen
-    if (form.ist_aktuell) {
-      await client
-        .from('lager')
-        .update({ ist_aktuell: false })
-        .neq('id', editingLager.value?.id || '')
-    }
-
     if (editingLager.value) {
-      await client
-        .from('lager')
-        .update(form)
-        .eq('id', editingLager.value.id)
+      await $fetch(`/api/admin/lager/${editingLager.value.id}`, {
+        method: 'PUT',
+        body: form
+      })
     } else {
-      await client
-        .from('lager')
-        .insert(form)
+      await $fetch('/api/admin/lager', {
+        method: 'POST',
+        body: form
+      })
     }
 
     showModal.value = false
     await refresh()
   } catch (e) {
-    console.error(e)
+    console.error('[admin-lager] save error', e)
     alert('Fehler beim Speichern')
   } finally {
     isSubmitting.value = false
@@ -104,31 +103,27 @@ const deleteLager = async (id: string) => {
   if (!confirm('Lager wirklich löschen? Alle zugehörigen Downloads werden ebenfalls gelöscht.')) return
 
   try {
-    await client.from('lager_downloads').delete().eq('lager_id', id)
-    await client.from('lager').delete().eq('id', id)
+    await $fetch(`/api/admin/lager/${id}`, { method: 'DELETE' })
     await refresh()
   } catch (e) {
-    console.error(e)
+    console.error('[admin-lager] delete error', e)
     alert('Fehler beim Löschen')
   }
 }
 
 const toggleAktuell = async (lager: any) => {
   try {
-    if (!lager.ist_aktuell) {
-      // Alle anderen auf nicht-aktuell setzen
-      await client.from('lager').update({ ist_aktuell: false }).neq('id', lager.id)
-    }
-    await client.from('lager').update({ ist_aktuell: !lager.ist_aktuell }).eq('id', lager.id)
+    await $fetch(`/api/admin/lager/${lager.id}`, {
+      method: 'PUT',
+      body: { ist_aktuell: !lager.ist_aktuell }
+    })
     await refresh()
   } catch (e) {
-    console.error(e)
+    console.error('[admin-lager] toggle error', e)
   }
 }
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('de-CH')
-}
+const { formatDateShort } = useFormat()
 </script>
 
 <template>
@@ -160,7 +155,7 @@ const formatDate = (date: string) => {
           <tr v-for="lager in lagerList" :key="lager.id" class="hover:bg-slate-50">
             <td class="px-6 py-4 font-medium text-slate-900">{{ lager.jahr }}</td>
             <td class="px-6 py-4 text-slate-600 hidden sm:table-cell">
-              {{ formatDate(lager.datum_von) }} - {{ formatDate(lager.datum_bis) }}
+              {{ formatDateShort(lager.datum_von) }} - {{ formatDateShort(lager.datum_bis) }}
             </td>
             <td class="px-6 py-4 text-slate-600 hidden md:table-cell">
               {{ lager.titel || '-' }}

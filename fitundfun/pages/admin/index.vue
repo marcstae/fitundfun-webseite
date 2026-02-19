@@ -39,13 +39,7 @@ const { data: lagerCount } = await useAsyncData('admin-lager-count', async () =>
   return count || 0
 })
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('de-CH', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
-}
+const { formatDate } = useFormat()
 </script>
 
 <template>

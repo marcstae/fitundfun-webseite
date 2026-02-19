@@ -1,3 +1,10 @@
+const supabaseUrl = process.env.SUPABASE_URL || 'http://localhost:8000'
+const supabaseClientUrl = process.env.SUPABASE_CLIENT_URL
+  || process.env.NUXT_PUBLIC_SUPABASE_CLIENT_URL
+  || process.env.NUXT_PUBLIC_SUPABASE_URL
+  || supabaseUrl
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NUXT_PUBLIC_SUPABASE_KEY || ''
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
@@ -29,16 +36,23 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    supabase: {
+      url: supabaseUrl, // SSR/Server interne URL (z.B. kong im Docker-Netz)
+      key: supabaseAnonKey,
+      clientUrl: supabaseClientUrl,
+    },
     public: {
       supabase: {
-        url: '',
-        key: '',
-        clientUrl: '', // Separate URL für Browser (Client-Side)
+        url: supabaseClientUrl,
+        key: supabaseAnonKey,
+        clientUrl: supabaseClientUrl,
       },
     },
   },
 
   supabase: {
+    url: supabaseUrl,
+    key: supabaseAnonKey,
     redirect: false,
     redirectOptions: {
       login: '/admin/login',

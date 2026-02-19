@@ -1,5 +1,4 @@
-import { serverSupabaseClient } from '#supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import archiver from 'archiver'
 
 /**
@@ -11,38 +10,17 @@ import archiver from 'archiver'
  * - storage/: Alle Dateien aus den Storage Buckets
  */
 export default defineEventHandler(async (event) => {
-  // Authentifizierung prüfen
-  const client = await serverSupabaseClient(event)
-  const { data: { user }, error: authError } = await client.auth.getUser()
-  
-  if (authError || !user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Nicht autorisiert'
-    })
-  }
+  // Auth wird durch server/middleware/admin-guard.ts sichergestellt
+  const auth = event.context.auth
 
   try {
-    // Service Role Client manuell erstellen
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!supabaseUrl || !serviceKey) {
-      throw new Error('Supabase URL oder Service Key nicht konfiguriert')
-    }
-    
-    const serviceClient = createClient(supabaseUrl, serviceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
+    const serviceClient = await serverSupabaseServiceRole(event)
     
     // Backup-Metadaten
     const manifest = {
       version: '1.0',
       created_at: new Date().toISOString(),
-      created_by: user.email,
+      created_by: auth?.email || 'unknown',
       tables: [] as string[],
       storage_buckets: [] as string[]
     }

@@ -1,5 +1,4 @@
-import { serverSupabaseClient } from '#supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import JSZip from 'jszip'
 
 interface BackupManifest {
@@ -24,16 +23,7 @@ interface RestoreOptions {
  * - options: JSON mit Restore-Optionen
  */
 export default defineEventHandler(async (event) => {
-  // Authentifizierung prüfen
-  const client = await serverSupabaseClient(event)
-  const { data: { user }, error: authError } = await client.auth.getUser()
-  
-  if (authError || !user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Nicht autorisiert'
-    })
-  }
+  // Auth wird durch server/middleware/admin-guard.ts sichergestellt
 
   try {
     // Multipart-Formular lesen
@@ -87,23 +77,7 @@ export default defineEventHandler(async (event) => {
 
     const manifest: BackupManifest = JSON.parse(await manifestFile.async('string'))
     
-    // Service Role Client manuell erstellen
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!supabaseUrl || !serviceKey) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Supabase nicht korrekt konfiguriert'
-      })
-    }
-    
-    const serviceClient = createClient(supabaseUrl, serviceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
+    const serviceClient = await serverSupabaseServiceRole(event)
     
     const results = {
       manifest,

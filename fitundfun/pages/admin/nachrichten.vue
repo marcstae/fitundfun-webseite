@@ -51,15 +51,7 @@ const deleteNachricht = async (id: string) => {
   }
 }
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleString('de-CH', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+const { formatDateTime } = useFormat()
 </script>
 
 <template>
@@ -91,7 +83,7 @@ const formatDate = (date: string) => {
                     {{ nachricht.name }}
                   </p>
                   <span class="text-xs text-slate-500 whitespace-nowrap">
-                    {{ formatDate(nachricht.erstellt_am) }}
+                    {{ formatDateTime(nachricht.erstellt_am) }}
                   </span>
                 </div>
                 <p class="text-sm text-slate-500 truncate">{{ nachricht.email }}</p>
@@ -125,7 +117,7 @@ const formatDate = (date: string) => {
 
         <div class="flex items-center gap-2 text-sm text-slate-500 mb-4">
           <Clock class="w-4 h-4" />
-          {{ formatDate(selectedNachricht.erstellt_am) }}
+          {{ formatDateTime(selectedNachricht.erstellt_am) }}
         </div>
 
         <div class="bg-slate-50 rounded-lg p-4">

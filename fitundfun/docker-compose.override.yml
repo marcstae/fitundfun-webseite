@@ -9,12 +9,16 @@ services:
       - "3000:3000"
     environment:
       # Server (SSR) verwendet kong (Docker-Netzwerk)
-      - NUXT_PUBLIC_SUPABASE_URL=http://kong:8000
-      - NUXT_PUBLIC_SUPABASE_KEY=${ANON_KEY}
-      # Client (Browser) verwendet localhost - wird vom Plugin verwendet
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_ANON_KEY=${ANON_KEY}
+      # Client (Browser) verwendet localhost
+      - SUPABASE_CLIENT_URL=http://localhost:8000
+      - NUXT_PUBLIC_SUPABASE_URL=http://localhost:8000
       - NUXT_PUBLIC_SUPABASE_CLIENT_URL=http://localhost:8000
+      - NUXT_PUBLIC_SUPABASE_KEY=${ANON_KEY}
       # Service Role Key für Admin-Operationen (Backup/Restore)
       - SUPABASE_SERVICE_KEY=${SERVICE_ROLE_KEY}
+      - SUPABASE_SECRET_KEY=${SERVICE_ROLE_KEY}
       - NODE_ENV=production
     extra_hosts:
       - "localhost:host-gateway"

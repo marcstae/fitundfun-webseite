@@ -83,6 +83,7 @@ export const SponsorSchema = z.object({
 /**
  * Lager (camp) schema
  */
+/** Basis-Schema für Lager (Create — alle Pflichtfelder required) */
 export const LagerSchema = z.object({
   jahr: z.number()
     .int()
@@ -98,11 +99,13 @@ export const LagerSchema = z.object({
   beschreibung: z.string()
     .max(10000)
     .optional()
-    .nullable(),
+    .nullable()
+    .or(z.literal('')),
   preis: z.string()
     .max(100)
     .optional()
-    .nullable(),
+    .nullable()
+    .or(z.literal('')),
   immich_album_url: z.string()
     .url()
     .max(500)
@@ -111,6 +114,18 @@ export const LagerSchema = z.object({
     .or(z.literal('')),
   ist_aktuell: z.boolean()
     .optional()
+})
+
+/** Update-Schema: Alle Felder optional, leere Strings erlaubt */
+export const LagerUpdateSchema = z.object({
+  jahr: z.number().int().min(2000).max(2100).optional(),
+  titel: z.string().max(200, 'Titel zu lang').optional().or(z.literal('')),
+  datum_von: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültiges Datumsformat').optional(),
+  datum_bis: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültiges Datumsformat').optional(),
+  beschreibung: z.string().max(10000).optional().nullable().or(z.literal('')),
+  preis: z.string().max(100).optional().nullable().or(z.literal('')),
+  immich_album_url: z.string().url().max(500).optional().nullable().or(z.literal('')),
+  ist_aktuell: z.boolean().optional(),
 })
 
 // =====================
@@ -125,23 +140,42 @@ export async function validateBody<T extends z.ZodSchema>(
   event: H3Event,
   schema: T
 ): Promise<z.infer<T>> {
-  const body = await readBody(event)
-  
+  let body: unknown
+  try {
+    body = await readBody(event)
+  } catch {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Ungültiger Request-Body',
+    })
+  }
+
+  if (body === null || body === undefined) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Request-Body fehlt',
+    })
+  }
+
   const result = schema.safeParse(body)
-  
+
   if (!result.success) {
-    const errors = result.error.errors.map(e => ({
+    const issues = result.error?.issues ?? []
+    const errors = issues.map((e) => ({
       field: e.path.join('.'),
-      message: e.message
+      message: e.message,
     }))
-    
+
+    // Debug-Log: Was genau schlägt fehl?
+    console.error('[validateBody] Validation failed:', JSON.stringify({ body, errors }, null, 2))
+
     throw createError({
       statusCode: 400,
       statusMessage: 'Validierungsfehler',
-      data: { errors }
+      data: { errors },
     })
   }
-  
+
   return result.data
 }
 

@@ -28,13 +28,7 @@ const { data: downloads } = await useAsyncData('lager-downloads', async () => {
   return data || []
 })
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('de-CH', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
-}
+const { formatDate } = useFormat()
 
 const { getPublicUrl } = useStorageUrl()
 

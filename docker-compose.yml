@@ -1,0 +1,32 @@
+services:
+  pb:
+    build: ./pb
+    container_name: fitundfun-pb
+    restart: unless-stopped
+    ports:
+      - "3844:8090"
+    volumes:
+      - pb_data:/pb/pb_data
+    environment:
+      TZ: Europe/Zurich
+      PB_ORIGINS: ${PB_ORIGINS}
+
+  web:
+    build:
+      context: .
+      args:
+        - NEXT_PUBLIC_PB_URL=${NEXT_PUBLIC_PB_URL}
+    container_name: fitundfun-web
+    restart: unless-stopped
+    depends_on:
+      - pb
+    ports:
+      - "3843:3000"
+    environment:
+      NEXT_PUBLIC_PB_URL: ${NEXT_PUBLIC_PB_URL}
+      SITE_URL: ${SITE_URL}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      TZ: Europe/Zurich
+
+volumes:
+  pb_data:

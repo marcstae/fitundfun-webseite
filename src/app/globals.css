@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-archivo: "Archivo", system-ui, sans-serif;
+    --font-archivo-black: "Archivo Black", "Archivo", sans-serif;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-white text-ink font-sans antialiased;
+  }
+  ::selection {
+    @apply bg-accent text-white;
+  }
+}
+
+@layer utilities {
+  .hero-stripes {
+    background-image: repeating-linear-gradient(
+        -48deg,
+        rgba(255, 255, 255, 0.04) 0 12px,
+        rgba(255, 255, 255, 0) 12px 26px
+      ),
+      linear-gradient(180deg, #1c3854 0%, #122741 55%, #0a1728 100%);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .scrim {
+    background: linear-gradient(180deg, rgba(10, 23, 40, 0) 30%, rgba(10, 23, 40, 0.65) 100%);
+  }
+  .focus-ring {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-white;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

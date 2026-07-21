@@ -37,7 +37,6 @@ export function HeroVideo({ videoUrl, posterUrl, className }: HeroVideoProps) {
           />
         )
       )}
-      <div className="scrim absolute inset-0" />
     </div>
   );
 }

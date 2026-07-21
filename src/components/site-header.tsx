@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,19 +15,6 @@ const NAV = [
   { href: "/kontakt", label: "Kontakt" },
 ];
 
-function Wordmark({ light = false }: { light?: boolean }) {
-  return (
-    <span
-      className={cn(
-        "font-display text-lg uppercase tracking-tight",
-        light ? "text-white" : "text-ink"
-      )}
-    >
-      fit<span className="text-accent">&amp;</span>fun
-    </span>
-  );
-}
-
 export function SiteHeader() {
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
@@ -35,8 +23,14 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink/8 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center" aria-label="fit&fun Startseite">
-          <Wordmark />
+        <Link href="/" className="flex items-center" aria-label="fit&fun Lager Brigels — Startseite">
+          <Image
+            src="/brigels-logo.png"
+            alt="fit&fun Lager Brigels"
+            width={96}
+            height={40}
+            priority
+          />
         </Link>
         <nav className="hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
           {NAV.map((n) => (

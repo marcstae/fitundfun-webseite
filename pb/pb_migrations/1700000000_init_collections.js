@@ -54,7 +54,8 @@ migrate((app) => {
       { name: "immich_url", type: "url" },
     ],
   });
-  const lagerId = lagerCol.id;
+  const lagerId = app.findCollectionByNameOrId("lager").id;
+  console.log("[fitundfun] lager collection ID:", lagerId);
 
   // ---- dokumente (öffentliche PDFs) ----
   ensureCollection(app, {

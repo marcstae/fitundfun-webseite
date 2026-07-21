@@ -9,9 +9,10 @@ import { HeroVideo } from "@/components/hero-video";
 import { publicFileUrl } from "@/lib/pb";
 import { Button } from "@/components/ui/button";
 import { formatDateRange, countdownLabel } from "@/lib/utils";
-import type { LagerRecord } from "@/lib/pb-types";
+import type { LagerRecord, SponsorRecord } from "@/lib/pb-types";
 import { EditableHero } from "@/components/edit/editable-hero";
 import { NeuesLagerButton } from "@/components/edit/neues-lager-wizard";
+import { Reveal } from "@/components/reveal";
 
 export const revalidate = 300;
 
@@ -37,7 +38,7 @@ export default async function HomePage() {
   return (
     <>
       {/* HERO */}
-      <section className="relative flex min-h-[88vh] flex-col overflow-hidden hero-stripes">
+      <section className="relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden hero-stripes">
         <HeroVideo videoUrl={heroVideo} posterUrl={heroPoster} />
         <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-end px-4 pb-12 pt-24 sm:px-6 sm:pb-16 lg:px-8">
           <div className="flex max-w-2xl flex-col gap-4 text-white sm:gap-5 animate-fade-up">
@@ -69,8 +70,8 @@ export default async function HomePage() {
             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:gap-4">
               {lager ? (
                 <Button asChild size="lg" className="w-full sm:w-auto">
-                  <Link href={`/lager/${lager.jahr}#dokumente`}>
-                    <FileText /> Dokumente
+                  <Link href={`/lager/${lager.jahr}`}>
+                    <FileText /> Lager {lager.jahr}
                   </Link>
                 </Button>
               ) : (
@@ -94,7 +95,7 @@ export default async function HomePage() {
       </section>
 
       {/* FUN FACTS / AKTUELLES LAGER */}
-      {lager && <FunFacts lager={lager} />}
+      {lager && <FunFacts lager={lager} sponsoren={sponsoren} />}
 
       {/* NEUES LAGER (nur Edit-Mode) */}
       <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 lg:px-8">
@@ -160,37 +161,46 @@ function renderHeroTitel(titel: string) {
   return titel;
 }
 
-function FunFacts({ lager }: { lager: LagerRecord }) {
+function FunFacts({ lager, sponsoren }: { lager: LagerRecord; sponsoren: SponsorRecord[] }) {
+  const tage = Math.max(
+    1,
+    Math.round(
+      (new Date(lager.datum_bis).getTime() - new Date(lager.datum_von).getTime()) / 86_400_000
+    ) + 1
+  );
   const facts = [
     { value: `${lager.jahr - 2006}.`, label: "Lager in Folge" },
-    { value: "8–75", label: "Jahre jung" },
+    { value: `${tage}`, label: "Tage Abenteuer" },
     { value: "1250", label: "m ü. M. — Brigels" },
-    { value: "1×", label: "legendärer Fondueabend" },
+    { value: `${sponsoren.length}`, label: "Sponsoren" },
   ];
   return (
     <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-muted sm:text-sm">
-          Lager {lager.jahr} · {formatDateRange(lager.datum_von, lager.datum_bis)}
-        </span>
-        <Link
-          href={`/lager/${lager.jahr}`}
-          className="text-sm font-bold text-accent hover:underline sm:text-base"
-        >
-          Alles zum Lager {lager.jahr} →
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {facts.map((f) => (
-          <div
-            key={f.label}
-            className="flex flex-col gap-1.5 rounded-2xl border border-ink/10 p-4 sm:p-6"
+      <Reveal>
+        <div className="mb-10 flex flex-wrap items-baseline justify-between gap-3 border-b border-ink/10 pb-5">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted sm:text-sm">
+            Lager {lager.jahr} · {formatDateRange(lager.datum_von, lager.datum_bis)}
+          </span>
+          <Link
+            href={`/lager/${lager.jahr}`}
+            className="text-sm font-bold text-accent transition-colors hover:text-accent-light sm:text-base"
           >
-            <span className="font-display text-3xl leading-none text-accent sm:text-4xl">
-              {f.value}
-            </span>
-            <span className="text-sm text-muted">{f.label}</span>
-          </div>
+            Alles zum Lager {lager.jahr} →
+          </Link>
+        </div>
+      </Reveal>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-4">
+        {facts.map((f, i) => (
+          <Reveal key={f.label} delay={i * 90}>
+            <div className="border-t-2 border-ink/80 pt-4">
+              <span className="font-display text-4xl leading-none tracking-tight text-ink sm:text-5xl">
+                {f.value}
+              </span>
+              <span className="mt-2 block text-xs font-bold uppercase tracking-widest text-muted sm:text-sm">
+                {f.label}
+              </span>
+            </div>
+          </Reveal>
         ))}
       </div>
     </section>

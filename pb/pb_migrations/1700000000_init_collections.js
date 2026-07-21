@@ -1,7 +1,7 @@
 /// <reference path="../pb_data/types.d.ts" />
 //
 // Auto-Migration: erstellt alle Collections für fit&fun beim ersten Start.
-// PB 0.21+ API. Sicher idempotent dank "if not exists"-Prüfungen.
+// PB 0.23+ API — Field-Options als direkte Properties, nicht in options:{}
 // =====================================================================
 
 function exists(app, name) {
@@ -16,10 +16,9 @@ function ensureCollection(app, def) {
   if (exists(app, def.name)) {
     return app.findCollectionByNameOrId(def.name);
   }
-  // CollectionBase-Definition wie im PB-Admin-Editor
   const collection = new Collection({
     name: def.name,
-    type: "base",
+    type: def.type || "base",
     listRule: def.listRule ?? "",
     viewRule: def.viewRule ?? "",
     createRule: def.createRule ?? "",
@@ -29,14 +28,14 @@ function ensureCollection(app, def) {
     indexes: def.indexes || [],
   });
   app.save(collection);
-  return collection;
+  return app.findCollectionByNameOrId(def.name);
 }
 
 const EDITOR = '@request.auth.rolle = "editor"';
 
 migrate((app) => {
   // ---- lager ----
-  const lagerCol = ensureCollection(app, {
+  ensureCollection(app, {
     name: "lager",
     listRule: "",
     viewRule: "",
@@ -55,7 +54,6 @@ migrate((app) => {
     ],
   });
   const lagerId = app.findCollectionByNameOrId("lager").id;
-  console.log("[fitundfun] lager collection ID:", lagerId);
 
   // ---- dokumente (öffentliche PDFs) ----
   ensureCollection(app, {
@@ -67,13 +65,8 @@ migrate((app) => {
     deleteRule: EDITOR,
     fields: [
       { name: "name", type: "text", required: true },
-      {
-        name: "datei",
-        type: "file",
-        required: true,
-        options: { mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
-      },
-      { name: "lager", type: "relation", required: true, options: { collectionId: lagerId, maxSelect: 1, cascadeDelete: true } },
+      { name: "datei", type: "file", required: true, mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
+      { name: "lager", type: "relation", required: true, collectionId: lagerId, maxSelect: 1, cascadeDelete: true },
       { name: "sensibel", type: "bool" },
       { name: "sort", type: "number" },
     ],
@@ -89,13 +82,8 @@ migrate((app) => {
     deleteRule: EDITOR,
     fields: [
       { name: "name", type: "text", required: true },
-      {
-        name: "datei",
-        type: "file",
-        required: true,
-        options: { mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
-      },
-      { name: "lager", type: "relation", required: true, options: { collectionId: lagerId, maxSelect: 1, cascadeDelete: true } },
+      { name: "datei", type: "file", required: true, mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
+      { name: "lager", type: "relation", required: true, collectionId: lagerId, maxSelect: 1, cascadeDelete: true },
       { name: "sensibel", type: "bool" },
       { name: "sort", type: "number" },
     ],
@@ -105,7 +93,7 @@ migrate((app) => {
   const intern = app.findCollectionByNameOrId("dokumente_intern");
   const dateiField = intern.fields.find((f) => f.name === "datei");
   if (dateiField) {
-    dateiField.options.protected = true;
+    dateiField.protected = true;
     app.save(intern);
   }
 
@@ -122,7 +110,7 @@ migrate((app) => {
       { name: "slug", type: "text", required: true },
       { name: "titel", type: "text" },
       { name: "inhalt", type: "editor" },
-      { name: "bilder", type: "file", options: { maxSelect: 20 } },
+      { name: "bilder", type: "file", maxSelect: 20 },
     ],
   });
 
@@ -152,7 +140,7 @@ migrate((app) => {
     deleteRule: EDITOR,
     fields: [
       { name: "name", type: "text", required: true },
-      { name: "logo", type: "file", options: { maxSelect: 1 } },
+      { name: "logo", type: "file", maxSelect: 1 },
       { name: "url", type: "url" },
       { name: "sort", type: "number" },
     ],
@@ -182,7 +170,7 @@ migrate((app) => {
     updateRule: EDITOR,
     deleteRule: EDITOR,
     fields: [
-      { name: "rolle", type: "select", required: true, options: { maxSelect: 1, values: ["Lagerleiter", "Website"] } },
+      { name: "rolle", type: "select", required: true, maxSelect: 1, values: ["Lagerleiter", "Website"] },
       { name: "name", type: "text", required: true },
       { name: "sort", type: "number" },
     ],
@@ -197,8 +185,8 @@ migrate((app) => {
     updateRule: EDITOR,
     deleteRule: "",
     fields: [
-      { name: "hero_video", type: "file", options: { maxSelect: 1, mimeTypes: ["video/mp4", "video/webm"], maxFilesize: 62914560 } },
-      { name: "hero_poster", type: "file", options: { maxSelect: 1 } },
+      { name: "hero_video", type: "file", maxSelect: 1, mimeTypes: ["video/mp4", "video/webm"], maxFilesize: 62914560 },
+      { name: "hero_poster", type: "file", maxSelect: 1 },
       { name: "hero_titel", type: "text" },
       { name: "hero_willkommen", type: "text" },
     ],
@@ -214,19 +202,18 @@ migrate((app) => {
       createRule: "",
       updateRule: "id = @request.auth.id",
       deleteRule: "id = @request.auth.id",
+      passwordAuth: { enabled: true },
+      allowUserRegistrations: false,
+      allowOAuth2Registrations: false,
       fields: [
         {
           name: "rolle",
           type: "select",
           required: true,
-          options: { maxSelect: 1, values: ["editor", "familie"] },
+          maxSelect: 1,
+          values: ["editor", "familie"],
         },
       ],
-    });
-    app.save(users);
-    users.options = Object.assign({}, users.options || {}, {
-      allowUserRegistrations: false,
-      allowOAuth2Registrations: false,
     });
     app.save(users);
     console.log("[fitundfun] users-Collection erstellt, Registrierung deaktiviert.");
@@ -237,7 +224,8 @@ migrate((app) => {
         name: "rolle",
         type: "select",
         required: true,
-        options: { maxSelect: 1, values: ["editor", "familie"] },
+        maxSelect: 1,
+        values: ["editor", "familie"],
       });
       app.save(users);
     }

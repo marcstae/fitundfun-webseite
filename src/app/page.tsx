@@ -27,7 +27,7 @@ export default async function HomePage() {
     einstellungen?.hero_willkommen || "Eine Woche Schnee, Sonne und Familie — seit 2007.";
   const heroVideo = einstellungen?.hero_video
     ? publicFileUrl("einstellungen", einstellungen.id, einstellungen.hero_video)
-    : null;
+    : "/hero.mp4";
   const heroPoster = einstellungen?.hero_poster
     ? publicFileUrl("einstellungen", einstellungen.id, einstellungen.hero_poster)
     : null;

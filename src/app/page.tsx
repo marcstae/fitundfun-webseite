@@ -40,7 +40,8 @@ export default async function HomePage() {
       {/* HERO */}
       <section className="relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden hero-stripes">
         <HeroVideo videoUrl={heroVideo} posterUrl={heroPoster} />
-        <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-start px-4 pt-4 pb-12 sm:px-6 sm:pt-6 lg:px-8">
+        <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-between gap-6 px-4 pt-4 pb-12 sm:justify-end sm:px-6 sm:pt-6 lg:px-8">
+          {/* Oben: Titel + Willkommenssatz */}
           <div className="flex max-w-2xl flex-col gap-4 text-white sm:gap-5 animate-fade-up">
             <h1 className="font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
               {renderHeroTitel(heroTitel)}
@@ -55,7 +56,10 @@ export default async function HomePage() {
                 {heroWillkommen}
               </EditableHero>
             </p>
+          </div>
 
+          {/* Unten (mobil) / direkt unter Titel (desktop): Datum + Buttons */}
+          <div className="flex flex-col gap-4 text-white sm:gap-5 animate-fade-up">
             {lager && (
               <div className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-bold backdrop-blur sm:text-base">
@@ -67,7 +71,7 @@ export default async function HomePage() {
               </div>
             )}
 
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
               {lager ? (
                 <Button asChild size="lg" className="w-full sm:w-auto">
                   <Link href={`/lager/${lager.jahr}`}>

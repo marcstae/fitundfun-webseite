@@ -36,7 +36,7 @@ const EDITOR = '@request.auth.rolle = "editor"';
 
 migrate((app) => {
   // ---- lager ----
-  ensureCollection(app, {
+  const lagerCol = ensureCollection(app, {
     name: "lager",
     listRule: "",
     viewRule: "",
@@ -54,6 +54,7 @@ migrate((app) => {
       { name: "immich_url", type: "url" },
     ],
   });
+  const lagerId = lagerCol.id;
 
   // ---- dokumente (öffentliche PDFs) ----
   ensureCollection(app, {
@@ -71,7 +72,7 @@ migrate((app) => {
         required: true,
         options: { mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
       },
-      { name: "lager", type: "relation", required: true, options: { collectionId: "lager", maxSelect: 1, cascadeDelete: true } },
+      { name: "lager", type: "relation", required: true, options: { collectionId: lagerId, maxSelect: 1, cascadeDelete: true } },
       { name: "sensibel", type: "bool" },
       { name: "sort", type: "number" },
     ],
@@ -93,7 +94,7 @@ migrate((app) => {
         required: true,
         options: { mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
       },
-      { name: "lager", type: "relation", required: true, options: { collectionId: "lager", maxSelect: 1, cascadeDelete: true } },
+      { name: "lager", type: "relation", required: true, options: { collectionId: lagerId, maxSelect: 1, cascadeDelete: true } },
       { name: "sensibel", type: "bool" },
       { name: "sort", type: "number" },
     ],

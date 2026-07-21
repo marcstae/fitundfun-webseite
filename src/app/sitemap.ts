@@ -16,9 +16,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/datenschutz`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
   ];
   for (const l of lager) {
+    // created/updated existieren nicht bei allen Collections — Fallback auf datum_von.
+    const raw = l.updated || l.created || l.datum_von || "";
+    const d = new Date(raw.replace(" ", "T"));
     entries.push({
       url: `${base}/lager/${l.jahr}`,
-      lastModified: new Date(l.updated || l.created),
+      lastModified: isNaN(d.getTime()) ? new Date() : d,
       changeFrequency: "yearly",
       priority: 0.7,
     });

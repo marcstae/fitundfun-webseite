@@ -40,7 +40,7 @@ export default async function HomePage() {
       {/* HERO */}
       <section className="relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden hero-stripes">
         <HeroVideo videoUrl={heroVideo} posterUrl={heroPoster} />
-        <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-end px-4 pb-12 pt-24 sm:px-6 sm:pb-16 lg:px-8">
+        <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-start px-4 pt-20 pb-12 sm:px-6 sm:pt-24 lg:px-8">
           <div className="flex max-w-2xl flex-col gap-4 text-white sm:gap-5 animate-fade-up">
             <h1 className="font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
               {renderHeroTitel(heroTitel)}

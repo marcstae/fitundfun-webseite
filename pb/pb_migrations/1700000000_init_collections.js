@@ -1,47 +1,31 @@
-/// <reference path="../pb_data/types.d.ts" />
-//
-// Auto-Migration: erstellt alle Collections für fit&fun beim ersten Start.
-// PB 0.23+ API — Field-Options als direkte Properties, nicht in options:{}
-// =====================================================================
+migrate((app) => {
+  const EDITOR = '@request.auth.rolle = "editor"';
 
-function exists(app, name) {
-  try {
-    return !!app.findCollectionByNameOrId(name);
-  } catch {
-    return false;
+  function exists(app, name) {
+    try { return !!app.findCollectionByNameOrId(name); } catch { return false; }
   }
-}
 
-function ensureCollection(app, def) {
-  if (exists(app, def.name)) {
+  function ensureCollection(app, def) {
+    if (exists(app, def.name)) {
+      return app.findCollectionByNameOrId(def.name);
+    }
+    const collection = new Collection({
+      name: def.name,
+      type: def.type || "base",
+      listRule: def.listRule ?? "",
+      viewRule: def.viewRule ?? "",
+      createRule: def.createRule ?? "",
+      updateRule: def.updateRule ?? "",
+      deleteRule: def.deleteRule ?? "",
+      fields: def.fields,
+      indexes: def.indexes || [],
+    });
+    app.save(collection);
     return app.findCollectionByNameOrId(def.name);
   }
-  const collection = new Collection({
-    name: def.name,
-    type: def.type || "base",
-    listRule: def.listRule ?? "",
-    viewRule: def.viewRule ?? "",
-    createRule: def.createRule ?? "",
-    updateRule: def.updateRule ?? "",
-    deleteRule: def.deleteRule ?? "",
-    fields: def.fields,
-    indexes: def.indexes || [],
-  });
-  app.save(collection);
-  return app.findCollectionByNameOrId(def.name);
-}
 
-const EDITOR = '@request.auth.rolle = "editor"';
-
-migrate((app) => {
-  // ---- lager ----
-  ensureCollection(app, {
-    name: "lager",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[1/9] lager");
+  ensureCollection(app, { name: "lager", createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     indexes: ['CREATE UNIQUE INDEX idx_lager_jahr ON `lager` (`jahr`)'],
     fields: [
       { name: "jahr", type: "number", required: true },
@@ -53,16 +37,11 @@ migrate((app) => {
       { name: "immich_url", type: "url" },
     ],
   });
+
   const lagerId = app.findCollectionByNameOrId("lager").id;
 
-  // ---- dokumente (öffentliche PDFs) ----
-  ensureCollection(app, {
-    name: "dokumente",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[2/9] dokumente");
+  ensureCollection(app, { name: "dokumente", createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     fields: [
       { name: "name", type: "text", required: true },
       { name: "datei", type: "file", required: true, mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
@@ -72,14 +51,8 @@ migrate((app) => {
     ],
   });
 
-  // ---- dokumente_intern (sensible PDFs, protected file) ----
-  ensureCollection(app, {
-    name: "dokumente_intern",
-    listRule: '@request.auth.id != ""',
-    viewRule: '@request.auth.id != ""',
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[3/9] dokumente_intern");
+  ensureCollection(app, { name: "dokumente_intern", listRule: '@request.auth.id != ""', viewRule: '@request.auth.id != ""', createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     fields: [
       { name: "name", type: "text", required: true },
       { name: "datei", type: "file", required: true, mimeTypes: ["application/pdf"], maxSelect: 1, maxFilesize: 26214400 },
@@ -89,22 +62,8 @@ migrate((app) => {
     ],
   });
 
-  // Protected-Flag für datei-Feld in dokumente_intern setzen
-  const intern = app.findCollectionByNameOrId("dokumente_intern");
-  const dateiField = intern.fields.find((f) => f.name === "datei");
-  if (dateiField) {
-    dateiField.protected = true;
-    app.save(intern);
-  }
-
-  // ---- seiten ----
-  ensureCollection(app, {
-    name: "seiten",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[4/9] seiten");
+  ensureCollection(app, { name: "seiten", createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     indexes: ['CREATE UNIQUE INDEX idx_seiten_slug ON `seiten` (`slug`)'],
     fields: [
       { name: "slug", type: "text", required: true },
@@ -114,14 +73,8 @@ migrate((app) => {
     ],
   });
 
-  // ---- archiv ----
-  ensureCollection(app, {
-    name: "archiv",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[5/9] archiv");
+  ensureCollection(app, { name: "archiv", createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     indexes: ['CREATE UNIQUE INDEX idx_archiv_jahr ON `archiv` (`jahr`)'],
     fields: [
       { name: "jahr", type: "number", required: true },
@@ -130,14 +83,8 @@ migrate((app) => {
     ],
   });
 
-  // ---- sponsoren ----
-  ensureCollection(app, {
-    name: "sponsoren",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[6/9] sponsoren");
+  ensureCollection(app, { name: "sponsoren", createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     fields: [
       { name: "name", type: "text", required: true },
       { name: "logo", type: "file", maxSelect: 1 },
@@ -146,14 +93,8 @@ migrate((app) => {
     ],
   });
 
-  // ---- links ----
-  ensureCollection(app, {
-    name: "links",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[7/9] links");
+  ensureCollection(app, { name: "links", createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     fields: [
       { name: "titel", type: "text", required: true },
       { name: "url", type: "url", required: true },
@@ -161,14 +102,8 @@ migrate((app) => {
     ],
   });
 
-  // ---- kontakte ----
-  ensureCollection(app, {
-    name: "kontakte",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: EDITOR,
+  console.log("[8/9] kontakte");
+  ensureCollection(app, { name: "kontakte", createRule: EDITOR, updateRule: EDITOR, deleteRule: EDITOR,
     fields: [
       { name: "rolle", type: "select", required: true, maxSelect: 1, values: ["Lagerleiter", "Website"] },
       { name: "name", type: "text", required: true },
@@ -176,14 +111,8 @@ migrate((app) => {
     ],
   });
 
-  // ---- einstellungen (genau 1 Record) ----
-  ensureCollection(app, {
-    name: "einstellungen",
-    listRule: "",
-    viewRule: "",
-    createRule: EDITOR,
-    updateRule: EDITOR,
-    deleteRule: "",
+  console.log("[9/9] einstellungen");
+  ensureCollection(app, { name: "einstellungen", createRule: EDITOR, updateRule: EDITOR, deleteRule: "",
     fields: [
       { name: "hero_video", type: "file", maxSelect: 1, mimeTypes: ["video/mp4", "video/webm"], maxFilesize: 62914560 },
       { name: "hero_poster", type: "file", maxSelect: 1 },
@@ -192,7 +121,7 @@ migrate((app) => {
     ],
   });
 
-  // ---- users (Auth-Collection mit Rolle) ----
+  console.log("[fitundfun] users collection");
   if (!exists(app, "users")) {
     const users = new Collection({
       name: "users",
@@ -206,32 +135,12 @@ migrate((app) => {
       allowUserRegistrations: false,
       allowOAuth2Registrations: false,
       fields: [
-        {
-          name: "rolle",
-          type: "select",
-          required: true,
-          maxSelect: 1,
-          values: ["editor", "familie"],
-        },
+        { name: "rolle", type: "select", required: true, maxSelect: 1, values: ["editor", "familie"] },
       ],
     });
     app.save(users);
-    console.log("[fitundfun] users-Collection erstellt, Registrierung deaktiviert.");
-  } else {
-    const users = app.findCollectionByNameOrId("users");
-    if (!users.fields.find((f) => f.name === "rolle")) {
-      users.fields.push({
-        name: "rolle",
-        type: "select",
-        required: true,
-        maxSelect: 1,
-        values: ["editor", "familie"],
-      });
-      app.save(users);
-    }
+    console.log("[fitundfun] users-Collection erstellt.");
   }
 
   console.log("[fitundfun] Migration abgeschlossen — Collections erstellt.");
-}, (app) => {
-  // Rollback (nur manuell) — Collections nicht automatisch löschen, um Datenverlust zu vermeiden.
-});
+}, (app) => {});

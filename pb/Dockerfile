@@ -1,7 +1,7 @@
 # PocketBase — Minimal-Image mit Migrations
 FROM alpine:3.20
 
-ARG PB_VERSION=0.21.0
+ARG PB_VERSION=0.23.0
 
 RUN apk add --no-cache unzip ca-certificates tzdata curl && \
     addgroup -S pb && adduser -S -G pb pb

@@ -28,7 +28,7 @@ function ensureCollection(app, def) {
     fields: def.fields,
     indexes: def.indexes || [],
   });
-  app.dao().saveCollection(collection);
+  app.save(collection);
   return collection;
 }
 
@@ -104,7 +104,7 @@ migrate((app) => {
   const dateiField = intern.fields.find((f) => f.name === "datei");
   if (dateiField) {
     dateiField.options.protected = true;
-    app.dao().saveCollection(intern);
+    app.save(intern);
   }
 
   // ---- seiten ----
@@ -221,12 +221,12 @@ migrate((app) => {
         },
       ],
     });
-    app.dao().saveCollection(users);
+    app.save(users);
     users.options = Object.assign({}, users.options || {}, {
       allowUserRegistrations: false,
       allowOAuth2Registrations: false,
     });
-    app.dao().saveCollection(users);
+    app.save(users);
     console.log("[fitundfun] users-Collection erstellt, Registrierung deaktiviert.");
   } else {
     const users = app.findCollectionByNameOrId("users");
@@ -237,7 +237,7 @@ migrate((app) => {
         required: true,
         options: { maxSelect: 1, values: ["editor", "familie"] },
       });
-      app.dao().saveCollection(users);
+      app.save(users);
     }
   }
 

@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { pbServer } from "./pb";
+import { pbRequest, pbServer } from "./pb";
 import type {
   ArchivRecord,
   DokumentRecord,
@@ -112,30 +112,67 @@ export async function getLagerByJahr(jahr: number): Promise<LagerRecord | null> 
   return all.find((l) => l.jahr === jahr) ?? null;
 }
 
-export async function getDokumenteForLager(
-  lagerId: string
+export async function getArchivByJahr(jahr: number): Promise<ArchivRecord | null> {
+  const all = await getArchiv();
+  return all.find((eintrag) => eintrag.jahr === jahr) ?? null;
+}
+
+async function getDokumenteForRelation(
+  relation: "lager" | "archiv",
+  recordId: string,
+  authCookie = ""
 ): Promise<DokumentRecord[]> {
-  const pb = pbServer();
   const out: DokumentRecord[] = [];
   try {
-    const pub = await pb.collection("dokumente").getList<DokumentRecord>(1, 500, {
-      filter: `lager = "${lagerId}"`,
+    const pub = await pbServer().collection("dokumente").getList<DokumentRecord>(1, 500, {
+      filter: `${relation} = "${recordId}"`,
       sort: "sort,name",
     });
-    out.push(...pub.items.map((d) => ({ ...d, sensibel: false, collection: "dokumente" as const })));
-  } catch {}
-  try {
-    const intern = await pb
-      .collection("dokumente_intern")
-      .getList<DokumentRecord>(1, 500, {
-        filter: `lager = "${lagerId}"`,
-        sort: "sort,name",
-      });
     out.push(
-      ...intern.items.map((d) => ({ ...d, sensibel: true, collection: "dokumente_intern" as const }))
+      ...pub.items.map((document) => ({
+        ...document,
+        sensibel: false,
+        collection: "dokumente" as const,
+      }))
     );
   } catch {}
+
+  if (authCookie) {
+    const authenticated = pbRequest(authCookie);
+    if (authenticated.authStore.isValid) {
+      try {
+        const intern = await authenticated
+          .collection("dokumente_intern")
+          .getList<DokumentRecord>(1, 500, {
+            filter: `${relation} = "${recordId}"`,
+            sort: "sort,name",
+          });
+        out.push(
+          ...intern.items.map((document) => ({
+            ...document,
+            sensibel: true,
+            collection: "dokumente_intern" as const,
+          }))
+        );
+      } catch {}
+    }
+  }
+
   return out.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
+}
+
+export async function getDokumenteForLager(
+  lagerId: string,
+  authCookie = ""
+): Promise<DokumentRecord[]> {
+  return getDokumenteForRelation("lager", lagerId, authCookie);
+}
+
+export async function getDokumenteForArchiv(
+  archivId: string,
+  authCookie = ""
+): Promise<DokumentRecord[]> {
+  return getDokumenteForRelation("archiv", archivId, authCookie);
 }
 
 export async function getSeite(slug: string): Promise<SeiteRecord | null> {

@@ -15,12 +15,12 @@ export default async function KontaktPage() {
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <h1 className="font-display text-3xl uppercase text-ink sm:text-4xl">Kontakt</h1>
       <p className="mt-3 text-sm text-muted">
-        Der Kontakt läuft persönlich über die Familie und Freunde 🙂
+        Fragen zum Lager oder zur Website beantworten wir persönlich.
       </p>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
         <KontaktBlock titel="Lagerleitung" items={lagerleiter} />
-        <KontaktBlock titel="Website" items={website} />
+        {website.length > 0 ? <KontaktBlock titel="Website" items={website} /> : null}
       </div>
 
       <div className="mt-10">

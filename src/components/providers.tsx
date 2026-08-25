@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Toaster } from "sonner";
+import type PocketBase from "pocketbase";
 import { pbBrowser } from "@/lib/pb";
 import type { Rol } from "@/lib/pb-types";
 
@@ -30,6 +31,15 @@ interface EditCtx {
 }
 
 const EditContext = React.createContext<EditCtx | null>(null);
+
+function syncAuthCookie(pb: PocketBase) {
+  document.cookie = pb.authStore.exportToCookie({
+    httpOnly: false,
+    secure: window.location.protocol === "https:",
+    sameSite: "lax",
+    path: "/",
+  });
+}
 
 export function useAuth() {
   const ctx = React.useContext(AuthContext);
@@ -64,6 +74,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
+    syncAuthCookie(pb);
     const unsubscribe = pb.authStore.onChange(() => {
       const model = pb.authStore.model as Record<string, unknown> | null;
       if (model) {
@@ -76,6 +87,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         setUser(null);
         setEditMode(false);
       }
+      syncAuthCookie(pb);
     });
     return () => unsubscribe();
   }, []);
@@ -85,6 +97,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const res = await pb
       .collection("users")
       .authWithPassword(email, password);
+    syncAuthCookie(pb);
     setUser({
       id: res.record.id,
       email: res.record.email,
@@ -94,6 +107,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(() => {
     pbBrowser().authStore.clear();
+    syncAuthCookie(pbBrowser());
     setUser(null);
     setEditMode(false);
   }, []);

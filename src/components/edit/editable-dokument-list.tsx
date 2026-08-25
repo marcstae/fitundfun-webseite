@@ -124,7 +124,7 @@ function DokumentForm({
         }
       } else {
         if (!file) {
-          toast.error("Bitte eine PDF-Datei wählen.");
+          toast.error("Bitte eine PDF- oder DOCX-Datei wählen.");
           setSaving(false);
           return;
         }
@@ -146,7 +146,7 @@ function DokumentForm({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{doc ? "Dokument bearbeiten" : "Dokument hochladen"}</DialogTitle>
-          <DialogDescription>Nur PDF, max. 20 MB.</DialogDescription>
+          <DialogDescription>PDF oder DOCX, max. 20 MB.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -159,9 +159,9 @@ function DokumentForm({
             />
           </div>
           <div className="space-y-2">
-            <Label>PDF-Datei</Label>
+            <Label>Dokument</Label>
             <Dropzone
-              accept="application/pdf"
+              accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               maxSizeMB={20}
               onFile={setFile}
               currentName={file ? file.name : doc?.datei}

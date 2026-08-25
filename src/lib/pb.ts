@@ -17,6 +17,16 @@ export function pbServer(): PocketBase {
   return _server;
 }
 
+/** Request-scoped client. Never mutate the shared server client's auth store. */
+export function pbRequest(cookieHeader = ""): PocketBase {
+  const pb = new PocketBase(PB_URL);
+  pb.autoCancellation(false);
+  if (cookieHeader) {
+    pb.authStore.loadFromCookie(cookieHeader);
+  }
+  return pb;
+}
+
 let _browser: PocketBase | null = null;
 
 /** Browser-side PocketBase client (singleton, persists auth in localStorage). */

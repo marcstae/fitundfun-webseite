@@ -8,6 +8,11 @@ export interface UserRecord {
   updated: string;
 }
 
+export interface PreisEintrag {
+  label: string;
+  preis: string;
+}
+
 export interface LagerRecord {
   id: string;
   jahr: number;
@@ -17,6 +22,9 @@ export interface LagerRecord {
   beschreibung: string;
   youtube_url: string;
   immich_url: string;
+  teilnehmer: number | null;
+  preise: PreisEintrag[] | null;
+  aktivitaeten: string[] | null;
   created: string;
   updated: string;
 }
@@ -26,6 +34,7 @@ export interface DokumentRecord {
   name: string;
   datei: string;
   lager: string;
+  archiv: string;
   sensibel: boolean;
   sort: number;
   collection: "dokumente" | "dokumente_intern";
@@ -48,6 +57,13 @@ export interface ArchivRecord {
   jahr: number;
   video_url: string;
   fotos_url: string;
+  beschreibung: string | null;
+  datum_von: string | null;
+  datum_bis: string | null;
+  teilnehmer: number | null;
+  preise: PreisEintrag[] | null;
+  aktivitaeten: string[] | null;
+  quelle_url: string | null;
   created: string;
   updated: string;
 }

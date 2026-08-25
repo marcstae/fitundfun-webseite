@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { pbServer, PB_URL } from "@/lib/pb";
+import { pbRequest, PB_URL } from "@/lib/pb";
 import type { DokumentRecord } from "@/lib/pb-types";
 
 interface RouteParams {
@@ -8,7 +8,7 @@ interface RouteParams {
 
 const ALLOWED = new Set(["dokumente", "dokumente_intern"]);
 
-export async function GET(_req: Request, { params }: RouteParams) {
+export async function GET(req: Request, { params }: RouteParams) {
   const { collection, id, path } = params;
   if (!ALLOWED.has(collection)) {
     return new NextResponse("Nicht gefunden", { status: 404 });
@@ -16,30 +16,15 @@ export async function GET(_req: Request, { params }: RouteParams) {
   const filename = path.join("/");
   if (!filename) return new NextResponse("Nicht gefunden", { status: 404 });
 
-  const pb = pbServer();
+  const cookieHeader = req.headers.get("cookie") || "";
+  const pb = collection === "dokumente_intern" ? pbRequest(cookieHeader) : pbRequest();
 
-  // Sensible Dokumente nur für eingeloggte Familie/Editor.
-  if (collection === "dokumente_intern") {
-    const cookie = _req.headers.get("cookie") || "";
-    if (cookie) {
-      const m = cookie.match(/pb_auth=([^;]+)/);
-      if (m) {
-        try {
-          pb.authStore.loadFromCookie(decodeURIComponent(m[1]));
-          await pb.collection("users").authRefresh();
-        } catch {
-          pb.authStore.clear();
-        }
-      }
-    }
-    if (!pb.authStore.isValid) {
-      return new NextResponse("Anmeldung erforderlich", {
-        status: 401,
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-      });
-    }
+  if (collection === "dokumente_intern" && !pb.authStore.isValid) {
+    return new NextResponse("Anmeldung erforderlich", {
+      status: 401,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   }
-
   // Record abrufen, um den echten Dateinamen + Namen zu validieren.
   let rec: DokumentRecord | null = null;
   try {
@@ -64,12 +49,18 @@ export async function GET(_req: Request, { params }: RouteParams) {
     return new NextResponse("Datei nicht verfügbar", { status: 502 });
   }
 
-  const downloadName = `${rec.name}.pdf`;
+  const extension = rec.datei.toLowerCase().endsWith(".docx") ? ".docx" : ".pdf";
+  const downloadName = `${rec.name}${extension}`.replace(/[\\/"\r\n]/g, "_");
+  const contentType =
+    upstream.headers.get("Content-Type") ||
+    (extension === ".docx"
+      ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      : "application/pdf");
   return new NextResponse(upstream.body, {
     status: 200,
     headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${downloadName.replace(/"/g, "_")}"`,
+      "Content-Type": contentType,
+      "Content-Disposition": `inline; filename="${downloadName}"`,
       "Cache-Control": "private, max-age=0",
     },
   });

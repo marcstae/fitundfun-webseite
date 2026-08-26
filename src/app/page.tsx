@@ -1,13 +1,6 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  CalendarDays,
-  Images,
-  MapPin,
-  MountainSnow,
-  UsersRound,
-} from "lucide-react";
-import { getAktuellesLager, getArchiv, getEinstellungen } from "@/lib/data";
+import { ArrowUpRight, CalendarDays, Images, MapPin } from "lucide-react";
+import { getAktuellesLager, getEinstellungen } from "@/lib/data";
 import { publicFileUrl } from "@/lib/pb";
 import { Button } from "@/components/ui/button";
 import { formatDateRange } from "@/lib/utils";
@@ -17,9 +10,8 @@ import { HeroVideo } from "@/components/hero-video";
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [lager, archiv, einstellungen] = await Promise.all([
+  const [lager, einstellungen] = await Promise.all([
     getAktuellesLager(),
-    getArchiv(),
     getEinstellungen(),
   ]);
 
@@ -36,8 +28,6 @@ export default async function HomePage() {
   const lagerHref = lager ? `/lager/${lager.jahr}` : "/lager";
   const fotosHref = lager?.immich_url || "/fotos";
   const fotosExtern = /^https?:\/\//.test(fotosHref);
-  const maxTeilnehmer =
-    Math.max(0, ...archiv.map((eintrag) => eintrag.teilnehmer ?? 0), lager?.teilnehmer ?? 0) || null;
 
   return (
       <section
@@ -54,44 +44,33 @@ export default async function HomePage() {
           <div aria-hidden className="camp-hero-grain pointer-events-none absolute inset-0 z-[4]" />
 
           <div className="relative z-10 mx-auto flex h-full w-full max-w-[96rem] flex-col px-5 pb-6 pt-5 sm:px-8 sm:pb-8 sm:pt-7 lg:px-12 lg:pb-11 lg:pt-9">
-            <div className="camp-hero-meta flex items-start justify-between gap-4 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white sm:text-xs">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-navy-950/15 px-3 py-2 backdrop-blur-md">
-                <MountainSnow className="size-4 text-[#ffad7a]" />
-                Familie · Freunde · Schnee
+            <div className="camp-hero-meta flex justify-end text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white sm:text-xs">
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="size-3.5 text-[#ffad7a]" />
+                Brigels · Graubünden
               </span>
-              <div className="flex items-center gap-4">
-                <span className="hidden text-white/75 md:inline">Ski · Snowboard · Schlitteln</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="size-3.5 text-[#ffad7a]" />
-                  Brigels · Graubünden
-                </span>
-              </div>
             </div>
 
-            <div className="mt-auto max-w-[74rem]">
-              <div className="camp-hero-kicker mb-5 flex flex-wrap gap-2 sm:mb-7">
+            <div className="mt-auto w-full xl:grid xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] xl:items-end xl:gap-x-8">
+              <div className="camp-hero-kicker mb-5 flex flex-wrap gap-2 sm:mb-7 xl:col-span-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/12 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md sm:text-sm">
                   <CalendarDays className="size-4 text-[#ffad7a]" />
                   {lager
                     ? `Lager ${lager.jahr} · ${formatDateRange(lager.datum_von, lager.datum_bis)}`
                     : "Eine Woche Winter"}
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/12 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md sm:text-sm">
-                  <UsersRound className="size-4 text-[#ffad7a]" />
-                  {maxTeilnehmer ? `Bis zu ${maxTeilnehmer} Personen` : "Familie & Freunde"}
-                </span>
               </div>
 
               <h1
                 id="hero-headline"
-                className="camp-hero-title max-w-[11ch] font-display text-[clamp(3.4rem,10vw,8.75rem)] leading-[0.8] tracking-[-0.075em] text-[#fffaf0]"
+                className="camp-hero-title max-w-[11ch] font-display text-[clamp(3.4rem,10vw,8.75rem)] leading-[0.8] tracking-[-0.075em] text-[#fffaf0] xl:mb-5"
               >
                 <EditableHero field="hero_titel" label="Hero-Titel" value={heroTitel}>
                   {renderHeroTitel(heroTitel)}
                 </EditableHero>
               </h1>
 
-              <div className="camp-hero-bottom mt-6 flex flex-col items-start justify-between gap-6 sm:mt-8 lg:flex-row lg:items-end">
+              <div className="camp-hero-bottom mt-6 flex flex-col items-start justify-between gap-6 sm:mt-8 lg:flex-row lg:items-end xl:mt-0 xl:min-w-0">
                 <p className="camp-hero-copy max-w-xl text-balance text-base font-semibold leading-relaxed text-white/90 sm:text-lg">
                   <EditableHero
                     field="hero_willkommen"

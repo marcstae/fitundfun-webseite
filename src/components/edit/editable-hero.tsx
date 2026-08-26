@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { EditButton } from "./edit-button";
+import { EditButton, useEditMode } from "./edit-button";
 
 interface EditableHeroProps {
   field: "hero_titel" | "hero_willkommen";
@@ -34,10 +34,10 @@ export function EditableHero({
   multiline,
   children,
 }: EditableHeroProps) {
+  const { editMode } = useEditMode();
   const [open, setOpen] = React.useState(false);
   const [draft, setDraft] = React.useState(value);
   const [saving, setSaving] = React.useState(false);
-
   const openDialog = () => {
     setDraft(value);
     setOpen(true);
@@ -69,9 +69,11 @@ export function EditableHero({
     <>
       <span className="group/edit relative inline">
         {children}
-        <span className="ml-2 align-middle">
-          <EditButton label={label} onClick={openDialog} />
-        </span>
+        {editMode && (
+          <span className="ml-2 align-middle">
+            <EditButton label={label} onClick={openDialog} />
+          </span>
+        )}
       </span>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

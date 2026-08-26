@@ -44,15 +44,15 @@ export default async function HomePage() {
           <div aria-hidden className="camp-hero-grain pointer-events-none absolute inset-0 z-[4]" />
 
           <div className="relative z-10 mx-auto flex h-full w-full max-w-[96rem] flex-col px-5 pb-6 pt-5 sm:px-8 sm:pb-8 sm:pt-7 lg:px-12 lg:pb-11 lg:pt-9">
-            <div className="camp-hero-meta flex justify-end text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white sm:text-xs">
-              <span className="inline-flex items-center gap-1.5">
+            <div className="camp-hero-meta order-1 flex justify-end text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white sm:text-xs">
+              <span className="hidden items-center gap-1.5 md:inline-flex">
                 <MapPin className="size-3.5 text-[#ffad7a]" />
                 Brigels · Graubünden
               </span>
             </div>
 
-            <div className="mt-auto w-full xl:grid xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] xl:items-end xl:gap-x-8">
-              <div className="camp-hero-kicker mb-5 flex flex-wrap gap-2 sm:mb-7 xl:col-span-2">
+            <div className="order-2 mt-auto w-full max-xl:contents xl:grid xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] xl:items-end xl:gap-x-8">
+              <div className="camp-hero-kicker order-3 mb-5 flex flex-wrap gap-2 max-xl:mt-auto sm:mb-7 xl:col-span-2 xl:row-start-1">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/12 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md sm:text-sm">
                   <CalendarDays className="size-4 text-[#ffad7a]" />
                   {lager
@@ -63,14 +63,14 @@ export default async function HomePage() {
 
               <h1
                 id="hero-headline"
-                className="camp-hero-title max-w-[11ch] font-display text-[clamp(3.4rem,10vw,8.75rem)] leading-[0.8] tracking-[-0.075em] text-[#fffaf0] xl:mb-5"
+                className="camp-hero-title order-2 max-w-[11ch] font-display text-[clamp(3.4rem,10vw,8.75rem)] leading-[0.8] tracking-[-0.075em] text-[#fffaf0] xl:col-start-1 xl:mb-5 xl:row-start-2"
               >
                 <EditableHero field="hero_titel" label="Hero-Titel" value={heroTitel}>
                   {renderHeroTitel(heroTitel)}
                 </EditableHero>
               </h1>
 
-              <div className="camp-hero-bottom mt-6 flex flex-col items-start justify-between gap-6 sm:mt-8 lg:flex-row lg:items-end xl:mt-0 xl:min-w-0">
+              <div className="camp-hero-bottom order-4 mt-6 flex flex-col items-start justify-between gap-6 sm:mt-8 lg:flex-row lg:items-end xl:col-start-2 xl:mt-0 xl:min-w-0 xl:row-start-2">
                 <p className="camp-hero-copy max-w-xl text-balance text-base font-semibold leading-relaxed text-white/90 sm:text-lg">
                   <EditableHero
                     field="hero_willkommen"

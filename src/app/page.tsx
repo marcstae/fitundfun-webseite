@@ -31,7 +31,7 @@ export default async function HomePage() {
 
   return (
       <section
-        className="camp-hero relative h-dvh overflow-hidden bg-[#f5efe2] px-2 pb-2 sm:px-3 sm:pb-3"
+        className="camp-hero relative h-dvh overflow-hidden bg-[#f5efe2] p-2 sm:p-3"
         aria-labelledby="hero-headline"
       >
         <div className="relative isolate h-full overflow-hidden rounded-[1.5rem] bg-navy-900 sm:rounded-[2rem]">

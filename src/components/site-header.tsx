@@ -17,18 +17,9 @@ const NAV = [
 
 export function SiteHeader() {
   const [open, setOpen] = React.useState(false);
-  const [scrolled, setScrolled] = React.useState(false);
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAuth();
   const isHome = pathname === "/";
-  const homeAtTop = isHome && !scrolled && !open;
-
-  React.useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   React.useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -45,13 +36,20 @@ export function SiteHeader() {
     <>
       <header
         className={cn(
-          "sticky top-0 z-40 transition-all duration-300",
-          homeAtTop
-            ? "bg-[#f5efe2]"
-            : "border-b border-ink/[0.08] bg-white/[0.92] shadow-[0_8px_30px_rgba(14,28,48,0.04)] backdrop-blur-xl"
+          "z-40",
+          isHome
+            ? "absolute inset-x-0 top-0 bg-transparent"
+            : "sticky top-0 border-b border-ink/[0.08] bg-white/[0.92] shadow-[0_8px_30px_rgba(14,28,48,0.04)] backdrop-blur-xl"
         )}
       >
-        <div className="mx-auto flex h-16 max-w-[96rem] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div
+          className={cn(
+            "mx-auto flex max-w-[96rem] items-center justify-between",
+            isHome
+              ? "h-20 px-7 sm:px-11 lg:px-[3.75rem]"
+              : "h-16 px-4 sm:px-6 lg:px-8"
+          )}
+        >
           <Link
             href="/"
             className="flex items-center"
@@ -63,42 +61,45 @@ export function SiteHeader() {
               width={112}
               height={46}
               priority
-              className="h-auto w-24 sm:w-28"
+              className={cn(
+                "h-auto w-24 sm:w-28",
+                isHome && "brightness-0 invert drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+              )}
             />
           </Link>
 
-          <div className="flex items-center gap-2">
-            <nav className="hidden items-center gap-1 lg:flex" aria-label="Direktnavigation">
-              {NAV.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "rounded-full px-4 py-2 text-sm font-bold text-ink/65 transition-colors hover:bg-ink/5 hover:text-ink",
-                    item.href === pathname && "bg-ink text-white hover:bg-ink hover:text-white"
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-            <button
-              onClick={() => setOpen(true)}
-              aria-label="Menü öffnen"
-              className="inline-flex size-11 items-center justify-center rounded-full text-ink transition-colors hover:bg-ink/5"
-            >
-              <Menu className="size-6" />
-            </button>
-          </div>
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Menü öffnen"
+            className={cn(
+              "inline-flex size-11 items-center justify-center rounded-full transition-colors",
+              isHome
+                ? "text-white hover:bg-white/10"
+                : "text-ink hover:bg-ink/5"
+            )}
+          >
+            <Menu className="size-6" />
+          </button>
         </div>
       </header>
 
       {open && (
         <div className="fixed inset-0 z-50 bg-navy-900/95 backdrop-blur-sm">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <span className="font-display text-sm uppercase tracking-[0.3em] text-white/60">
-              fit&fun Brigels
-            </span>
+          <div className="mx-auto flex h-20 max-w-[96rem] items-center justify-between px-7 sm:px-11 lg:px-[3.75rem]">
+            <Link
+              href="/"
+              onClick={() => setOpen(false)}
+              className="flex items-center"
+              aria-label="fit&fun Lager Brigels — Startseite"
+            >
+              <Image
+                src="/brigels-logo.png"
+                alt="fit&fun Lager Brigels"
+                width={112}
+                height={46}
+                className="h-auto w-24 brightness-0 invert sm:w-28"
+              />
+            </Link>
             <button
               onClick={() => setOpen(false)}
               aria-label="Menü schliessen"

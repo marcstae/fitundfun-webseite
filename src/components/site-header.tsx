@@ -38,7 +38,7 @@ export function SiteHeader() {
         className={cn(
           "z-40",
           isHome
-            ? "absolute inset-x-0 top-0 bg-transparent"
+            ? "absolute inset-x-0 top-2 bg-transparent sm:top-3"
             : "sticky top-0 border-b border-ink/[0.08] bg-white/[0.92] shadow-[0_8px_30px_rgba(14,28,48,0.04)] backdrop-blur-xl"
         )}
       >

@@ -38,7 +38,7 @@ export function SiteHeader() {
         className={cn(
           "z-40",
           isHome
-            ? "absolute inset-x-0 top-2 bg-transparent sm:top-3"
+            ? "absolute inset-x-0 top-5 bg-transparent sm:top-7"
             : "sticky top-0 border-b border-ink/[0.08] bg-white/[0.92] shadow-[0_8px_30px_rgba(14,28,48,0.04)] backdrop-blur-xl"
         )}
       >
@@ -46,7 +46,7 @@ export function SiteHeader() {
           className={cn(
             "mx-auto flex max-w-[96rem] items-center justify-between",
             isHome
-              ? "h-20 px-7 sm:px-11 lg:px-[3.75rem]"
+              ? "h-16 px-7 sm:px-11 lg:px-[3.75rem]"
               : "h-16 px-4 sm:px-6 lg:px-8"
           )}
         >

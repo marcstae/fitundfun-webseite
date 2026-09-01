@@ -1,12 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { pbServer, REVALIDATE_SECRET } from "@/lib/pb";
+import { pbRequest, REVALIDATE_SECRET } from "@/lib/pb";
 
 /** On-Demand-Revalidation nach jedem Save. Geschützt: gültige PB-Session nötig. */
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization") || "";
 
-  const pb = pbServer();
+  // Request-scoped Client — niemals den geteilten Server-AuthStore mutieren.
+  const pb = pbRequest();
   try {
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (token) {

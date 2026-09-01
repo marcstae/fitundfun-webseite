@@ -20,6 +20,7 @@ import {
 import {
   FAMILY_ACCESS_COOKIE,
   FAMILY_ACCESS_MAX_AGE,
+  clientIp,
   familyAccessCookieValue,
   hasFamilyAccess,
   isFamilyPassword,
@@ -41,6 +42,30 @@ import { EditableImmich } from "@/components/edit/editable-immich";
 import { EditableLinks } from "@/components/edit/editable-links";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ jahr: string }>;
+}) {
+  const { jahr: jahrParam } = await params;
+  const jahr = Number(jahrParam);
+  const [lager, archiv] = await Promise.all([
+    getLagerByJahr(jahr),
+    getArchivByJahr(jahr),
+  ]);
+  const titel = lager?.titel || `Lager ${jahr}`;
+  const beschreibung =
+    (lager?.beschreibung || archiv?.beschreibung || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160) || `Informationen und Dokumente zum fit&fun Lager ${jahr} in Brigels.`;
+  return {
+    title: titel,
+    description: beschreibung,
+  };
+}
 
 export default async function LagerPage({
   params,
@@ -73,24 +98,34 @@ export default async function LagerPage({
   ]);
   const dokumente = documentResult.items;
 
-  const titel = lager?.titel || `Lager ${jahr}`;
-  const datumVon = lager?.datum_von || archiv?.datum_von || "";
-  const datumBis = lager?.datum_bis || archiv?.datum_bis || "";
+  // View-Model: lager und archiv (zwei Collections, fast gleiches Schema)
+  // werden einmal normalisiert — der Rest der Seite kennt nur diese Form.
+  const ansicht = {
+    istAktuell: !!lager,
+    recordId: lager?.id || archiv!.id,
+    collection: (lager ? "lager" : "archiv") as "lager" | "archiv",
+    titel: lager?.titel || `Lager ${jahr}`,
+    datumVon: lager?.datum_von || archiv?.datum_von || "",
+    datumBis: lager?.datum_bis || archiv?.datum_bis || "",
+    beschreibung: lager?.beschreibung || archiv?.beschreibung || "",
+    videoUrl: lager?.youtube_url || archiv?.video_url || "",
+    teilnehmer: lager?.teilnehmer || archiv?.teilnehmer || null,
+    preise: lager?.preise || archiv?.preise || [],
+    aktivitaeten: lager?.aktivitaeten || archiv?.aktivitaeten || [],
+    quelleUrl: archiv?.quelle_url || "",
+  };
   const zeitraum =
-    datumVon && datumBis ? formatDateRangeLong(datumVon, datumBis) : `Lager ${jahr}`;
+    ansicht.datumVon && ansicht.datumBis
+      ? formatDateRangeLong(ansicht.datumVon, ansicht.datumBis)
+      : `Lager ${jahr}`;
   const beschreibung = lager
-    ? sanitizeRichText(lager.beschreibung || "")
-    : archiv?.beschreibung || "";
+    ? sanitizeRichText(ansicht.beschreibung)
+    : ansicht.beschreibung;
   const fotosUrl = documentResult.fotoalbum?.url || "";
   const validFotosUrl = !!fotosUrl && isValidHttpUrl(fotosUrl);
-  const videoUrl = lager?.youtube_url || archiv?.video_url || "";
-  const validVideoUrl = !!videoUrl && isValidHttpUrl(videoUrl);
-  const ytId = youtubeId(videoUrl);
-  const teilnehmer = lager?.teilnehmer || archiv?.teilnehmer || null;
-  const preise = lager?.preise || archiv?.preise || [];
-  const aktivitaeten = lager?.aktivitaeten || archiv?.aktivitaeten || [];
-  const mediaCollection = lager ? "lager" : "archiv";
-  const mediaRecordId = lager?.id || archiv!.id;
+  const validVideoUrl = !!ansicht.videoUrl && isValidHttpUrl(ansicht.videoUrl);
+  const ytId = youtubeId(ansicht.videoUrl);
+
   const showFamilyGate =
     !documentResult.accessGranted &&
     (documentResult.hasProtected || documentResult.hasProtectedPhoto);
@@ -98,8 +133,7 @@ export default async function LagerPage({
   async function unlockFamilyAccess(formData: FormData) {
     "use server";
     const headerStore = await headers();
-    const ip =
-      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = clientIp(headerStore);
     if (!unlockAttemptAllowed(ip)) {
       redirect(`/lager/${jahr}?familienzugang=blockiert#familienzugang`);
     }
@@ -121,7 +155,6 @@ export default async function LagerPage({
     redirect(`/lager/${jahr}#dokumente`);
   }
 
-
   return (
     <article>
       <header className="border-b border-ink/8 bg-navy-900 text-white">
@@ -130,28 +163,28 @@ export default async function LagerPage({
             {zeitraum}
           </p>
           <h1 className="camp-display text-4xl leading-tight sm:text-5xl">
-            {titel}
+            {ansicht.titel}
           </h1>
-          {lager && beschreibung ? (
+          {ansicht.istAktuell && beschreibung ? (
             <div
               className="prose prose-invert mt-4 max-w-2xl text-white/85 [&_a]:text-accent-light [&_a]:underline"
               dangerouslySetInnerHTML={{ __html: beschreibung }}
             />
           ) : null}
-          {!lager && beschreibung ? (
+          {!ansicht.istAktuell && beschreibung ? (
             <p className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-white/80">
               {beschreibung}
             </p>
           ) : null}
 
           <div className="mt-6 flex flex-wrap gap-2">
-            {teilnehmer ? (
+            {ansicht.teilnehmer ? (
               <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
                 <UsersRound className="size-4 text-accent-light" />
-                {teilnehmer} Teilnehmende
+                {ansicht.teilnehmer} Teilnehmende
               </span>
             ) : null}
-            {preise.slice(0, 2).map((preis) => (
+            {ansicht.preise.slice(0, 2).map((preis) => (
               <span
                 key={`${preis.label}-${preis.preis}`}
                 className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold"
@@ -170,13 +203,13 @@ export default async function LagerPage({
       </header>
 
       <div className="mx-auto max-w-5xl space-y-14 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {aktivitaeten.length > 0 ? (
+        {ansicht.aktivitaeten.length > 0 ? (
           <section>
             <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
               Was dabei war
             </h2>
             <div className="flex flex-wrap gap-2">
-              {aktivitaeten.map((aktivitaet) => (
+              {ansicht.aktivitaeten.map((aktivitaet) => (
                 <span
                   key={aktivitaet}
                   className="rounded-full border border-ink/10 bg-navy-50 px-3 py-1.5 text-sm font-semibold text-ink"
@@ -302,8 +335,8 @@ export default async function LagerPage({
             </a>
             <div className="mt-3">
               <EditableImmich
-                relation={mediaCollection}
-                relationId={mediaRecordId}
+                relation={ansicht.collection}
+                relationId={ansicht.recordId}
                 albumId={documentResult.fotoalbum?.id}
                 current={fotosUrl}
               />
@@ -311,8 +344,8 @@ export default async function LagerPage({
           </section>
         ) : (
           <EditableImmich
-            relation={mediaCollection}
-            relationId={mediaRecordId}
+            relation={ansicht.collection}
+            relationId={ansicht.recordId}
             albumId={documentResult.fotoalbum?.id}
             current={fotosUrl}
           />
@@ -326,7 +359,7 @@ export default async function LagerPage({
             {ytId ? <YoutubeClickToPlay id={ytId} /> : null}
             {!ytId ? (
               <a
-                href={videoUrl}
+                href={ansicht.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-bold text-accent hover:underline"
@@ -336,27 +369,27 @@ export default async function LagerPage({
             ) : null}
             <div className="mt-3">
               <EditableYoutube
-                collection={mediaCollection}
-                recordId={mediaRecordId}
-                current={videoUrl}
+                collection={ansicht.collection}
+                recordId={ansicht.recordId}
+                current={ansicht.videoUrl}
               />
             </div>
           </section>
         ) : (
           <EditableYoutube
-            collection={mediaCollection}
-            recordId={mediaRecordId}
-            current={videoUrl}
+            collection={ansicht.collection}
+            recordId={ansicht.recordId}
+            current={ansicht.videoUrl}
           />
         )}
 
-        {archiv?.quelle_url ? (
+        {ansicht.quelleUrl ? (
           <section className="rounded-2xl bg-navy-50 p-5">
             <p className="text-xs font-bold uppercase tracking-wider text-muted">
               Historische Quelle
             </p>
             <a
-              href={archiv.quelle_url}
+              href={ansicht.quelleUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:underline"

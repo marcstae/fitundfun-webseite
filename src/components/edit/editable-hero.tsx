@@ -1,22 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { EditButton, useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 
 interface EditableHeroProps {
   field: "hero_titel" | "hero_willkommen";
@@ -37,15 +28,14 @@ export function EditableHero({
   const { editMode } = useEditMode();
   const [open, setOpen] = React.useState(false);
   const [draft, setDraft] = React.useState(value);
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
   const openDialog = () => {
     setDraft(value);
     setOpen(true);
   };
 
   const save = async () => {
-    setSaving(true);
-    try {
+    const ok = await run(async () => {
       const pb = pbBrowser();
       const list = await pb.collection("einstellungen").getList(1, 1);
       const rec = list.items[0];
@@ -55,14 +45,8 @@ export function EditableHero({
         await pb.collection("einstellungen").update(rec.id, { [field]: draft });
       }
       await revalidatePath("/");
-      toast.success("Gespeichert ✓");
-      setOpen(false);
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) setOpen(false);
   };
 
   return (
@@ -75,41 +59,32 @@ export function EditableHero({
           </span>
         )}
       </span>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{label} bearbeiten</DialogTitle>
-            <DialogDescription>
-              Wird auf der Startseite im Hero angezeigt.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="hero-field">{label}</Label>
-            {multiline ? (
-              <Textarea
-                id="hero-field"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                rows={3}
-              />
-            ) : (
-              <Input
-                id="hero-field"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-              />
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
-              Abbrechen
-            </Button>
-            <Button onClick={save} disabled={saving}>
-              {saving ? "Speichert…" : "Speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SaveDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`${label} bearbeiten`}
+        description="Wird auf der Startseite im Hero angezeigt."
+        saving={saving}
+        onSave={save}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="hero-field">{label}</Label>
+          {multiline ? (
+            <Textarea
+              id="hero-field"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={3}
+            />
+          ) : (
+            <Input
+              id="hero-field"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+          )}
+        </div>
+      </SaveDialog>
     </>
   );
 }

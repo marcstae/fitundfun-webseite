@@ -6,17 +6,11 @@ import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dropzone } from "./dropzone";
 import { useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 import { isValidHttpUrl } from "@/lib/utils";
 import type { SponsorRecord } from "@/lib/pb-types";
 
@@ -89,7 +83,7 @@ function SponsorForm({
   const [name, setName] = React.useState(item?.name || "");
   const [url, setUrl] = React.useState(item?.url || "");
   const [logo, setLogo] = React.useState<File | null>(null);
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
 
   const save = async () => {
     if (!name.trim()) {
@@ -100,8 +94,7 @@ function SponsorForm({
       toast.error("URL ist ungültig.");
       return;
     }
-    setSaving(true);
-    try {
+    const ok = await run(async () => {
       const pb = pbBrowser();
       const form = new FormData();
       form.set("name", name.trim());
@@ -115,48 +108,37 @@ function SponsorForm({
       }
       await revalidatePath("/sponsoren");
       await revalidatePath("/");
-      toast.success("Gespeichert ✓");
-      onSaved();
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) onSaved();
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{item ? "Sponsor bearbeiten" : "Sponsor hinzufügen"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="sp-name">Name</Label>
-            <Input id="sp-name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sp-url">URL (optional)</Label>
-            <Input id="sp-url" value={url} placeholder="https://…" onChange={(e) => setUrl(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Logo (optional)</Label>
-            <Dropzone
-              accept="image/*"
-              maxSizeMB={5}
-              onFile={setLogo}
-              currentName={logo ? logo.name : item?.logo}
-              label="Logo wählen"
-              hint="PNG/SVG/JPG hierher ziehen oder"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>Abbrechen</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Speichert…" : "Speichern"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <SaveDialog
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title={item ? "Sponsor bearbeiten" : "Sponsor hinzufügen"}
+      saving={saving}
+      onSave={save}
+    >
+      <div className="space-y-2">
+        <Label htmlFor="sp-name">Name</Label>
+        <Input id="sp-name" value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="sp-url">URL (optional)</Label>
+        <Input id="sp-url" value={url} placeholder="https://…" onChange={(e) => setUrl(e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label>Logo (optional)</Label>
+        <Dropzone
+          accept="image/*"
+          maxSizeMB={5}
+          onFile={setLogo}
+          currentName={logo ? logo.name : item?.logo}
+          label="Logo wählen"
+          hint="PNG/SVG/JPG hierher ziehen oder"
+        />
+      </div>
+    </SaveDialog>
   );
 }

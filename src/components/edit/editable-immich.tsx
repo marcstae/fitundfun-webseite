@@ -4,18 +4,10 @@ import * as React from "react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditButton, useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 import { isValidHttpUrl } from "@/lib/utils";
 
 interface Props {
@@ -34,7 +26,7 @@ export function EditableImmich({
   const { canEdit, editMode } = useEditMode();
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState(current || "");
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
   if (!canEdit || !editMode) return null;
 
   const valid = !url || isValidHttpUrl(url);
@@ -44,8 +36,7 @@ export function EditableImmich({
       toast.error("Bitte eine gültige URL eingeben.");
       return;
     }
-    setSaving(true);
-    try {
+    const ok = await run(async () => {
       const albums = pbBrowser().collection("fotoalben");
       if (!url && albumId) {
         await albums.delete(albumId);
@@ -56,14 +47,8 @@ export function EditableImmich({
       }
       await revalidatePath(window.location.pathname);
       await revalidatePath("/");
-      toast.success("Gespeichert ✓");
-      setOpen(false);
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) setOpen(false);
   };
 
   return (
@@ -74,36 +59,27 @@ export function EditableImmich({
       >
         Foto-Album-Link {current ? "ändern" : "setzen"}
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Immich-Album-Link</DialogTitle>
-            <DialogDescription>
-              Share-Link mit Upload-Erlaubnis für Teilnehmende.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="im-url">URL</Label>
-            <Input
-              id="im-url"
-              value={url}
-              placeholder="https://…"
-              onChange={(e) => setUrl(e.target.value)}
-            />
-            {url && !valid && (
-              <p className="text-xs text-red-600">Ungültige URL.</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
-              Abbrechen
-            </Button>
-            <Button onClick={save} disabled={saving}>
-              {saving ? "Speichert…" : "Speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SaveDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Immich-Album-Link"
+        description="Share-Link mit Upload-Erlaubnis für Teilnehmende."
+        saving={saving}
+        onSave={save}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="im-url">URL</Label>
+          <Input
+            id="im-url"
+            value={url}
+            placeholder="https://…"
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          {url && !valid && (
+            <p className="text-xs text-red-600">Ungültige URL.</p>
+          )}
+        </div>
+      </SaveDialog>
     </>
   );
 }

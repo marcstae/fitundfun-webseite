@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+function localTarget(value: string | null): string {
+  if (!value) return "/";
+  return value.startsWith("/") && !value.startsWith("//") ? value : "/";
+}
+
 function LoginForm() {
   const { login, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -18,7 +23,7 @@ function LoginForm() {
 
   React.useEffect(() => {
     if (!loading && isAuthenticated) {
-      const redirect = search.get("redirect") || "/";
+      const redirect = localTarget(search.get("redirect"));
       router.replace(redirect);
     }
   }, [isAuthenticated, loading, router, search]);
@@ -32,7 +37,7 @@ function LoginForm() {
       if (userData.mussPasswortAendern) {
         router.replace("/admin-einrichtung");
       } else {
-        const redirect = search.get("redirect") || "/";
+        const redirect = localTarget(search.get("redirect"));
         router.replace(redirect);
       }
       router.refresh();

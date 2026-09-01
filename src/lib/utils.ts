@@ -1,5 +1,20 @@
+import type { LagerRecord } from "./pb-types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+
+/** Aktuelles Lager = höchstes Jahr dessen datum_bis <= 60 Tage zurück, sonst höchstes Jahr. */
+export function pickAktuellesLager(lager: LagerRecord[]): LagerRecord | null {
+  if (!lager.length) return null;
+  const sorted = [...lager].sort((a, b) => a.jahr - b.jahr);
+  const now = Date.now();
+  const cutoff = now - 60 * 86_400_000;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const l = sorted[i];
+    const bis = new Date(l.datum_bis).getTime();
+    if (bis >= cutoff) return l;
+  }
+  return sorted[sorted.length - 1];
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

@@ -16,10 +16,10 @@ export default function AdminEinrichtungPage() {
   const [password, setPassword] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
   const [busy, setBusy] = React.useState(false);
-
+  const justChanged = React.useRef(false);
   React.useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.replace("/login");
+      router.replace(justChanged.current ? "/login?geaendert=1" : "/login");
     }
   }, [loading, isAuthenticated, router]);
 
@@ -50,6 +50,7 @@ export default function AdminEinrichtungPage() {
         muss_passwort_aendern: false,
       });
       toast.success("Passwort gespeichert ✓");
+      justChanged.current = true;
       logout();
       router.replace("/login?geaendert=1");
     } catch {

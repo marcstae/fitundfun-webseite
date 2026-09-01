@@ -4,18 +4,10 @@ import * as React from "react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditButton, useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 import { youtubeId, isValidHttpUrl } from "@/lib/utils";
 
 interface Props {
@@ -28,7 +20,7 @@ export function EditableYoutube({ collection, recordId, current }: Props) {
   const { canEdit, editMode } = useEditMode();
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState(current || "");
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
   if (!canEdit || !editMode) return null;
 
   const id = youtubeId(url);
@@ -39,18 +31,15 @@ export function EditableYoutube({ collection, recordId, current }: Props) {
       toast.error("Bitte eine gültige YouTube-URL eingeben.");
       return;
     }
-    setSaving(true);
-    try {
-      await pbBrowser().collection(collection).update(recordId, { [collection === "lager" ? "youtube_url" : "video_url"]: url });
+    const ok = await run(async () => {
+      await pbBrowser()
+        .collection(collection)
+        .update(recordId, {
+          [collection === "lager" ? "youtube_url" : "video_url"]: url,
+        });
       await revalidatePath(window.location.pathname);
-      toast.success("Gespeichert ✓");
-      setOpen(false);
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) setOpen(false);
   };
 
   return (
@@ -63,43 +52,34 @@ export function EditableYoutube({ collection, recordId, current }: Props) {
           Video-Link {current ? "ändern" : "setzen"}
         </button>
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>YouTube-Link</DialogTitle>
-            <DialogDescription>
-              Akzeptiert alle YouTube-URL-Formen.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="yt-url">URL</Label>
-            <Input
-              id="yt-url"
-              value={url}
-              placeholder="https://www.youtube.com/watch?v=…"
-              onChange={(e) => setUrl(e.target.value)}
+      <SaveDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="YouTube-Link"
+        description="Akzeptiert alle YouTube-URL-Formen."
+        saving={saving}
+        onSave={save}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="yt-url">URL</Label>
+          <Input
+            id="yt-url"
+            value={url}
+            placeholder="https://www.youtube.com/watch?v=…"
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          {id && (
+            <img
+              src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`}
+              alt="Vorschau"
+              className="mt-2 w-full rounded-lg border border-ink/10"
             />
-            {id && (
-              <img
-                src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`}
-                alt="Vorschau"
-                className="mt-2 w-full rounded-lg border border-ink/10"
-              />
-            )}
-            {url && !valid && (
-              <p className="text-xs text-red-600">Ungültige YouTube-URL.</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
-              Abbrechen
-            </Button>
-            <Button onClick={save} disabled={saving}>
-              {saving ? "Speichert…" : "Speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+          {url && !valid && (
+            <p className="text-xs text-red-600">Ungültige YouTube-URL.</p>
+          )}
+        </div>
+      </SaveDialog>
     </>
   );
 }

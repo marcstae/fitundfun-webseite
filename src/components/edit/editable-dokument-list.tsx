@@ -6,19 +6,12 @@ import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dropzone } from "./dropzone";
 import { EditButton, useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 import type { DokumentRecord } from "@/lib/pb-types";
 
 export function EditableDokumentList({
@@ -94,7 +87,7 @@ function DokumentForm({
   const [name, setName] = React.useState(doc?.name || "");
   const [sensibel, setSensibel] = React.useState(doc?.sensibel ?? false);
   const [file, setFile] = React.useState<File | null>(null);
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
 
   const collection = sensibel ? "dokumente_intern" : "dokumente";
 
@@ -103,8 +96,7 @@ function DokumentForm({
       toast.error("Bitte einen Namen eingeben.");
       return;
     }
-    setSaving(true);
-    try {
+    const ok = await run(async () => {
       const pb = pbBrowser();
       const form = new FormData();
       form.set("name", name.trim());
@@ -113,82 +105,66 @@ function DokumentForm({
       form.set("sort", String(doc?.sort ?? 0));
       if (file) form.set("datei", file);
 
-      // Sammlung kann sich beim Sensibel-Toggle ändern → ggf. verschieben
-      if (doc) {
-        const origColl = doc.collection;
-        if (origColl === collection) {
-          await pb.collection(collection).update(doc.id, form);
-        } else {
-          await pb.collection(origColl).delete(doc.id);
-          await pb.collection(collection).create(form);
-        }
+      // Sammlung kann sich beim Sensibel-Toggle ändern → verschieben:
+      // erst in die Ziel-Sammlung anlegen, erst danach das Original löschen
+      // (kein Datenverlustfenster, anders als Delete-then-Create).
+      if (doc && doc.collection !== collection) {
+        await pb.collection(collection).create(form);
+        await pb.collection(doc.collection).delete(doc.id);
+      } else if (doc) {
+        await pb.collection(collection).update(doc.id, form);
       } else {
         if (!file) {
           toast.error("Bitte eine PDF- oder DOCX-Datei wählen.");
-          setSaving(false);
           return;
         }
         await pb.collection(collection).create(form);
       }
       await revalidatePath(window.location.pathname);
-      toast.success("Gespeichert ✓");
-      onClose();
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) onClose();
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{doc ? "Dokument bearbeiten" : "Dokument hochladen"}</DialogTitle>
-          <DialogDescription>PDF oder DOCX, max. 20 MB.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="doc-name">Name</Label>
-            <Input
-              id="doc-name"
-              value={name}
-              placeholder="z. B. Packliste"
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Dokument</Label>
-            <Dropzone
-              accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              maxSizeMB={20}
-              onFile={setFile}
-              currentName={file ? file.name : doc?.datei}
-            />
-          </div>
-          <label className="flex items-center justify-between rounded-xl border border-ink/10 px-4 py-3">
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              🔒 Sensibel
-              <span className="text-xs font-normal text-muted">
-                nur für eingeloggte Familie
-              </span>
-            </span>
-            <Switch checked={sensibel} onCheckedChange={setSensibel} />
-          </label>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Abbrechen
-          </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Speichert…" : "Speichern"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <SaveDialog
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title={doc ? "Dokument bearbeiten" : "Dokument hochladen"}
+      description="PDF oder DOCX, max. 20 MB."
+      saving={saving}
+      onSave={save}
+    >
+      <div className="space-y-2">
+        <Label htmlFor="doc-name">Name</Label>
+        <Input
+          id="doc-name"
+          value={name}
+          placeholder="z. B. Packliste"
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Dokument</Label>
+        <Dropzone
+          accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          maxSizeMB={20}
+          onFile={setFile}
+          currentName={file ? file.name : doc?.datei}
+        />
+      </div>
+      <label className="flex items-center justify-between rounded-xl border border-ink/10 px-4 py-3">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          🔒 Sensibel
+          <span className="text-xs font-normal text-muted">
+            nur für eingeloggte Familie
+          </span>
+        </span>
+        <Switch checked={sensibel} onCheckedChange={setSensibel} />
+      </label>
+    </SaveDialog>
   );
 }
+
 
 function DeleteDoc({ doc }: { doc: DokumentRecord }) {
   const [busy, setBusy] = React.useState(false);

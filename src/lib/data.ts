@@ -1,6 +1,7 @@
 import type PocketBase from "pocketbase";
 import { unstable_cache } from "next/cache";
 import { familyPocketBase } from "./family-access";
+import { pickAktuellesLager } from "./utils";
 import { pbRequest, pbServer } from "./pb";
 import type {
   ArchivRecord,
@@ -16,18 +17,9 @@ import type {
 
 const REVALIDATE = 300; // 5 Minuten
 
-/** Aktuelles Lager = höchstes Jahr dessen datum_bis <= 60 Tage zurück, sonst höchstes Jahr. */
-export function pickAktuellesLager(lager: LagerRecord[]): LagerRecord | null {
-  if (!lager.length) return null;
-  const sorted = [...lager].sort((a, b) => a.jahr - b.jahr);
-  const now = Date.now();
-  const cutoff = now - 60 * 86_400_000;
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    const l = sorted[i];
-    const bis = new Date(l.datum_bis).getTime();
-    if (bis >= cutoff) return l;
-  }
-  return sorted[sorted.length - 1];
+export async function getAktuellesLager(): Promise<LagerRecord | null> {
+  const all = await getLager();
+  return pickAktuellesLager(all);
 }
 
 async function listAll<T>(collection: string, sort = ""): Promise<T[]> {
@@ -41,8 +33,9 @@ async function listAll<T>(collection: string, sort = ""): Promise<T[]> {
       res = await pb.collection(collection).getList<T>(page, perPage, {
         sort,
       });
-    } catch {
+    } catch (e) {
       // PB nicht erreichbar (z. B. zur Build-Zeit) → leer liefern
+      console.error(`fitundfun: PBS-Abfrage ${collection} fehlgeschlagen`, e);
       return out;
     }
     out.push(...res.items);
@@ -96,7 +89,8 @@ export const getEinstellungen = unstable_cache(
         .collection("einstellungen")
         .getList<EinstellungenRecord>(1, 1);
       return res.items[0] ?? null;
-    } catch {
+    } catch (e) {
+      console.error("fitundfun: einstellungen-Abfrage fehlgeschlagen", e);
       return null;
     }
   },
@@ -104,10 +98,6 @@ export const getEinstellungen = unstable_cache(
   { revalidate: REVALIDATE }
 );
 
-export async function getAktuellesLager(): Promise<LagerRecord | null> {
-  const all = await getLager();
-  return pickAktuellesLager(all);
-}
 
 export async function getLagerByJahr(jahr: number): Promise<LagerRecord | null> {
   const all = await getLager();
@@ -171,7 +161,9 @@ async function getDokumenteForRelation(
         collection: "dokumente" as const,
       }))
     );
-  } catch {}
+  } catch (e) {
+    console.error("fitundfun: öffentliche Dokumente nicht ladbar", e);
+  }
 
   let protectedContent: ProtectedContent = {
     documents: [],

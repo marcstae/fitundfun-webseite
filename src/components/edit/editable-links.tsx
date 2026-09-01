@@ -6,16 +6,10 @@ import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditButton, useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 import { isValidHttpUrl } from "@/lib/utils";
 import type { LinkRecord } from "@/lib/pb-types";
 
@@ -128,15 +122,14 @@ function LinkForm({
 }) {
   const [titel, setTitel] = React.useState(item?.titel || "");
   const [url, setUrl] = React.useState(item?.url || "");
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
 
   const save = async () => {
     if (!titel.trim() || !isValidHttpUrl(url)) {
       toast.error("Bitte Titel und gültige URL eingeben.");
       return;
     }
-    setSaving(true);
-    try {
+    const ok = await run(async () => {
       const pb = pbBrowser();
       if (item) {
         await pb.collection("links").update(item.id, { titel, url });
@@ -144,52 +137,37 @@ function LinkForm({
         await pb.collection("links").create({ titel, url, sort: 0 });
       }
       await revalidatePath(window.location.pathname);
-      toast.success("Gespeichert ✓");
-      onSaved();
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) onSaved();
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{item ? "Link bearbeiten" : "Link hinzufügen"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="lnk-titel">Titel</Label>
-            <Input
-              id="lnk-titel"
-              value={titel}
-              placeholder="z. B. Bergbahnen Brigels"
-              onChange={(e) => setTitel(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="lnk-url">URL</Label>
-            <Input
-              id="lnk-url"
-              value={url}
-              placeholder="https://…"
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Abbrechen
-          </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Speichert…" : "Speichern"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <SaveDialog
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title={item ? "Link bearbeiten" : "Link hinzufügen"}
+      saving={saving}
+      onSave={save}
+    >
+      <div className="space-y-2">
+        <Label htmlFor="lnk-titel">Titel</Label>
+        <Input
+          id="lnk-titel"
+          value={titel}
+          placeholder="z. B. Bergbahnen Brigels"
+          onChange={(e) => setTitel(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="lnk-url">URL</Label>
+        <Input
+          id="lnk-url"
+          value={url}
+          placeholder="https://…"
+          onChange={(e) => setUrl(e.target.value)}
+        />
+      </div>
+    </SaveDialog>
   );
 }
 

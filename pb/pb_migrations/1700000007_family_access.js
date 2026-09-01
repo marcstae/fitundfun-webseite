@@ -6,6 +6,8 @@ migrate(
     if (!password) {
       throw new Error("FAMILY_ACCESS_PASSWORD ist nicht gesetzt — Familienkonto kann nicht provisioniert werden.");
     }
+    // Muss exakt family-access.ts (familyPocketBase) entsprechen.
+    const accountPassword = `${password}-internal`;
     const users = app.findCollectionByNameOrId("users");
 
     let record;

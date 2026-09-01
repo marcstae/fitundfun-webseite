@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type PocketBase from "pocketbase";
-import { pbRequest } from "./pb";
+import { pbRequest } from "./pb.ts";
 
 export const FAMILY_ACCESS_COOKIE = "fitundfun_family_access";
 // ponytail: 400 Tage = Chromium/Safari Cookie-Obergrenze; für 18 Monate wäre ein Refresh nötig.
@@ -48,6 +48,17 @@ export async function familyPocketBase(): Promise<PocketBase> {
 const unlockAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_UNLOCK_ATTEMPTS = 10;
 const UNLOCK_WINDOW_MS = 60 * 60 * 1000;
+const MAX_UNLOCK_TRACKED_IPS = 10_000;
+
+export function clientIp(requestHeaders: Headers): string {
+  // X-Real-IP wird vom Reverse Proxy verlässlich überschrieben; X-Forwarded-For
+  // ist client-kontrollierbar und darf nur als Fallback dienen.
+  return (
+    requestHeaders.get("x-real-ip")?.trim() ||
+    requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "unknown"
+  );
+}
 
 export function unlockAttemptAllowed(ip: string): boolean {
   const entry = unlockAttempts.get(ip);
@@ -62,6 +73,11 @@ export function unlockAttemptAllowed(ip: string): boolean {
 export function recordUnlockFailure(ip: string): void {
   const entry = unlockAttempts.get(ip);
   if (!entry || Date.now() > entry.resetAt) {
+    // ponytail: Cap statt Alters-Sweeping; reicht, solange die Map unter 10k bleibt.
+    if (unlockAttempts.size >= MAX_UNLOCK_TRACKED_IPS) {
+      const oldest = unlockAttempts.keys().next().value;
+      if (oldest !== undefined) unlockAttempts.delete(oldest);
+    }
     unlockAttempts.set(ip, { count: 1, resetAt: Date.now() + UNLOCK_WINDOW_MS });
   } else {
     entry.count++;

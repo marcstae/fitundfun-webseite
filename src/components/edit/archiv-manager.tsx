@@ -6,16 +6,10 @@ import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 import { isValidHttpUrl } from "@/lib/utils";
 import type { ArchivRecord } from "@/lib/pb-types";
 
@@ -78,7 +72,7 @@ export function ArchivManager({ existing }: { existing: ArchivRecord[] }) {
 function ArchivForm({ onSaved, onClose }: { onSaved: () => void; onClose: () => void }) {
   const [jahr, setJahr] = React.useState("");
   const [video, setVideo] = React.useState("");
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
 
   const save = async () => {
     const j = Number(jahr);
@@ -90,45 +84,31 @@ function ArchivForm({ onSaved, onClose }: { onSaved: () => void; onClose: () => 
       toast.error("Video-URL ist ungültig.");
       return;
     }
-    setSaving(true);
-    try {
+    const ok = await run(async () => {
       await pbBrowser()
         .collection("archiv")
         .create({ jahr: j, video_url: video });
       await revalidatePath("/lager");
-      toast.success("Gespeichert ✓");
-      onSaved();
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) onSaved();
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Alt-Lager hinzufügen</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="ar-jahr">Jahr</Label>
-            <Input id="ar-jahr" type="number" value={jahr} onChange={(e) => setJahr(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ar-video">Video-URL (optional)</Label>
-            <Input id="ar-video" value={video} onChange={(e) => setVideo(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>Abbrechen</Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Speichert…" : "Speichern"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <SaveDialog
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title="Alt-Lager hinzufügen"
+      saving={saving}
+      onSave={save}
+    >
+      <div className="space-y-2">
+        <Label htmlFor="ar-jahr">Jahr</Label>
+        <Input id="ar-jahr" type="number" value={jahr} onChange={(e) => setJahr(e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="ar-video">Video-URL (optional)</Label>
+        <Input id="ar-video" value={video} onChange={(e) => setVideo(e.target.value)} />
+      </div>
+    </SaveDialog>
   );
 }

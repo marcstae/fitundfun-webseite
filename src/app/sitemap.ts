@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
 import { getLager } from "@/lib/data";
+import { siteUrl } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const revalidate = 300;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.SITE_URL || "http://localhost:3000";
+  const base = siteUrl();
   const lager = await getLager();
   const entries: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },

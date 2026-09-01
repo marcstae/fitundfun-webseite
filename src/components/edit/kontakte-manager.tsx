@@ -6,16 +6,10 @@ import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEditMode } from "./edit-button";
+import { SaveDialog, useSaveAction } from "./save-dialog";
 import type { KontaktRecord } from "@/lib/pb-types";
 
 export function KontakteManager({ existing }: { existing: KontaktRecord[] }) {
@@ -69,7 +63,7 @@ export function KontakteManager({ existing }: { existing: KontaktRecord[] }) {
       {open && (
         <KontaktForm
           item={editing}
-          onSaved={() => { setOpen(false); window.location.reload(); }}
+          onSaved={() => setOpen(false)}
           onClose={() => setOpen(false)}
         />
       )}
@@ -88,15 +82,14 @@ function KontaktForm({
 }) {
   const [name, setName] = React.useState(item?.name || "");
   const [rolle, setRolle] = React.useState<KontaktRecord["rolle"]>(item?.rolle || "Lagerleiter");
-  const [saving, setSaving] = React.useState(false);
+  const { saving, run } = useSaveAction();
 
   const save = async () => {
     if (!name.trim()) {
       toast.error("Bitte einen Namen eingeben.");
       return;
     }
-    setSaving(true);
-    try {
+    const ok = await run(async () => {
       const pb = pbBrowser();
       if (item) {
         await pb.collection("kontakte").update(item.id, { name, rolle });
@@ -104,45 +97,34 @@ function KontaktForm({
         await pb.collection("kontakte").create({ name, rolle, sort: 0 });
       }
       await revalidatePath("/kontakt");
-      toast.success("Gespeichert ✓");
-      onSaved();
-    } catch (e) {
-      toast.error("Speichern fehlgeschlagen");
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    });
+    if (ok) onSaved();
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{item ? "Kontakt bearbeiten" : "Kontakt hinzufügen"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="k-name">Name</Label>
-            <Input id="k-name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="k-rolle">Rolle</Label>
-            <select
-              id="k-rolle"
-              value={rolle}
-              onChange={(e) => setRolle(e.target.value as KontaktRecord["rolle"])}
-              className="flex h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
-            >
-              <option value="Lagerleiter">Lagerleiter</option>
-              <option value="Website">Website</option>
-            </select>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>Abbrechen</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Speichert…" : "Speichern"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <SaveDialog
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title={item ? "Kontakt bearbeiten" : "Kontakt hinzufügen"}
+      saving={saving}
+      onSave={save}
+    >
+      <div className="space-y-2">
+        <Label htmlFor="k-name">Name</Label>
+        <Input id="k-name" value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="k-rolle">Rolle</Label>
+        <select
+          id="k-rolle"
+          value={rolle}
+          onChange={(e) => setRolle(e.target.value as KontaktRecord["rolle"])}
+          className="flex h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+        >
+          <option value="Lagerleiter">Lagerleiter</option>
+          <option value="Website">Website</option>
+        </select>
+      </div>
+    </SaveDialog>
   );
 }

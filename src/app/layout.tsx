@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { EditBar } from "@/components/edit/edit-bar";
 import { getAktuellesLager } from "@/lib/data";
+import { siteUrl } from "@/lib/site";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -26,9 +27,8 @@ const fredoka = Fredoka({
   variable: "--font-camp",
   display: "swap",
 });
-
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "fit&fun Lager Brigels",
     template: "%s · fit&fun Lager Brigels",

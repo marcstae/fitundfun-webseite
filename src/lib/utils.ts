@@ -62,15 +62,6 @@ export function isoToDateInput(d: string | Date): string {
   return `${date.getFullYear()}-${dePad(date.getMonth() + 1)}-${dePad(date.getDate())}`;
 }
 
-/** Tage zwischen heute (Mitternacht) und Ziel; negativ = vorbei. */
-export function daysUntil(target: string | Date): number {
-  const t = typeof target === "string" ? new Date(target) : target;
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const tgt = new Date(t);
-  tgt.setHours(0, 0, 0, 0);
-  return Math.round((tgt.getTime() - start.getTime()) / 86_400_000);
-}
 
 export type LagerStatus = "before" | "running" | "past";
 
@@ -86,14 +77,6 @@ export function lagerStatus(von: string | Date, bis: string | Date): LagerStatus
   return "running";
 }
 
-export function countdownLabel(von: string | Date, bis: string | Date): string {
-  const status = lagerStatus(von, bis);
-  if (status === "running") return "Das Lager läuft!";
-  if (status === "past") return "Lager abgeschlossen";
-  const d = daysUntil(von);
-  if (d <= 1) return "Morgen geht's los";
-  return `Noch ${d} Tage`;
-}
 
 export function isValidHttpUrl(s: string): boolean {
   try {

@@ -26,8 +26,6 @@ export default async function HomePage() {
     ? publicFileUrl("einstellungen", einstellungen.id, einstellungen.hero_poster)
     : "/hero-poster.jpg";
   const lagerHref = lager ? `/lager/${lager.jahr}` : "/lager";
-  const fotosHref = lager?.immich_url || "/fotos";
-  const fotosExtern = /^https?:\/\//.test(fotosHref);
 
   return (
       <section
@@ -99,14 +97,10 @@ export default async function HomePage() {
                     variant="white"
                     className="w-full rounded-full border border-white/35 bg-white/90 px-7 hover:bg-white sm:w-auto"
                   >
-                    <a
-                      href={fotosHref}
-                      target={fotosExtern ? "_blank" : undefined}
-                      rel={fotosExtern ? "noopener noreferrer" : undefined}
-                    >
+                    <Link href="/lager">
                       <Images />
-                      Fotos ansehen
-                    </a>
+                      Frühere Lager
+                    </Link>
                   </Button>
                 </div>
               </div>

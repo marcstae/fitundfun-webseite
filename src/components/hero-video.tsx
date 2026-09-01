@@ -39,7 +39,6 @@ export function HeroVideo({ videoUrl, posterUrl, className }: HeroVideoProps) {
   return (
     <div className={cn("absolute inset-0 overflow-hidden", className)}>
       {posterUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={posterUrl}
           alt=""

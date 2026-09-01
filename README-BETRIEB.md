@@ -57,8 +57,10 @@ PB-Admin-UI (`/_/`) im Reverse Proxy auf interne IPs beschränken.
 
 1. `docker compose up -d --build` → Collections werden automatisch angelegt.
 2. PB-Admin: ersten Superuser anlegen (interne IP).
-3. PB-Admin → Collection `users`: einen User mit Rolle `editor` anlegen
-   (= Lagerleiter). Optional einen `familie`-User für die Familie.
+3. Der Editor-Admin (**Lagerleiter**) wird von Migration `1700000009`
+   automatisch angelegt: `admin@fitundfun.local` / `admin1234`. Beim ersten
+   Login wird die Passwortänderung erzwungen; danach gilt nur das neue Passwort.
+   (E-Mail-Änderung nur über das PB-Admin-UI.)
 4. Mit dem Editor-Login auf der Website einloggen → Bearbeitungsmodus →
    Hero-Video/Poster hochladen, Willkommenssatz setzen, erstes Lager anlegen.
 
@@ -84,6 +86,21 @@ Vor Major-Updates immer ein Backup ziehen.
 | `NEXT_PUBLIC_PB_URL` | Öffentliche PocketBase-URL (z. B. `https://api.fitundfun.ch`) |
 | `SITE_URL` | Öffentliche Website-URL (für SEO/sitemap) |
 | `REVALIDATE_SECRET` | Optional: Server-to-Server-Revalidation-Secret |
+| `FAMILY_ACCESS_PASSWORD` | Geteiltes Familienpasswort für geschützte Dokumente/Fotoalben (Pflicht, geheim, nicht committen) |
+| `FAMILY_ACCESS_EMAIL` | Optional: E-Mail des internen Familienkontos (Default `familie@fitundfun.local`) |
+
+### Familienpasswort ändern
+
+Das Familienpasswort liegt ausschliesslich in der Umgebungsvariablen
+`FAMILY_ACCESS_PASSWORD` (nie im Code). Änderung:
+
+1. `.env` auf dem Server anpassen,
+2. `docker compose up -d` (beide Container neu starten),
+3. das PB-interne Passwort neu setzen: PB-Admin → Collection `users` →
+   Konto `familie@fitundfun.local` → neues Passwort `<neues>-internal`.
+
+Hinweis: Die Migration `1700000007` läuft nur beim **ersten** Start; sie
+synchronisiert das Passwort nicht bei jedem Neustart.
 
 ## Architektur-Hinweise
 

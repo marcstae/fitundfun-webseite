@@ -27,10 +27,14 @@ function LoginForm() {
     e.preventDefault();
     setBusy(true);
     try {
-      await login(email.trim(), password);
+      const userData = await login(email.trim(), password);
       toast.success("Angemeldet ✓");
-      const redirect = search.get("redirect") || "/";
-      router.replace(redirect);
+      if (userData.mussPasswortAendern) {
+        router.replace("/admin-einrichtung");
+      } else {
+        const redirect = search.get("redirect") || "/";
+        router.replace(redirect);
+      }
       router.refresh();
     } catch {
       toast.error("Anmeldung fehlgeschlagen — E-Mail oder Passwort falsch.");
@@ -41,10 +45,15 @@ function LoginForm() {
 
   return (
     <div className="rounded-2xl border border-ink/10 p-6 sm:p-8">
-      <h1 className="font-display text-2xl uppercase text-ink">Login</h1>
+      <h1 className="font-display text-2xl uppercase text-ink">Admin-Login</h1>
       <p className="mt-2 text-sm text-muted">
-        Anmeldung für die Lagerleitung und die Familie.
+        Anmeldung für die Lagerleitung.
       </p>
+      {search.get("geaendert") === "1" ? (
+        <p className="mt-3 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+          Zugangsdaten geändert — bitte mit den neuen Daten anmelden.
+        </p>
+      ) : null}
       <form onSubmit={submit} className="mt-6 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">E-Mail</Label>
@@ -73,8 +82,8 @@ function LoginForm() {
         </Button>
       </form>
       <p className="mt-4 text-xs text-muted">
-        Kein Login? Die Zugänge stellt der Betreiber bereit. Passwort bei der
-        Lagerleitung erfragen.
+        Geschützte Familieninhalte werden direkt beim jeweiligen Lager
+        freigeschaltet.
       </p>
     </div>
   );
@@ -89,4 +98,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

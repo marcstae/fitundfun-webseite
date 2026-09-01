@@ -14,6 +14,9 @@ export function SiteFooter() {
           fit<span className="text-accent">&amp;</span>fun
         </span>
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2" aria-label="Footer">
+          <Link href="/sponsoren" className="transition-colors hover:text-ink">
+            Sponsoren
+          </Link>
           <Link href="/impressum" className="transition-colors hover:text-ink">
             Impressum
           </Link>
@@ -21,7 +24,7 @@ export function SiteFooter() {
             Datenschutz
           </Link>
           <Link href="/login" className="transition-colors hover:text-ink">
-            Login
+            Admin-Login
           </Link>
         </nav>
       </div>

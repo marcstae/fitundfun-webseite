@@ -19,11 +19,18 @@ import { EditButton, useEditMode } from "./edit-button";
 import { isValidHttpUrl } from "@/lib/utils";
 
 interface Props {
-  lagerId: string;
+  relation: "lager" | "archiv";
+  relationId: string;
+  albumId?: string;
   current: string;
 }
 
-export function EditableImmich({ lagerId, current }: Props) {
+export function EditableImmich({
+  relation,
+  relationId,
+  albumId,
+  current,
+}: Props) {
   const { canEdit, editMode } = useEditMode();
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState(current || "");
@@ -39,7 +46,14 @@ export function EditableImmich({ lagerId, current }: Props) {
     }
     setSaving(true);
     try {
-      await pbBrowser().collection("lager").update(lagerId, { immich_url: url });
+      const albums = pbBrowser().collection("fotoalben");
+      if (!url && albumId) {
+        await albums.delete(albumId);
+      } else if (albumId) {
+        await albums.update(albumId, { url });
+      } else if (url) {
+        await albums.create({ [relation]: relationId, url });
+      }
       await revalidatePath(window.location.pathname);
       await revalidatePath("/");
       toast.success("Gespeichert ✓");

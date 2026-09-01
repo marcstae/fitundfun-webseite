@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { EditBar } from "@/components/edit/edit-bar";
+import { getAktuellesLager } from "@/lib/data";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -44,7 +45,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const aktuellesLager = await getAktuellesLager();
   return (
     <html
       lang="de-CH"
@@ -52,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-dvh flex flex-col">
         <Providers>
-          <SiteHeader />
+          <SiteHeader aktuellesJahr={aktuellesLager?.jahr ?? null} />
           <main className="flex-1">{children}</main>
           <SiteFooter />
           <EditBar />

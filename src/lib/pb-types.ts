@@ -21,7 +21,6 @@ export interface LagerRecord {
   datum_bis: string;
   beschreibung: string;
   youtube_url: string;
-  immich_url: string;
   teilnehmer: number | null;
   preise: PreisEintrag[] | null;
   aktivitaeten: string[] | null;
@@ -42,6 +41,15 @@ export interface DokumentRecord {
   updated: string;
 }
 
+export interface FotoalbumRecord {
+  id: string;
+  lager: string;
+  archiv: string;
+  url: string;
+  created: string;
+  updated: string;
+}
+
 export interface SeiteRecord {
   id: string;
   slug: string;
@@ -56,7 +64,6 @@ export interface ArchivRecord {
   id: string;
   jahr: number;
   video_url: string;
-  fotos_url: string;
   beschreibung: string | null;
   datum_von: string | null;
   datum_bis: string | null;
@@ -110,6 +117,7 @@ export interface CollectionSchema {
   lager: LagerRecord;
   dokumente: DokumentRecord;
   dokumente_intern: DokumentRecord;
+  fotoalben: FotoalbumRecord;
   seiten: SeiteRecord;
   archiv: ArchivRecord;
   sponsoren: SponsorRecord;

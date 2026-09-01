@@ -4,7 +4,7 @@ import { pbServer, REVALIDATE_SECRET } from "@/lib/pb";
 
 /** On-Demand-Revalidation nach jedem Save. Geschützt: gültige PB-Session nötig. */
 export async function POST(req: Request) {
-  let authHeader = req.headers.get("authorization") || "";
+  const authHeader = req.headers.get("authorization") || "";
 
   const pb = pbServer();
   try {

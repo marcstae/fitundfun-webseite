@@ -1,14 +1,19 @@
 # Anleitung für die Lagerleitung
 
 Du pflegst **alles** über die Website — du brauchst nie das PocketBase-Admin-UI.
-Einzig der technische Betreiber legt einmalig deine Login-Daten an.
 
 ## Einloggen
 
-1. Unten im Footer auf **Login**.
-2. E-Mail + Passwort eingeben → **Anmelden**.
-3. Es erscheint unten die Leiste **Bearbeitungsmodus**. Schalter auf **An**.
-4. Jetzt siehst du überall kleine ✏️-Stifte und Verwaltungs-Karten.
+1. Unten im Footer (oder im Menü) auf **Admin-Login**.
+2. Beim allerersten Login gelten die Default-Daten
+   **`admin@fitundfun.local` / `admin1234`**.
+3. Beim ersten Login wird die **Passwortänderung erzwungen** — neues Passwort
+   setzen (mind. 8 Zeichen), danach gilt nur noch das neue Passwort.
+4. Es erscheint unten die Leiste **Bearbeitungsmodus**. Schalter auf **An**.
+5. Jetzt siehst du überall kleine ✏️-Stifte und Verwaltungs-Karten.
+
+Die E-Mail-Adresse des Admin-Kontos kann nur im PocketBase-Admin-UI geändert
+werden (der Betreiber macht das auf Wunsch).
 
 ## Jährlicher Ablauf
 
@@ -38,7 +43,8 @@ Einzig der technische Betreiber legt einmalig deine Login-Daten an.
 - Share-Link erstellen **mit Upload-Erlaubnis** für Teilnehmende.
 - Auf der Jahresseite bei **Fotos** auf **Foto-Album-Link setzen**,
   Link einfügen, speichern.
-- Der Startseiten-Button **Fotos** führt nun automatisch ins neuste Album.
+- Der Link erscheint erst nach Eingabe des Familienpassworts
+  (siehe unten). Leeres Feld + Speichern entfernt den Link.
 
 ### 5. Video (nach dem Lager)
 
@@ -48,8 +54,11 @@ Einzig der technische Betreiber legt einmalig deine Login-Daten an.
 
 ### 6. Alt-Lager (Archiv)
 
-- Unter **/lager** unten im Bereich **Alt-Lager verwalten** kannst du
-  vergangene Jahre (2007–2025) mit Video-/Foto-Link erfassen.
+- Unter **Frühere Lager** unten im Bereich **Alt-Lager verwalten** kannst du
+  vergangene Jahre (2007–2025) mit Jahr und Video-Link erfassen.
+- Foto-Album-Links vergangener Jahre setzt du direkt auf der jeweiligen
+  Jahresseite bei **Fotos** (gleicher Dialog wie beim aktuellen Lager).
+
 
 ### 7. Sponsoren, Links, Kontakte, Lagerhaus, Impressum
 
@@ -58,6 +67,15 @@ Einzig der technische Betreiber legt einmalig deine Login-Daten an.
 - Links: z. B. Bergbahnen, Webcam, Wetter (erscheinen auf der Jahresseite).
 - Kontakte: nur Namen, Rolle (Lagerleitung/Website).
 - Lagerhaus/Impressum/Datenschutz: Text mit Fett/Kursiv/Aufzählung/Link.
+
+### Familienpasswort (für die Familie)
+
+- Auf jeder Jahresseite mit geschützten Inhalten erscheint der Bereich
+  **Familienzugang**. Das gemeinsame Familienpasswort schaltet
+  Zimmerplan, Teilnehmerliste und Fotoalbum frei.
+- Dieses Passwort ist **getrennt vom Admin-Login** und wird vom Betreiber
+  über die Umgebungsvariable `FAMILY_ACCESS_PASSWORD` gepflegt
+  (siehe README-BETRIEB.md). Es wird ~1,5 Jahre im Browser gespeichert.
 
 ### 8. Hero auf der Startseite
 

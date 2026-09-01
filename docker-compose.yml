@@ -10,6 +10,8 @@ services:
     environment:
       TZ: Europe/Zurich
       PB_ORIGINS: ${PB_ORIGINS}
+      FAMILY_ACCESS_EMAIL: ${FAMILY_ACCESS_EMAIL:-familie@fitundfun.local}
+      FAMILY_ACCESS_PASSWORD: ${FAMILY_ACCESS_PASSWORD:?FAMILY_ACCESS_PASSWORD ist erforderlich}
 
   web:
     build:
@@ -26,6 +28,8 @@ services:
       NEXT_PUBLIC_PB_URL: ${NEXT_PUBLIC_PB_URL}
       SITE_URL: ${SITE_URL}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      FAMILY_ACCESS_EMAIL: ${FAMILY_ACCESS_EMAIL:-familie@fitundfun.local}
+      FAMILY_ACCESS_PASSWORD: ${FAMILY_ACCESS_PASSWORD:?FAMILY_ACCESS_PASSWORD ist erforderlich}
       TZ: Europe/Zurich
 
 volumes:

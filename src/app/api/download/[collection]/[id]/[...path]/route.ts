@@ -1,29 +1,45 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  FAMILY_ACCESS_COOKIE,
+  familyPocketBase,
+  hasFamilyAccess,
+} from "@/lib/family-access";
 import { pbRequest, PB_URL } from "@/lib/pb";
 import type { DokumentRecord } from "@/lib/pb-types";
 
 interface RouteParams {
-  params: { collection: string; id: string; path: string[] };
+  params: Promise<{ collection: string; id: string; path: string[] }>;
 }
 
 const ALLOWED = new Set(["dokumente", "dokumente_intern"]);
 
-export async function GET(req: Request, { params }: RouteParams) {
-  const { collection, id, path } = params;
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  const { collection, id, path } = await params;
   if (!ALLOWED.has(collection)) {
     return new NextResponse("Nicht gefunden", { status: 404 });
   }
   const filename = path.join("/");
   if (!filename) return new NextResponse("Nicht gefunden", { status: 404 });
-
   const cookieHeader = req.headers.get("cookie") || "";
-  const pb = collection === "dokumente_intern" ? pbRequest(cookieHeader) : pbRequest();
+  let pb = pbRequest();
 
-  if (collection === "dokumente_intern" && !pb.authStore.isValid) {
-    return new NextResponse("Anmeldung erforderlich", {
-      status: 401,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+  if (collection === "dokumente_intern") {
+    if (hasFamilyAccess(req.cookies.get(FAMILY_ACCESS_COOKIE)?.value)) {
+      try {
+        pb = await familyPocketBase();
+      } catch {
+        return new NextResponse("Familienzugang nicht verfügbar", { status: 503 });
+      }
+    } else {
+      pb = pbRequest(cookieHeader);
+    }
+
+    if (!pb.authStore.isValid) {
+      return new NextResponse("Familienpasswort erforderlich", {
+        status: 401,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
+    }
   }
   // Record abrufen, um den echten Dateinamen + Namen zu validieren.
   let rec: DokumentRecord | null = null;

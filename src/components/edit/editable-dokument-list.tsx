@@ -65,7 +65,7 @@ export function EditableDokumentList({
                 >
                   <Pencil className="size-4" />
                 </button>
-                <DeleteDoc doc={d} lagerId={lagerId} />
+                <DeleteDoc doc={d} />
               </span>
             </li>
           ))}
@@ -190,7 +190,7 @@ function DokumentForm({
   );
 }
 
-function DeleteDoc({ doc, lagerId }: { doc: DokumentRecord; lagerId: string }) {
+function DeleteDoc({ doc }: { doc: DokumentRecord }) {
   const [busy, setBusy] = React.useState(false);
   const del = async () => {
     if (!window.confirm(`Dokument «${doc.name}» wirklich löschen?`)) return;

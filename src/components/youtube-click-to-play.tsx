@@ -29,7 +29,6 @@ export function YoutubeClickToPlay({ id }: { id: string }) {
         className="group relative size-full"
         aria-label="Video abspielen"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={thumb}
           alt="Vorschaubild Video"

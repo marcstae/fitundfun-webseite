@@ -19,11 +19,12 @@ import { EditButton, useEditMode } from "./edit-button";
 import { youtubeId, isValidHttpUrl } from "@/lib/utils";
 
 interface Props {
-  lagerId: string;
+  collection: "lager" | "archiv";
+  recordId: string;
   current: string;
 }
 
-export function EditableYoutube({ lagerId, current }: Props) {
+export function EditableYoutube({ collection, recordId, current }: Props) {
   const { canEdit, editMode } = useEditMode();
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState(current || "");
@@ -40,7 +41,7 @@ export function EditableYoutube({ lagerId, current }: Props) {
     }
     setSaving(true);
     try {
-      await pbBrowser().collection("lager").update(lagerId, { youtube_url: url });
+      await pbBrowser().collection(collection).update(recordId, { [collection === "lager" ? "youtube_url" : "video_url"]: url });
       await revalidatePath(window.location.pathname);
       toast.success("Gespeichert ✓");
       setOpen(false);
@@ -79,7 +80,6 @@ export function EditableYoutube({ lagerId, current }: Props) {
               onChange={(e) => setUrl(e.target.value)}
             />
             {id && (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`}
                 alt="Vorschau"

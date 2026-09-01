@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { cookies, headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import {
   Download,
   ExternalLink,
   FileText,
   Images,
+  KeyRound,
   Lock,
   UsersRound,
 } from "lucide-react";
@@ -16,6 +17,15 @@ import {
   getLagerByJahr,
   getLinks,
 } from "@/lib/data";
+import {
+  FAMILY_ACCESS_COOKIE,
+  FAMILY_ACCESS_MAX_AGE,
+  familyAccessCookieValue,
+  hasFamilyAccess,
+  isFamilyPassword,
+  recordUnlockFailure,
+  unlockAttemptAllowed,
+} from "@/lib/family-access";
 import {
   formatDateRangeLong,
   isValidHttpUrl,
@@ -34,10 +44,13 @@ export const dynamic = "force-dynamic";
 
 export default async function LagerPage({
   params,
+  searchParams,
 }: {
-  params: { jahr: string };
+  params: Promise<{ jahr: string }>;
+  searchParams?: Promise<{ familienzugang?: string }>;
 }) {
-  const jahr = Number(params.jahr);
+  const { jahr: jahrParam } = await params;
+  const jahr = Number(jahrParam);
   if (!jahr) notFound();
 
   const [lager, archiv] = await Promise.all([
@@ -46,13 +59,19 @@ export default async function LagerPage({
   ]);
   if (!lager && !archiv) notFound();
 
-  const authCookie = cookies().toString();
-  const [dokumente, links] = await Promise.all([
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.toString();
+  const familyAccess = hasFamilyAccess(
+    cookieStore.get(FAMILY_ACCESS_COOKIE)?.value
+  );
+  const search = await searchParams;
+  const [documentResult, links] = await Promise.all([
     lager
-      ? getDokumenteForLager(lager.id, authCookie)
-      : getDokumenteForArchiv(archiv!.id, authCookie),
+      ? getDokumenteForLager(lager.id, authCookie, familyAccess)
+      : getDokumenteForArchiv(archiv!.id, authCookie, familyAccess),
     getLinks(),
   ]);
+  const dokumente = documentResult.items;
 
   const titel = lager?.titel || `Lager ${jahr}`;
   const datumVon = lager?.datum_von || archiv?.datum_von || "";
@@ -62,12 +81,46 @@ export default async function LagerPage({
   const beschreibung = lager
     ? sanitizeRichText(lager.beschreibung || "")
     : archiv?.beschreibung || "";
-  const fotosUrl = lager?.immich_url || archiv?.fotos_url || "";
+  const fotosUrl = documentResult.fotoalbum?.url || "";
+  const validFotosUrl = !!fotosUrl && isValidHttpUrl(fotosUrl);
   const videoUrl = lager?.youtube_url || archiv?.video_url || "";
+  const validVideoUrl = !!videoUrl && isValidHttpUrl(videoUrl);
   const ytId = youtubeId(videoUrl);
   const teilnehmer = lager?.teilnehmer || archiv?.teilnehmer || null;
   const preise = lager?.preise || archiv?.preise || [];
   const aktivitaeten = lager?.aktivitaeten || archiv?.aktivitaeten || [];
+  const mediaCollection = lager ? "lager" : "archiv";
+  const mediaRecordId = lager?.id || archiv!.id;
+  const showFamilyGate =
+    !documentResult.accessGranted &&
+    (documentResult.hasProtected || documentResult.hasProtectedPhoto);
+
+  async function unlockFamilyAccess(formData: FormData) {
+    "use server";
+    const headerStore = await headers();
+    const ip =
+      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!unlockAttemptAllowed(ip)) {
+      redirect(`/lager/${jahr}?familienzugang=blockiert#familienzugang`);
+    }
+
+    const password = formData.get("password");
+    if (typeof password !== "string" || !isFamilyPassword(password)) {
+      recordUnlockFailure(ip);
+      redirect(`/lager/${jahr}?familienzugang=fehler#familienzugang`);
+    }
+
+    const cookieStore2 = await cookies();
+    cookieStore2.set(FAMILY_ACCESS_COOKIE, familyAccessCookieValue(), {
+      httpOnly: true,
+      maxAge: FAMILY_ACCESS_MAX_AGE,
+      path: "/",
+      sameSite: "lax",
+      secure: headerStore.get("x-forwarded-proto") === "https",
+    });
+    redirect(`/lager/${jahr}#dokumente`);
+  }
+
 
   return (
     <article>
@@ -135,12 +188,83 @@ export default async function LagerPage({
           </section>
         ) : null}
 
+        {showFamilyGate ? (
+          <section
+            id="familienzugang"
+            className="scroll-mt-20 rounded-2xl border border-accent/25 bg-accent/[0.04] p-5 sm:p-6"
+          >
+            <div className="flex items-start gap-3">
+              <KeyRound className="mt-0.5 size-6 shrink-0 text-accent" />
+              <div>
+                <h2 className="font-display text-xl text-ink">
+                  Familienzugang
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                  Mit dem gemeinsamen Familienpasswort werden{" "}
+                  {documentResult.hasProtectedPhoto
+                    ? documentResult.hasProtected
+                      ? "das Fotoalbum und die geschützten Lagerdokumente"
+                      : "das Fotoalbum"
+                    : "Zimmerplan, Teilnehmerliste und weitere geschützte Dateien"}{" "}
+                  freigeschaltet.
+                </p>
+              </div>
+            </div>
+            <form
+              action={unlockFamilyAccess}
+              className="mt-5 flex max-w-lg flex-col gap-3 sm:flex-row"
+            >
+              <div className="flex-1">
+                <label className="sr-only" htmlFor="family-password">
+                  Familienpasswort
+                </label>
+                <input
+                  id="family-password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  aria-describedby={
+                    search?.familienzugang === "fehler"
+                      ? "family-password-error"
+                      : undefined
+                  }
+                  className="h-11 w-full rounded-xl border border-ink/15 bg-white px-4 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  placeholder="Familienpasswort"
+                />
+              </div>
+              <button
+                type="submit"
+                className="h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white transition hover:bg-accent/90"
+              >
+                Freischalten
+              </button>
+            </form>
+            {search?.familienzugang === "fehler" ? (
+              <p
+                id="family-password-error"
+                role="alert"
+                className="mt-2 text-sm font-semibold text-red-700"
+              >
+                Das Familienpasswort ist nicht korrekt.
+              </p>
+            ) : search?.familienzugang === "blockiert" ? (
+              <p role="alert" className="mt-2 text-sm font-semibold text-red-700">
+                Zu viele Versuche — bitte in einer Stunde erneut versuchen.
+              </p>
+            ) : null}
+            <p className="mt-3 text-xs text-muted">
+              Dieser Zugang ist vom Admin-Login der Lagerleitung getrennt.
+            </p>
+          </section>
+        ) : null}
+
         <section id="dokumente" className="scroll-mt-20">
           <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
             Dokumente
           </h2>
           {dokumente.length === 0 ? (
-            <p className="text-sm text-muted">Noch keine Dokumente vorhanden.</p>
+            <p className="text-sm text-muted">Noch keine öffentlichen Dokumente vorhanden.</p>
           ) : (
             <ul className="divide-y divide-ink/8 rounded-2xl border border-ink/10">
               {dokumente.map((document) => (
@@ -155,11 +279,11 @@ export default async function LagerPage({
           ) : null}
         </section>
 
-        <section>
-          <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
-            Fotos
-          </h2>
-          {fotosUrl && isValidHttpUrl(fotosUrl) ? (
+        {validFotosUrl && documentResult.accessGranted ? (
+          <section>
+            <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
+              Fotos
+            </h2>
             <a
               href={fotosUrl}
               target="_blank"
@@ -168,42 +292,63 @@ export default async function LagerPage({
             >
               <span className="flex items-center gap-3">
                 <Images className="size-7 text-accent" />
-                <span className="font-display text-lg text-ink">Fotos ansehen</span>
+                <span className="font-display text-lg text-ink">
+                  Fotos ansehen oder hochladen
+                </span>
               </span>
-              <span className="text-sm text-muted">Foto-Album in einem neuen Tab öffnen</span>
+              <span className="text-sm text-muted">
+                Immich-Album in einem neuen Tab öffnen
+              </span>
             </a>
-          ) : (
-            <p className="text-sm text-muted">Noch kein Foto-Album verlinkt.</p>
-          )}
-          {lager ? (
             <div className="mt-3">
-              <EditableImmich lagerId={lager.id} current={lager.immich_url} />
+              <EditableImmich
+                relation={mediaCollection}
+                relationId={mediaRecordId}
+                albumId={documentResult.fotoalbum?.id}
+                current={fotosUrl}
+              />
             </div>
-          ) : null}
-        </section>
+          </section>
+        ) : (
+          <EditableImmich
+            relation={mediaCollection}
+            relationId={mediaRecordId}
+            albumId={documentResult.fotoalbum?.id}
+            current={fotosUrl}
+          />
+        )}
 
-        <section>
-          <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
-            Video
-          </h2>
-          {ytId ? <YoutubeClickToPlay id={ytId} /> : null}
-          {!ytId && videoUrl && isValidHttpUrl(videoUrl) ? (
-            <a
-              href={videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-bold text-accent hover:underline"
-            >
-              Video öffnen <ExternalLink className="size-4" />
-            </a>
-          ) : null}
-          {!videoUrl ? <p className="text-sm text-muted">Noch kein Video verlinkt.</p> : null}
-          {lager ? (
+        {validVideoUrl ? (
+          <section>
+            <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
+              Video
+            </h2>
+            {ytId ? <YoutubeClickToPlay id={ytId} /> : null}
+            {!ytId ? (
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-bold text-accent hover:underline"
+              >
+                Video öffnen <ExternalLink className="size-4" />
+              </a>
+            ) : null}
             <div className="mt-3">
-              <EditableYoutube lagerId={lager.id} current={lager.youtube_url} />
+              <EditableYoutube
+                collection={mediaCollection}
+                recordId={mediaRecordId}
+                current={videoUrl}
+              />
             </div>
-          ) : null}
-        </section>
+          </section>
+        ) : (
+          <EditableYoutube
+            collection={mediaCollection}
+            recordId={mediaRecordId}
+            current={videoUrl}
+          />
+        )}
 
         {archiv?.quelle_url ? (
           <section className="rounded-2xl bg-navy-50 p-5">
@@ -280,7 +425,7 @@ function DocumentRow({ doc }: { doc: DokumentRecord }) {
           )}
           <span className="truncate font-semibold text-ink">{doc.name}</span>
           {doc.sensibel ? (
-            <span className="hidden shrink-0 text-xs text-muted sm:inline">Intern</span>
+            <span className="hidden shrink-0 text-xs text-muted sm:inline">Geschützt</span>
           ) : null}
         </span>
         <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-accent">

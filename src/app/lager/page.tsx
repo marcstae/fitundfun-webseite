@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   CalendarDays,
-  Images,
   Play,
   UsersRound,
 } from "lucide-react";
@@ -149,11 +148,6 @@ function ArchivedCampCard({ lager }: { lager: ArchivRecord }) {
         {lager.video_url ? (
           <span className="inline-flex items-center gap-1.5">
             <Play className="size-3.5" /> Video
-          </span>
-        ) : null}
-        {lager.fotos_url ? (
-          <span className="inline-flex items-center gap-1.5">
-            <Images className="size-3.5" /> Fotos
           </span>
         ) : null}
         <span className="ml-auto text-[#e85f35]">Details</span>

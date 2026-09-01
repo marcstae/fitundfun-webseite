@@ -25,7 +25,6 @@ export default async function SponsorenPage() {
             const inner = (
               <div className="flex h-28 items-center justify-center rounded-2xl border border-ink/10 p-4">
                 {logo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={logo} alt={s.name} className="max-h-16 w-auto opacity-80 grayscale" />
                 ) : (
                   <span className="font-display text-lg text-ink">{s.name}</span>

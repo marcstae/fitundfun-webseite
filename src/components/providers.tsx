@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Toaster } from "sonner";
 import type PocketBase from "pocketbase";
+import { usePathname, useRouter } from "next/navigation";
 import { pbBrowser } from "@/lib/pb";
 import type { Rol } from "@/lib/pb-types";
 
@@ -10,6 +11,7 @@ interface AuthUser {
   id: string;
   email: string;
   rolle: Rol;
+  mussPasswortAendern: boolean;
 }
 
 interface AuthCtx {
@@ -18,7 +20,7 @@ interface AuthCtx {
   isFamilie: boolean;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -41,6 +43,15 @@ function syncAuthCookie(pb: PocketBase) {
   });
 }
 
+function userFromModel(model: Record<string, unknown>): AuthUser {
+  return {
+    id: String(model.id),
+    email: String(model.email),
+    rolle: (model.rolle as Rol) || "familie",
+    mussPasswortAendern: model.muss_passwort_aendern === true,
+  };
+}
+
 export function useAuth() {
   const ctx = React.useContext(AuthContext);
   if (!ctx) throw new Error("useAuth muss innerhalb <Providers> verwendet werden");
@@ -57,17 +68,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [editMode, setEditMode] = React.useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   React.useEffect(() => {
     const pb = pbBrowser();
     try {
       if (pb.authStore.isValid && pb.authStore.model) {
         const m = pb.authStore.model as Record<string, unknown>;
-        setUser({
-          id: String(m.id),
-          email: String(m.email),
-          rolle: (m.rolle as Rol) || "familie",
-        });
+        setUser(userFromModel(m));
       }
     } catch {
       // ignore
@@ -78,11 +87,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const unsubscribe = pb.authStore.onChange(() => {
       const model = pb.authStore.model as Record<string, unknown> | null;
       if (model) {
-        setUser({
-          id: String(model.id),
-          email: String(model.email),
-          rolle: (model.rolle as Rol) || "familie",
-        });
+        setUser(userFromModel(model));
       } else {
         setUser(null);
         setEditMode(false);
@@ -92,17 +97,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  // Erzwungene Zugangsdaten-Änderung: nur die Änderungsseite (+Login/Abmelden) zulassen.
+  React.useEffect(() => {
+    if (
+      !loading &&
+      user?.mussPasswortAendern &&
+      pathname !== "/admin-einrichtung" &&
+      pathname !== "/login"
+    ) {
+      router.replace("/admin-einrichtung");
+    }
+  }, [loading, user, pathname, router]);
+
   const login = React.useCallback(async (email: string, password: string) => {
     const pb = pbBrowser();
     const res = await pb
       .collection("users")
       .authWithPassword(email, password);
     syncAuthCookie(pb);
-    setUser({
-      id: res.record.id,
-      email: res.record.email,
-      rolle: (res.record as unknown as { rolle: Rol }).rolle || "familie",
-    });
+    const next = userFromModel(res.record as unknown as Record<string, unknown>);
+    setUser(next);
+    return next;
   }, []);
 
   const logout = React.useCallback(() => {

@@ -78,7 +78,6 @@ export function ArchivManager({ existing }: { existing: ArchivRecord[] }) {
 function ArchivForm({ onSaved, onClose }: { onSaved: () => void; onClose: () => void }) {
   const [jahr, setJahr] = React.useState("");
   const [video, setVideo] = React.useState("");
-  const [fotos, setFotos] = React.useState("");
   const [saving, setSaving] = React.useState(false);
 
   const save = async () => {
@@ -91,15 +90,11 @@ function ArchivForm({ onSaved, onClose }: { onSaved: () => void; onClose: () => 
       toast.error("Video-URL ist ungültig.");
       return;
     }
-    if (fotos && !isValidHttpUrl(fotos)) {
-      toast.error("Foto-URL ist ungültig.");
-      return;
-    }
     setSaving(true);
     try {
       await pbBrowser()
         .collection("archiv")
-        .create({ jahr: j, video_url: video, fotos_url: fotos });
+        .create({ jahr: j, video_url: video });
       await revalidatePath("/lager");
       toast.success("Gespeichert ✓");
       onSaved();
@@ -125,10 +120,6 @@ function ArchivForm({ onSaved, onClose }: { onSaved: () => void; onClose: () => 
           <div className="space-y-2">
             <Label htmlFor="ar-video">Video-URL (optional)</Label>
             <Input id="ar-video" value={video} onChange={(e) => setVideo(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ar-fotos">Foto-URL (optional)</Label>
-            <Input id="ar-fotos" value={fotos} onChange={(e) => setFotos(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

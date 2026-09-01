@@ -30,7 +30,10 @@ export function Dropzone({
     const file = files?.[0];
     if (!file) return;
     const acceptTypes = accept.split(",").map((s) => s.trim());
-    if (accept && acceptTypes.length && !acceptTypes.includes(file.type)) {
+    const ok = acceptTypes.some(
+      (t) => t === file.type || (t.endsWith("/*") && file.type.startsWith(t.slice(0, -1)))
+    );
+    if (accept && acceptTypes.length && !ok) {
       toast.error(`Falsches Format — ${accept} wählen.`);
       return;
     }

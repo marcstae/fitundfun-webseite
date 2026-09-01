@@ -1,6 +1,49 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-navy-50: #f2f5f9;
+  --color-navy-100: #dce5f0;
+  --color-navy-400: #3a5bf0;
+  --color-navy-500: #3a5bf0;
+  --color-navy-600: #2a4bd0;
+  --color-navy-700: #1c3854;
+  --color-navy-800: #122741;
+  --color-navy-900: #0a1728;
+  --color-navy-950: #0e1c30;
+  --color-accent: #3a5bf0;
+  --color-accent-light: #5c77ff;
+  --color-ink: #0e1c30;
+  --color-muted: #6b7686;
+
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-display: var(--font-archivo-black), var(--font-archivo), sans-serif;
+  --font-mono: ui-monospace, "Menlo", monospace;
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1rem;
+
+  --animate-fade-up: fade-up 0.6s ease forwards;
+  --animate-fade-in: fade-in 0.4s ease forwards;
+
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+}
 
 @layer base {
   :root {

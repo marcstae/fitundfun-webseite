@@ -1,8 +1,11 @@
+import type PocketBase from "pocketbase";
 import { unstable_cache } from "next/cache";
+import { familyPocketBase } from "./family-access";
 import { pbRequest, pbServer } from "./pb";
 import type {
   ArchivRecord,
   DokumentRecord,
+  FotoalbumRecord,
   EinstellungenRecord,
   KontaktRecord,
   LagerRecord,
@@ -10,7 +13,6 @@ import type {
   SeiteRecord,
   SponsorRecord,
 } from "./pb-types";
-import { lagerStatus } from "./utils";
 
 const REVALIDATE = 300; // 5 Minuten
 
@@ -117,11 +119,45 @@ export async function getArchivByJahr(jahr: number): Promise<ArchivRecord | null
   return all.find((eintrag) => eintrag.jahr === jahr) ?? null;
 }
 
+interface ProtectedContent {
+  documents: DokumentRecord[];
+  fotoalbum: FotoalbumRecord | null;
+}
+
+interface LagerInhaltResult {
+  items: DokumentRecord[];
+  hasProtected: boolean;
+  fotoalbum: FotoalbumRecord | null;
+  hasProtectedPhoto: boolean;
+  accessGranted: boolean;
+}
+
+async function loadProtectedContent(
+  pb: PocketBase,
+  relation: "lager" | "archiv",
+  recordId: string
+): Promise<ProtectedContent> {
+  const [documents, albums] = await Promise.all([
+    pb.collection("dokumente_intern").getList<DokumentRecord>(1, 500, {
+      filter: `${relation} = "${recordId}"`,
+      sort: "sort,name",
+    }),
+    pb.collection("fotoalben").getList<FotoalbumRecord>(1, 1, {
+      filter: `${relation} = "${recordId}"`,
+    }),
+  ]);
+  return {
+    documents: documents.items,
+    fotoalbum: albums.items[0] ?? null,
+  };
+}
+
 async function getDokumenteForRelation(
   relation: "lager" | "archiv",
   recordId: string,
-  authCookie = ""
-): Promise<DokumentRecord[]> {
+  authCookie = "",
+  familyAccess = false
+): Promise<LagerInhaltResult> {
   const out: DokumentRecord[] = [];
   try {
     const pub = await pbServer().collection("dokumente").getList<DokumentRecord>(1, 500, {
@@ -137,49 +173,81 @@ async function getDokumenteForRelation(
     );
   } catch {}
 
+  let protectedContent: ProtectedContent = {
+    documents: [],
+    fotoalbum: null,
+  };
+  let protectedLoaded = false;
+  let revealProtected = false;
+
   if (authCookie) {
     const authenticated = pbRequest(authCookie);
     if (authenticated.authStore.isValid) {
       try {
-        const intern = await authenticated
-          .collection("dokumente_intern")
-          .getList<DokumentRecord>(1, 500, {
-            filter: `${relation} = "${recordId}"`,
-            sort: "sort,name",
-          });
-        out.push(
-          ...intern.items.map((document) => ({
-            ...document,
-            sensibel: true,
-            collection: "dokumente_intern" as const,
-          }))
+        protectedContent = await loadProtectedContent(
+          authenticated,
+          relation,
+          recordId
         );
-      } catch {}
+        protectedLoaded = true;
+        revealProtected = true;
+      } catch (e) {
+        console.error("fitundfun: geschützte Inhalte mit Admin-Cookie fehlgeschlagen", e);
+      }
     }
   }
 
-  return out.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
+  if (!protectedLoaded) {
+    try {
+      const authenticated = await familyPocketBase();
+      protectedContent = await loadProtectedContent(
+        authenticated,
+        relation,
+        recordId
+      );
+      protectedLoaded = true;
+      revealProtected = familyAccess;
+    } catch (e) {
+      console.error("fitundfun: Familienzugang-Auth fehlgeschlagen — FAMILY_ACCESS_PASSWORD prüfen", e);
+    }
+  }
+
+  if (revealProtected) {
+    out.push(
+      ...protectedContent.documents.map((document) => ({
+        ...document,
+        sensibel: true,
+        collection: "dokumente_intern" as const,
+      }))
+    );
+  }
+
+  return {
+    items: out.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),
+    hasProtected: protectedContent.documents.length > 0,
+    fotoalbum: revealProtected ? protectedContent.fotoalbum : null,
+    hasProtectedPhoto: !!protectedContent.fotoalbum,
+    accessGranted: revealProtected,
+  };
 }
 
 export async function getDokumenteForLager(
   lagerId: string,
-  authCookie = ""
-): Promise<DokumentRecord[]> {
-  return getDokumenteForRelation("lager", lagerId, authCookie);
+  authCookie = "",
+  familyAccess = false
+): Promise<LagerInhaltResult> {
+  return getDokumenteForRelation("lager", lagerId, authCookie, familyAccess);
 }
 
 export async function getDokumenteForArchiv(
   archivId: string,
-  authCookie = ""
-): Promise<DokumentRecord[]> {
-  return getDokumenteForRelation("archiv", archivId, authCookie);
+  authCookie = "",
+  familyAccess = false
+): Promise<LagerInhaltResult> {
+  return getDokumenteForRelation("archiv", archivId, authCookie, familyAccess);
 }
 
 export async function getSeite(slug: string): Promise<SeiteRecord | null> {
   const all = await getSeiten();
   return all.find((s) => s.slug === slug) ?? null;
-}
-
-export function isLagerAktiv(l: LagerRecord): boolean {
-  return lagerStatus(l.datum_von, l.datum_bis) !== "past";
 }

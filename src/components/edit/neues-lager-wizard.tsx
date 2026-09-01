@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { isoToDateInput } from "@/lib/utils";
 
 /** "Neues Lager anlegen" — 2-Schritt-Wizard (Jahr + Daten). */
 export function NeuesLagerButton() {
@@ -50,7 +49,6 @@ export function NeuesLagerButton() {
         datum_bis: new Date(bis).toISOString(),
         beschreibung: "",
         youtube_url: "",
-        immich_url: "",
       });
       await revalidatePath("/");
       await revalidatePath("/lager");
@@ -132,5 +130,3 @@ export function NeuesLagerButton() {
     </>
   );
 }
-
-export { isoToDateInput };

@@ -4,9 +4,9 @@ services:
     container_name: fitundfun-pb
     restart: unless-stopped
     ports:
-      - "3844:8090"
+      - "8090:8090"
     volumes:
-      - pb_data:/pb/pb_data
+      - ./pb_data:/pb/pb_data
     environment:
       TZ: Europe/Zurich
       PB_ORIGINS: ${PB_ORIGINS}
@@ -35,6 +35,3 @@ services:
       FAMILY_ACCESS_EMAIL: ${FAMILY_ACCESS_EMAIL:-familie@fitundfun.local}
       FAMILY_ACCESS_PASSWORD: ${FAMILY_ACCESS_PASSWORD:?FAMILY_ACCESS_PASSWORD ist erforderlich}
       TZ: Europe/Zurich
-
-volumes:
-  pb_data:

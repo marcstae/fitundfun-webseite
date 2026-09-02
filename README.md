@@ -23,4 +23,4 @@ Ein neues Lager beginnt als Entwurf. Beim Veröffentlichen wird das bisher aktue
 
 ## Datensicherung
 
-Alle redaktionellen Daten und Uploads liegen im Docker-Volume `pb_data`. Dieses Volume regelmässig und vor jedem Update sichern; ein Backup des Git-Repositories allein enthält keine Inhalte oder Uploads. Wiederherstellungen zuerst auf einer separaten Instanz testen.
+Alle redaktionellen Daten und Uploads liegen im Ordner `pb_data` neben der Compose-Datei. Diesen Ordner regelmässig und vor jedem Update sichern; ein Backup des Git-Repositories allein enthält keine Inhalte oder Uploads. Wiederherstellungen zuerst auf einer separaten Instanz testen.

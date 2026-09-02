@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ExternalLink, MapPin } from "lucide-react";
 import { getSeite } from "@/lib/data";
 import { sanitizeRichText } from "@/lib/sanitize";
-import { EditableSeite } from "@/components/edit/editable-seite";
 
 export const revalidate = 300;
 export const metadata = { title: "Lagerhaus" };
@@ -23,9 +22,9 @@ export default async function LagerhausPage() {
   const inhalt = sanitizeRichText(seite?.inhalt || FALLBACK_CONTENT);
 
   return (
-    <main className="bg-[#f5efe2]">
+    <main className="bg-sand">
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#e85f35]">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
           Casa Crestneder
         </p>
         <h1 className="camp-display mt-4 text-4xl leading-none text-ink sm:text-6xl">
@@ -41,7 +40,7 @@ export default async function LagerhausPage() {
           </div>
 
           <div className="flex flex-col justify-between rounded-[1.75rem] bg-ink p-6 text-white sm:p-8">
-            <MapPin className="size-8 text-[#ff8a61]" />
+            <MapPin className="size-8 text-accent-light" />
             <div>
               <h2 className="camp-display text-3xl">Brigels</h2>
               <p className="mt-3 text-sm font-semibold leading-relaxed text-white/65">
@@ -51,7 +50,7 @@ export default async function LagerhausPage() {
                 href="https://www.google.com/maps?q=46.769060887157934,9.062191843986511"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#ff9b76]"
+                className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-accent-light"
               >
                 Auf der Karte ansehen <ExternalLink className="size-4" />
               </a>
@@ -59,9 +58,6 @@ export default async function LagerhausPage() {
           </div>
         </div>
 
-        <div className="mt-8">
-          <EditableSeite slug="lagerhaus" seite={seite} defaultTitel="Unser Lagerhaus" />
-        </div>
         <div className="mt-8">
           <Link href="/" className="text-sm font-bold text-accent hover:underline">
             ← Zur Startseite

@@ -9,12 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 function localTarget(value: string | null): string {
-  if (!value) return "/";
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/";
+  if (!value) return "/admin";
+  return value.startsWith("/") && !value.startsWith("//") ? value : "/admin";
 }
 
 function LoginForm() {
-  const { login, isAuthenticated, loading } = useAuth();
+  const { login, logout, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const search = useSearchParams();
   const [email, setEmail] = React.useState("");
@@ -33,6 +33,11 @@ function LoginForm() {
     setBusy(true);
     try {
       const userData = await login(email.trim(), password);
+      if (userData.rolle !== "editor") {
+        logout();
+        toast.error("Dieser Zugang ist nicht für das Admin-Cockpit berechtigt.");
+        return;
+      }
       toast.success("Angemeldet ✓");
       if (userData.mussPasswortAendern) {
         router.replace("/admin-einrichtung");
@@ -49,9 +54,14 @@ function LoginForm() {
   };
 
   return (
-    <div className="rounded-2xl border border-ink/10 p-6 sm:p-8">
-      <h1 className="font-display text-2xl uppercase text-ink">Admin-Login</h1>
-      <p className="mt-2 text-sm text-muted">
+    <div className="rounded-[1.75rem] border border-ink/10 bg-white p-6 sm:p-8">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
+        Geschützter Bereich
+      </p>
+      <h1 className="camp-display mt-3 text-3xl leading-none text-ink sm:text-4xl">
+        Admin-Login
+      </h1>
+      <p className="mt-4 text-sm font-semibold leading-relaxed text-muted">
         Anmeldung für die Lagerleitung.
       </p>
       {search.get("geaendert") === "1" ? (
@@ -96,8 +106,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:px-6">
-      <React.Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-ink/5" />}>
+    <div className="mx-auto flex w-full max-w-md flex-col px-4 py-12 sm:px-6 sm:py-16">
+      <React.Suspense fallback={<div className="h-80 animate-pulse rounded-[1.75rem] bg-white/70" />}>
         <LoginForm />
       </React.Suspense>
     </div>

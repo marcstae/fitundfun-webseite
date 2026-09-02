@@ -26,14 +26,6 @@ interface AuthCtx {
 
 const AuthContext = React.createContext<AuthCtx | null>(null);
 
-interface EditCtx {
-  editMode: boolean;
-  setEditMode: (v: boolean) => void;
-  canEdit: boolean;
-}
-
-const EditContext = React.createContext<EditCtx | null>(null);
-
 function syncAuthCookie(pb: PocketBase) {
   document.cookie = pb.authStore.exportToCookie({
     httpOnly: false,
@@ -58,43 +50,44 @@ export function useAuth() {
   return ctx;
 }
 
-export function useEdit() {
-  const ctx = React.useContext(EditContext);
-  if (!ctx) throw new Error("useEdit muss innerhalb <Providers> verwendet werden");
-  return ctx;
-}
-
 export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [editMode, setEditMode] = React.useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
   React.useEffect(() => {
     const pb = pbBrowser();
-    try {
-      if (pb.authStore.isValid && pb.authStore.model) {
-        const m = pb.authStore.model as Record<string, unknown>;
-        setUser(userFromModel(m));
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-    syncAuthCookie(pb);
     const unsubscribe = pb.authStore.onChange(() => {
       const model = pb.authStore.model as Record<string, unknown> | null;
       if (model) {
         setUser(userFromModel(model));
       } else {
         setUser(null);
-        setEditMode(false);
       }
       syncAuthCookie(pb);
     });
-    return () => unsubscribe();
+
+    let active = true;
+    void (async () => {
+      try {
+        if (pb.authStore.isValid) {
+          await pb.collection("users").authRefresh();
+        } else {
+          pb.authStore.clear();
+        }
+      } catch {
+        pb.authStore.clear();
+      } finally {
+        syncAuthCookie(pb);
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   // Erzwungene Zugangsdaten-Änderung: nur die Änderungsseite (+Login/Abmelden) zulassen.
@@ -124,7 +117,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     pbBrowser().authStore.clear();
     syncAuthCookie(pbBrowser());
     setUser(null);
-    setEditMode(false);
   }, []);
 
   const auth: AuthCtx = {
@@ -137,24 +129,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
     logout,
   };
 
-  const edit: EditCtx = {
-    editMode,
-    setEditMode,
-    canEdit: user?.rolle === "editor",
-  };
-
   return (
     <AuthContext.Provider value={auth}>
-      <EditContext.Provider value={edit}>
-        {children}
-        <Toaster
-          position="bottom-center"
-          toastOptions={{
-            style: { borderRadius: "12px", fontFamily: "var(--font-archivo)" },
-          }}
-          richColors
-        />
-      </EditContext.Provider>
+      {children}
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: { borderRadius: "12px", fontFamily: "var(--font-archivo)" },
+        }}
+        richColors
+      />
     </AuthContext.Provider>
   );
 }

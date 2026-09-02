@@ -10,8 +10,11 @@ migrate(
       app.save(users);
     }
 
-    const EMAIL = "admin@fitundfun.local";
-    const DEFAULT_PASSWORD = "admin1234"; // ponytail: OSS-Default; Erzwingungs-Flag macht ihn unbrauchbar nach dem ersten Login.
+    const EMAIL = $os.getenv("ADMIN_EMAIL");
+    const DEFAULT_PASSWORD = $os.getenv("ADMIN_PASSWORD");
+    if (!EMAIL || !DEFAULT_PASSWORD || DEFAULT_PASSWORD.length < 8) {
+      throw new Error("ADMIN_EMAIL und ADMIN_PASSWORD (mind. 8 Zeichen) müssen gesetzt sein.");
+    }
 
     // Editor-Admin nur beim ersten Start anlegen — niemals überschreiben,
     // damit Container-Updates geänderte Zugangsdaten nicht zurücksetzen.
@@ -39,7 +42,8 @@ migrate(
   },
   (app) => {
     const users = app.findCollectionByNameOrId("users");
-    const records = app.findRecordsByFilter(users, 'email = "admin@fitundfun.local"', "", 1, 0);
+    const email = $os.getenv("ADMIN_EMAIL") || "admin@fitundfun.local";
+    const records = app.findRecordsByFilter(users, 'email = "' + email + '"', "", 1, 0);
     for (const record of records) {
       if (record) app.delete(record);
     }

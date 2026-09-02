@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getSeite } from "@/lib/data";
 import { sanitizeRichText } from "@/lib/sanitize";
-import { EditableSeite } from "@/components/edit/editable-seite";
 
 export const revalidate = 300;
 export const metadata = { title: "Datenschutz" };
@@ -11,17 +10,20 @@ const FALLBACK_CONTENT =
 
 export default async function DatenschutzPage() {
   const seite = await getSeite("datenschutz");
+  const titel = seite?.titel || "Datenschutz";
   const inhalt = seite?.inhalt || FALLBACK_CONTENT;
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <h1 className="font-display text-3xl uppercase text-ink sm:text-4xl">Datenschutz</h1>
+    <div className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
+        Transparenz
+      </p>
+      <h1 className="camp-display mt-4 text-4xl leading-none text-ink sm:text-6xl">
+        {titel}
+      </h1>
       <div
-        className="mt-6 text-base leading-relaxed text-ink/80 [&_a]:text-accent [&_a]:underline [&_h2]:mb-2 [&_h2]:mt-8 [&_h2]:font-display [&_h2]:text-xl [&_h2]:uppercase [&_h2]:text-ink [&_p+p]:mt-4"
+        className="mt-10 rounded-[1.75rem] border border-ink/10 bg-white p-6 text-base font-semibold leading-relaxed text-ink/80 [&_a]:text-accent [&_a]:underline [&_h2]:mb-2 [&_h2]:mt-8 [&_h2]:font-[family-name:var(--font-camp)] [&_h2]:text-2xl [&_h2]:text-ink [&_p+p]:mt-4 sm:p-8"
         dangerouslySetInnerHTML={{ __html: sanitizeRichText(inhalt) }}
       />
-      <div className="mt-8">
-        <EditableSeite slug="datenschutz" seite={seite} defaultTitel="Datenschutz" />
-      </div>
       <div className="mt-8">
         <Link href="/" className="text-sm font-bold text-accent hover:underline">
           ← Zur Startseite

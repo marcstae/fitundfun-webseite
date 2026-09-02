@@ -25,8 +25,8 @@ export default function AdminEinrichtungPage() {
 
   if (loading || !user) {
     return (
-      <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:px-6">
-        <div className="h-64 animate-pulse rounded-2xl bg-ink/5" />
+      <div className="mx-auto flex w-full max-w-md flex-col px-4 py-12 sm:px-6 sm:py-16">
+        <div className="h-80 animate-pulse rounded-[1.75rem] bg-white/70" />
       </div>
     );
   }
@@ -61,13 +61,16 @@ export default function AdminEinrichtungPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
-      <div className="rounded-2xl border border-ink/10 p-6 sm:p-8">
-        <h1 className="font-display text-2xl uppercase text-ink">
+    <div className="mx-auto w-full max-w-md px-4 py-12 sm:px-6 sm:py-16">
+      <div className="rounded-[1.75rem] border border-ink/10 bg-white p-6 sm:p-8">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
+          Lagerleitung
+        </p>
+        <h1 className="camp-display mt-3 text-3xl leading-none text-ink sm:text-4xl">
           Passwort ändern
         </h1>
-        <p className="mt-2 text-sm text-muted">
-          Vor der ersten Nutzung muss das Standard-Passwort geändert werden.
+        <p className="mt-4 text-sm font-semibold leading-relaxed text-muted">
+          Vor der ersten Nutzung muss das Startpasswort geändert werden.
           Danach gilt nur noch das neue Passwort.
         </p>
         <form onSubmit={submit} className="mt-6 space-y-4">

@@ -5,22 +5,15 @@ import assert from "node:assert/strict";
 process.env.FAMILY_ACCESS_PASSWORD = "TestPasswort123";
 
 const familyAccess = await import("./family-access.ts");
-test("isFamilyPassword: richtig/falsch", () => {
-  assert.equal(familyAccess.isFamilyPassword("TestPasswort123"), true);
-  assert.equal(familyAccess.isFamilyPassword("falsch"), false);
-  assert.equal(familyAccess.isFamilyPassword(""), false);
+test("Passwort-Hash: richtig/falsch", async () => {
+  const hash = await familyAccess.hashFamilyPassword("TestPasswort123");
+  assert.equal(await familyAccess.verifyFamilyPasswordHash("TestPasswort123", hash), true);
+  assert.equal(await familyAccess.verifyFamilyPasswordHash("falsch", hash), false);
+  assert.equal(await familyAccess.verifyFamilyPasswordHash("", hash), false);
 });
 
-test("familyAccessCookieValue: deterministisch und nicht leer", () => {
-  assert.equal(familyAccess.familyAccessCookieValue(), familyAccess.familyAccessCookieValue());
-  assert.ok(familyAccess.familyAccessCookieValue().length > 20);
-});
-
-test("hasFamilyAccess: gültiger Cookie-Wert", () => {
-  assert.equal(familyAccess.hasFamilyAccess(familyAccess.familyAccessCookieValue()), true);
-  assert.equal(familyAccess.hasFamilyAccess("manipuliert"), false);
-  assert.equal(familyAccess.hasFamilyAccess(undefined), false);
-  assert.equal(familyAccess.hasFamilyAccess(""), false);
+test("Passwort-Hash: manipulierte Werte werden abgelehnt", async () => {
+  assert.equal(await familyAccess.verifyFamilyPasswordHash("x", "kaputt"), false);
 });
 
 test("clientIp: X-Real-IP hat Vorrang vor X-Forwarded-For", () => {

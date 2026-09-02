@@ -1,8 +1,8 @@
 /// <reference path="../pb_data/types.d.ts" />
 migrate(
   (app) => {
-    // Editor-Default-Passwort ist im öffentlichen Repo bekannt: Schreibzugriff
-    // erst nach dem erzwungenen Passwortwechsel (Flag muss_passwort_aendern = false).
+    // Schreibzugriff erst nach dem erzwungenen Wechsel des Startpassworts
+    // (Flag muss_passwort_aendern = false).
     const EDITOR =
       '@request.auth.rolle = "editor" && @request.auth.muss_passwort_aendern = false';
 

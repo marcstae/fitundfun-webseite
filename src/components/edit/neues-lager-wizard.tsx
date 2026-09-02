@@ -5,22 +5,21 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
-import { useEditMode } from "./edit-button";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SaveDialog, useSaveAction } from "./save-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** "Neues Lager anlegen" — 2-Schritt-Wizard (Jahr + Daten). */
-export function NeuesLagerButton() {
-  const { canEdit, editMode } = useEditMode();
-  const [open, setOpen] = React.useState(false);
-  const [jahr, setJahr] = React.useState<string>("");
+export function NeuesLagerButton({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  const router = useRouter();
+  const nextJahr = new Date().getFullYear() + 1;
+  const [open, setOpen] = React.useState(defaultOpen);
+  const [jahr, setJahr] = React.useState(String(nextJahr));
   const [von, setVon] = React.useState("");
   const [bis, setBis] = React.useState("");
   const { saving, run } = useSaveAction();
-
-  if (!canEdit || !editMode) return null;
 
   const submit = async () => {
     const j = Number(jahr);
@@ -28,21 +27,32 @@ export function NeuesLagerButton() {
       toast.error("Bitte ein gültiges Jahr eingeben (z. B. 2027).");
       return;
     }
-    if (!von || !bis) {
-      toast.error("Bitte Datum von und bis auswählen.");
+    if (!!von !== !!bis) {
+      toast.error("Bitte beide Daten ausfüllen oder den Zeitraum vorerst leer lassen.");
       return;
     }
+    if (von && bis && new Date(bis) < new Date(von)) {
+      toast.error("Das Enddatum muss nach dem Startdatum liegen.");
+      return;
+    }
+    let createdId = "";
     const ok = await run(
       async () => {
         const pb = pbBrowser();
-        await pb.collection("lager").create({
+        const created = await pb.collection("lager").create({
           jahr: j,
           titel: `Lager ${j}`,
-          datum_von: new Date(von).toISOString(),
-          datum_bis: new Date(bis).toISOString(),
+          datum_von: von ? new Date(von).toISOString() : "",
+          datum_bis: bis ? new Date(bis).toISOString() : "",
           beschreibung: "",
           youtube_url: "",
+          quelle_url: "",
+          teilnehmer: null,
+          preise: [],
+          aktivitaeten: [],
+          status: "entwurf",
         });
+        createdId = created.id;
         await revalidatePath("/");
         await revalidatePath("/lager");
       },
@@ -50,13 +60,13 @@ export function NeuesLagerButton() {
     );
     if (ok) {
       setOpen(false);
-      setJahr("");
+      setJahr(String(nextJahr));
       setVon("");
       setBis("");
+      router.push(`/admin/lager/${createdId}`);
+      router.refresh();
     }
   };
-
-  const nextJahr = new Date().getFullYear() + 1;
 
   return (
     <>
@@ -67,7 +77,7 @@ export function NeuesLagerButton() {
         open={open}
         onOpenChange={setOpen}
         title="Neues Lager anlegen"
-        description="Danach ist das neue Jahr sofort live auf der Startseite und im Archiv."
+        description="Das Lager wird als Entwurf angelegt und ist noch nicht öffentlich."
         saveLabel="Lager anlegen"
         saving={saving}
         onSave={submit}
@@ -85,7 +95,7 @@ export function NeuesLagerButton() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor="nl-von">Datum von</Label>
+            <Label htmlFor="nl-von">Datum von (optional)</Label>
             <Input
               id="nl-von"
               type="date"
@@ -94,7 +104,7 @@ export function NeuesLagerButton() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="nl-bis">Datum bis</Label>
+            <Label htmlFor="nl-bis">Datum bis (optional)</Label>
             <Input
               id="nl-bis"
               type="date"
@@ -105,7 +115,7 @@ export function NeuesLagerButton() {
         </div>
         <p className="text-xs text-muted">
           Titel wird automatisch auf «Lager {jahr || nextJahr}» gesetzt und kann
-          später angepasst werden.
+          später angepasst werden. Der Zeitraum kann ebenfalls später erfasst werden.
         </p>
       </SaveDialog>
     </>

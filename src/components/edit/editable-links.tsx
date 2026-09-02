@@ -1,21 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EditButton, useEditMode } from "./edit-button";
 import { SaveDialog, useSaveAction } from "./save-dialog";
 import { isValidHttpUrl } from "@/lib/utils";
 import type { LinkRecord } from "@/lib/pb-types";
 
 export function EditableLinks() {
-  const { canEdit, editMode } = useEditMode();
-  if (!canEdit || !editMode) return null;
   return (
     <div>
       <LinkManager />
@@ -46,6 +43,23 @@ function LinkManager() {
     load();
   }, [load]);
 
+  const move = async (index: number, delta: -1 | 1) => {
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const previous = items;
+    const next = [...items];
+    [next[index], next[target]] = [next[target], next[index]];
+    setItems(next);
+    try {
+      await Promise.all(next.map((item, sort) => pbBrowser().collection("links").update(item.id, { sort: sort + 1 })));
+      await revalidatePath("/lager");
+      toast.success("Reihenfolge gespeichert");
+    } catch {
+      setItems(previous);
+      toast.error("Reihenfolge konnte nicht gespeichert werden.");
+    }
+  };
+
   const del = async (it: LinkRecord) => {
     if (!window.confirm(`Link «${it.titel}» löschen?`)) return;
     try {
@@ -74,13 +88,15 @@ function LinkManager() {
       </div>
       {!loading && items.length > 0 && (
         <ul className="mt-3 space-y-1.5">
-          {items.map((it) => (
+          {items.map((it, index) => (
             <li
               key={it.id}
               className="flex items-center justify-between gap-2 rounded-lg bg-ink/[0.03] px-3 py-2 text-sm"
             >
               <span className="truncate font-semibold">{it.titel}</span>
               <span className="flex shrink-0 gap-1">
+                <button onClick={() => move(index, -1)} disabled={index === 0} className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.titel} nach oben verschieben`}><ArrowUp className="size-4" /></button>
+                <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.titel} nach unten verschieben`}><ArrowDown className="size-4" /></button>
                 <button
                   onClick={() => { setEditing(it); setOpen(true); }}
                   className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink"
@@ -170,5 +186,3 @@ function LinkForm({
     </SaveDialog>
   );
 }
-
-export { EditButton };

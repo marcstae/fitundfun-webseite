@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, Archivo_Black, Fredoka } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { EditBar } from "@/components/edit/edit-bar";
+import { SiteChrome } from "@/components/site-chrome";
 import { getAktuellesLager } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
 
@@ -54,10 +52,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <body className="min-h-dvh flex flex-col">
         <Providers>
-          <SiteHeader aktuellesJahr={aktuellesLager?.jahr ?? null} />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-          <EditBar />
+          <SiteChrome aktuellesJahr={aktuellesLager?.jahr ?? null}>
+            {children}
+          </SiteChrome>
         </Providers>
       </body>
     </html>

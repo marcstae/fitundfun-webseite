@@ -21,3 +21,13 @@ export function sanitizeRichText(html: string): string {
   if (!html) return "";
   return sanitizeHtml(html, WHITELIST);
 }
+
+export function richTextToPlainText(html: string): string {
+  return sanitizeRichText(html)
+    .replace(/<[^>]+>/g, " ")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}

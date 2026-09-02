@@ -1,10 +1,9 @@
 import type PocketBase from "pocketbase";
 import { unstable_cache } from "next/cache";
 import { familyPocketBase } from "./family-access";
-import { pickAktuellesLager } from "./utils";
+import { pickNeustesFotoalbum } from "./utils";
 import { pbRequest, pbServer } from "./pb";
 import type {
-  ArchivRecord,
   DokumentRecord,
   FotoalbumRecord,
   EinstellungenRecord,
@@ -19,7 +18,7 @@ const REVALIDATE = 300; // 5 Minuten
 
 export async function getAktuellesLager(): Promise<LagerRecord | null> {
   const all = await getLager();
-  return pickAktuellesLager(all);
+  return all.find((lager) => lager.status === "veroeffentlicht") ?? null;
 }
 
 async function listAll<T>(collection: string, sort = ""): Promise<T[]> {
@@ -46,16 +45,54 @@ async function listAll<T>(collection: string, sort = ""): Promise<T[]> {
 }
 
 export const getLager = unstable_cache(
-  async () => listAll<LagerRecord>("lager", "jahr"),
+  async () => listAll<LagerRecord>("lager", "-jahr"),
   ["lager"],
   { revalidate: REVALIDATE }
 );
 
-export const getArchiv = unstable_cache(
-  async () => listAll<ArchivRecord>("archiv", "-jahr"),
-  ["archiv"],
-  { revalidate: REVALIDATE }
-);
+export async function getNeustesFotoalbum(
+  authCookie = "",
+  familyAccess = false
+): Promise<{
+  fotoalbum: FotoalbumRecord | null;
+  jahr: number | null;
+  hasFotoalbum: boolean;
+}> {
+  const empty = { fotoalbum: null, jahr: null, hasFotoalbum: false };
+  const request = authCookie ? pbRequest(authCookie) : null;
+  let authenticated: PocketBase;
+  let reveal = false;
+
+  if (request?.authStore.isValid) {
+    authenticated = request;
+    reveal = true;
+  } else {
+    try {
+      authenticated = await familyPocketBase();
+      reveal = familyAccess;
+    } catch (e) {
+      console.error("fitundfun: Fotoalbum-Zugriff fehlgeschlagen", e);
+      return empty;
+    }
+  }
+
+  try {
+    const [albums, lager] = await Promise.all([
+      authenticated.collection("fotoalben").getFullList<FotoalbumRecord>(),
+      getLager(),
+    ]);
+    const latest = pickNeustesFotoalbum(albums, lager);
+
+    return {
+      fotoalbum: reveal ? latest?.fotoalbum || null : null,
+      jahr: latest?.jahr || null,
+      hasFotoalbum: !!latest,
+    };
+  } catch (e) {
+    console.error("fitundfun: Fotoalben konnten nicht geladen werden", e);
+    return empty;
+  }
+}
 
 export const getSponsoren = unstable_cache(
   async () => listAll<SponsorRecord>("sponsoren", "sort"),
@@ -99,14 +136,25 @@ export const getEinstellungen = unstable_cache(
 );
 
 
-export async function getLagerByJahr(jahr: number): Promise<LagerRecord | null> {
+export async function getLagerByJahr(
+  jahr: number,
+  authCookie = ""
+): Promise<LagerRecord | null> {
+  if (authCookie) {
+    const authenticated = pbRequest(authCookie);
+    if (authenticated.authStore.isValid) {
+      try {
+        return await authenticated
+          .collection("lager")
+          .getFirstListItem<LagerRecord>(`jahr = ${jahr}`);
+      } catch {
+        // Ungültige/abgelaufene Sitzung oder kein sichtbarer Datensatz:
+        // mit der öffentlichen Sicht fortfahren.
+      }
+    }
+  }
   const all = await getLager();
   return all.find((l) => l.jahr === jahr) ?? null;
-}
-
-export async function getArchivByJahr(jahr: number): Promise<ArchivRecord | null> {
-  const all = await getArchiv();
-  return all.find((eintrag) => eintrag.jahr === jahr) ?? null;
 }
 
 interface ProtectedContent {
@@ -124,16 +172,15 @@ interface LagerInhaltResult {
 
 async function loadProtectedContent(
   pb: PocketBase,
-  relation: "lager" | "archiv",
   recordId: string
 ): Promise<ProtectedContent> {
   const [documents, albums] = await Promise.all([
     pb.collection("dokumente_intern").getList<DokumentRecord>(1, 500, {
-      filter: `${relation} = "${recordId}"`,
+      filter: `lager = "${recordId}"`,
       sort: "sort,name",
     }),
     pb.collection("fotoalben").getList<FotoalbumRecord>(1, 1, {
-      filter: `${relation} = "${recordId}"`,
+      filter: `lager = "${recordId}"`,
     }),
   ]);
   return {
@@ -143,7 +190,6 @@ async function loadProtectedContent(
 }
 
 async function getDokumenteForRelation(
-  relation: "lager" | "archiv",
   recordId: string,
   authCookie = "",
   familyAccess = false
@@ -151,7 +197,7 @@ async function getDokumenteForRelation(
   const out: DokumentRecord[] = [];
   try {
     const pub = await pbServer().collection("dokumente").getList<DokumentRecord>(1, 500, {
-      filter: `${relation} = "${recordId}"`,
+      filter: `lager = "${recordId}"`,
       sort: "sort,name",
     });
     out.push(
@@ -178,7 +224,6 @@ async function getDokumenteForRelation(
       try {
         protectedContent = await loadProtectedContent(
           authenticated,
-          relation,
           recordId
         );
         protectedLoaded = true;
@@ -194,7 +239,6 @@ async function getDokumenteForRelation(
       const authenticated = await familyPocketBase();
       protectedContent = await loadProtectedContent(
         authenticated,
-        relation,
         recordId
       );
       protectedLoaded = true;
@@ -228,15 +272,7 @@ export async function getDokumenteForLager(
   authCookie = "",
   familyAccess = false
 ): Promise<LagerInhaltResult> {
-  return getDokumenteForRelation("lager", lagerId, authCookie, familyAccess);
-}
-
-export async function getDokumenteForArchiv(
-  archivId: string,
-  authCookie = "",
-  familyAccess = false
-): Promise<LagerInhaltResult> {
-  return getDokumenteForRelation("archiv", archivId, authCookie, familyAccess);
+  return getDokumenteForRelation(lagerId, authCookie, familyAccess);
 }
 
 export async function getSeite(slug: string): Promise<SeiteRecord | null> {

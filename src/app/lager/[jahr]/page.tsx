@@ -11,8 +11,6 @@ import {
   UsersRound,
 } from "lucide-react";
 import {
-  getArchivByJahr,
-  getDokumenteForArchiv,
   getDokumenteForLager,
   getLagerByJahr,
   getLinks,
@@ -32,14 +30,9 @@ import {
   isValidHttpUrl,
   youtubeId,
 } from "@/lib/utils";
-import { sanitizeRichText } from "@/lib/sanitize";
+import { richTextToPlainText, sanitizeRichText } from "@/lib/sanitize";
 import type { DokumentRecord } from "@/lib/pb-types";
 import { YoutubeClickToPlay } from "@/components/youtube-click-to-play";
-import { EditableLagerDaten } from "@/components/edit/editable-lager";
-import { EditableDokumentList } from "@/components/edit/editable-dokument-list";
-import { EditableYoutube } from "@/components/edit/editable-youtube";
-import { EditableImmich } from "@/components/edit/editable-immich";
-import { EditableLinks } from "@/components/edit/editable-links";
 
 export const dynamic = "force-dynamic";
 
@@ -50,17 +43,11 @@ export async function generateMetadata({
 }) {
   const { jahr: jahrParam } = await params;
   const jahr = Number(jahrParam);
-  const [lager, archiv] = await Promise.all([
-    getLagerByJahr(jahr),
-    getArchivByJahr(jahr),
-  ]);
+  const lager = await getLagerByJahr(jahr);
   const titel = lager?.titel || `Lager ${jahr}`;
   const beschreibung =
-    (lager?.beschreibung || archiv?.beschreibung || "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 160) || `Informationen und Dokumente zum fit&fun Lager ${jahr} in Brigels.`;
+    richTextToPlainText(lager?.beschreibung || "").slice(0, 160) ||
+    `Informationen und Dokumente zum fit&fun Lager ${jahr} in Brigels.`;
   return {
     title: titel,
     description: beschreibung,
@@ -72,119 +59,108 @@ export default async function LagerPage({
   searchParams,
 }: {
   params: Promise<{ jahr: string }>;
-  searchParams?: Promise<{ familienzugang?: string }>;
+  searchParams?: Promise<{
+    familienzugang?: string;
+    fotos?: string;
+    vorschau?: string;
+  }>;
 }) {
   const { jahr: jahrParam } = await params;
   const jahr = Number(jahrParam);
   if (!jahr) notFound();
 
-  const [lager, archiv] = await Promise.all([
-    getLagerByJahr(jahr),
-    getArchivByJahr(jahr),
-  ]);
-  if (!lager && !archiv) notFound();
-
   const cookieStore = await cookies();
   const authCookie = cookieStore.toString();
-  const familyAccess = hasFamilyAccess(
+  const search = await searchParams;
+  const lager = await getLagerByJahr(
+    jahr,
+    search?.vorschau === "1" ? authCookie : ""
+  );
+  if (!lager) notFound();
+  if (lager.status === "entwurf" && search?.vorschau !== "1") notFound();
+
+  const familyAccess = await hasFamilyAccess(
     cookieStore.get(FAMILY_ACCESS_COOKIE)?.value
   );
-  const search = await searchParams;
   const [documentResult, links] = await Promise.all([
-    lager
-      ? getDokumenteForLager(lager.id, authCookie, familyAccess)
-      : getDokumenteForArchiv(archiv!.id, authCookie, familyAccess),
+    getDokumenteForLager(lager.id, authCookie, familyAccess),
     getLinks(),
   ]);
   const dokumente = documentResult.items;
 
-  // View-Model: lager und archiv (zwei Collections, fast gleiches Schema)
-  // werden einmal normalisiert — der Rest der Seite kennt nur diese Form.
-  const ansicht = {
-    istAktuell: !!lager,
-    recordId: lager?.id || archiv!.id,
-    collection: (lager ? "lager" : "archiv") as "lager" | "archiv",
-    titel: lager?.titel || `Lager ${jahr}`,
-    datumVon: lager?.datum_von || archiv?.datum_von || "",
-    datumBis: lager?.datum_bis || archiv?.datum_bis || "",
-    beschreibung: lager?.beschreibung || archiv?.beschreibung || "",
-    videoUrl: lager?.youtube_url || archiv?.video_url || "",
-    teilnehmer: lager?.teilnehmer || archiv?.teilnehmer || null,
-    preise: lager?.preise || archiv?.preise || [],
-    aktivitaeten: lager?.aktivitaeten || archiv?.aktivitaeten || [],
-    quelleUrl: archiv?.quelle_url || "",
-  };
   const zeitraum =
-    ansicht.datumVon && ansicht.datumBis
-      ? formatDateRangeLong(ansicht.datumVon, ansicht.datumBis)
+    lager.datum_von && lager.datum_bis
+      ? formatDateRangeLong(lager.datum_von, lager.datum_bis)
       : `Lager ${jahr}`;
-  const beschreibung = lager
-    ? sanitizeRichText(ansicht.beschreibung)
-    : ansicht.beschreibung;
+  const beschreibung = sanitizeRichText(lager.beschreibung || "");
+  const preise = lager.preise || [];
+  const aktivitaeten = lager.aktivitaeten || [];
   const fotosUrl = documentResult.fotoalbum?.url || "";
   const validFotosUrl = !!fotosUrl && isValidHttpUrl(fotosUrl);
-  const validVideoUrl = !!ansicht.videoUrl && isValidHttpUrl(ansicht.videoUrl);
-  const ytId = youtubeId(ansicht.videoUrl);
+  const validVideoUrl = !!lager.youtube_url && isValidHttpUrl(lager.youtube_url);
+  const ytId = youtubeId(lager.youtube_url);
 
   const showFamilyGate =
     !documentResult.accessGranted &&
     (documentResult.hasProtected || documentResult.hasProtectedPhoto);
+  const returnToPhotos = search?.fotos === "1";
+  const photosQuery = returnToPhotos ? "&fotos=1" : "";
 
   async function unlockFamilyAccess(formData: FormData) {
     "use server";
     const headerStore = await headers();
     const ip = clientIp(headerStore);
     if (!unlockAttemptAllowed(ip)) {
-      redirect(`/lager/${jahr}?familienzugang=blockiert#familienzugang`);
+      redirect(`/lager/${jahr}?familienzugang=blockiert${photosQuery}#familienzugang`);
     }
 
     const password = formData.get("password");
-    if (typeof password !== "string" || !isFamilyPassword(password)) {
+    if (typeof password !== "string" || !(await isFamilyPassword(password))) {
       recordUnlockFailure(ip);
-      redirect(`/lager/${jahr}?familienzugang=fehler#familienzugang`);
+      redirect(`/lager/${jahr}?familienzugang=fehler${photosQuery}#familienzugang`);
     }
 
     const cookieStore2 = await cookies();
-    cookieStore2.set(FAMILY_ACCESS_COOKIE, familyAccessCookieValue(), {
+    cookieStore2.set(FAMILY_ACCESS_COOKIE, await familyAccessCookieValue(), {
       httpOnly: true,
       maxAge: FAMILY_ACCESS_MAX_AGE,
       path: "/",
       sameSite: "lax",
       secure: headerStore.get("x-forwarded-proto") === "https",
     });
-    redirect(`/lager/${jahr}#dokumente`);
+    redirect(returnToPhotos ? "/fotos" : `/lager/${jahr}#dokumente`);
   }
 
   return (
-    <article>
-      <header className="border-b border-ink/8 bg-navy-900 text-white">
+    <article className="bg-sand">
+      {lager.status === "entwurf" ? (
+        <div className="bg-amber-300 px-4 py-2 text-center text-sm font-bold text-ink">
+          Entwurfsvorschau – dieses Lager ist noch nicht öffentlich.
+        </div>
+      ) : null}
+      <header className="bg-ink text-white">
         <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-accent-light/80">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
             {zeitraum}
           </p>
-          <h1 className="camp-display text-4xl leading-tight sm:text-5xl">
-            {ansicht.titel}
+          <h1 className="camp-display mt-4 text-4xl leading-none sm:text-5xl">
+            {lager.titel || `Lager ${jahr}`}
           </h1>
-          {ansicht.istAktuell && beschreibung ? (
+          {beschreibung ? (
             <div
-              className="prose prose-invert mt-4 max-w-2xl text-white/85 [&_a]:text-accent-light [&_a]:underline"
+              className="mt-5 max-w-2xl font-semibold leading-relaxed text-white/80 [&_a]:text-accent-light [&_a]:underline [&_p+p]:mt-4"
               dangerouslySetInnerHTML={{ __html: beschreibung }}
             />
           ) : null}
-          {!ansicht.istAktuell && beschreibung ? (
-            <p className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-white/80">
-              {beschreibung}
-            </p>
-          ) : null}
 
           <div className="mt-6 flex flex-wrap gap-2">
-            {ansicht.teilnehmer ? (
+            {lager.teilnehmer ? (
               <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
                 <UsersRound className="size-4 text-accent-light" />
-                {ansicht.teilnehmer} Teilnehmende
+                {lager.teilnehmer} Teilnehmende
               </span>
             ) : null}
-            {ansicht.preise.slice(0, 2).map((preis) => (
+            {preise.slice(0, 2).map((preis) => (
               <span
                 key={`${preis.label}-${preis.preis}`}
                 className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold"
@@ -194,25 +170,20 @@ export default async function LagerPage({
             ))}
           </div>
 
-          {lager ? (
-            <div className="mt-4">
-              <EditableLagerDaten lager={lager} />
-            </div>
-          ) : null}
         </div>
       </header>
 
       <div className="mx-auto max-w-5xl space-y-14 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {ansicht.aktivitaeten.length > 0 ? (
+        {aktivitaeten.length > 0 ? (
           <section>
             <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
               Was dabei war
             </h2>
             <div className="flex flex-wrap gap-2">
-              {ansicht.aktivitaeten.map((aktivitaet) => (
+              {aktivitaeten.map((aktivitaet) => (
                 <span
                   key={aktivitaet}
-                  className="rounded-full border border-ink/10 bg-navy-50 px-3 py-1.5 text-sm font-semibold text-ink"
+                  className="rounded-full border border-ink/10 bg-white px-3 py-1.5 text-sm font-semibold text-ink"
                 >
                   {aktivitaet}
                 </span>
@@ -224,12 +195,12 @@ export default async function LagerPage({
         {showFamilyGate ? (
           <section
             id="familienzugang"
-            className="scroll-mt-20 rounded-2xl border border-accent/25 bg-accent/[0.04] p-5 sm:p-6"
+            className="scroll-mt-20 rounded-[1.75rem] border border-ink/10 bg-white p-6 sm:p-8"
           >
             <div className="flex items-start gap-3">
               <KeyRound className="mt-0.5 size-6 shrink-0 text-accent" />
               <div>
-                <h2 className="font-display text-xl text-ink">
+                <h2 className="camp-display text-2xl text-ink">
                   Familienzugang
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
@@ -299,17 +270,12 @@ export default async function LagerPage({
           {dokumente.length === 0 ? (
             <p className="text-sm text-muted">Noch keine öffentlichen Dokumente vorhanden.</p>
           ) : (
-            <ul className="divide-y divide-ink/8 rounded-2xl border border-ink/10">
+            <ul className="overflow-hidden divide-y divide-ink/8 rounded-[1.75rem] border border-ink/10 bg-white">
               {dokumente.map((document) => (
                 <DocumentRow key={document.id} doc={document} />
               ))}
             </ul>
           )}
-          {lager ? (
-            <div className="mt-4">
-              <EditableDokumentList lagerId={lager.id} existing={dokumente} />
-            </div>
-          ) : null}
         </section>
 
         {validFotosUrl && documentResult.accessGranted ? (
@@ -321,7 +287,7 @@ export default async function LagerPage({
               href={fotosUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-start gap-3 rounded-2xl border border-ink/10 p-6 transition hover:border-accent/40 hover:bg-accent/[0.03] sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col items-start gap-3 rounded-[1.75rem] border border-ink/10 bg-white p-6 transition hover:-translate-y-1 hover:border-ink/20 hover:shadow-[0_18px_45px_rgba(14,28,48,0.08)] sm:flex-row sm:items-center sm:justify-between"
             >
               <span className="flex items-center gap-3">
                 <Images className="size-7 text-accent" />
@@ -333,23 +299,8 @@ export default async function LagerPage({
                 Immich-Album in einem neuen Tab öffnen
               </span>
             </a>
-            <div className="mt-3">
-              <EditableImmich
-                relation={ansicht.collection}
-                relationId={ansicht.recordId}
-                albumId={documentResult.fotoalbum?.id}
-                current={fotosUrl}
-              />
-            </div>
           </section>
-        ) : (
-          <EditableImmich
-            relation={ansicht.collection}
-            relationId={ansicht.recordId}
-            albumId={documentResult.fotoalbum?.id}
-            current={fotosUrl}
-          />
-        )}
+        ) : null}
 
         {validVideoUrl ? (
           <section>
@@ -359,7 +310,7 @@ export default async function LagerPage({
             {ytId ? <YoutubeClickToPlay id={ytId} /> : null}
             {!ytId ? (
               <a
-                href={ansicht.videoUrl}
+                href={lager.youtube_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-bold text-accent hover:underline"
@@ -367,29 +318,16 @@ export default async function LagerPage({
                 Video öffnen <ExternalLink className="size-4" />
               </a>
             ) : null}
-            <div className="mt-3">
-              <EditableYoutube
-                collection={ansicht.collection}
-                recordId={ansicht.recordId}
-                current={ansicht.videoUrl}
-              />
-            </div>
           </section>
-        ) : (
-          <EditableYoutube
-            collection={ansicht.collection}
-            recordId={ansicht.recordId}
-            current={ansicht.videoUrl}
-          />
-        )}
+        ) : null}
 
-        {ansicht.quelleUrl ? (
-          <section className="rounded-2xl bg-navy-50 p-5">
+        {lager.quelle_url ? (
+          <section className="rounded-[1.75rem] border border-ink/10 bg-white p-6">
             <p className="text-xs font-bold uppercase tracking-wider text-muted">
               Historische Quelle
             </p>
             <a
-              href={ansicht.quelleUrl}
+              href={lager.quelle_url}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:underline"
@@ -400,8 +338,8 @@ export default async function LagerPage({
         ) : null}
 
         {links.length > 0 ? (
-          <section>
-            <h2 className="mb-4 font-display text-lg uppercase text-ink">Nützliche Links</h2>
+          <section className="rounded-[1.75rem] border border-ink/10 bg-white p-6">
+            <h2 className="camp-display mb-4 text-2xl text-ink">Nützliche Links</h2>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {links.map((link) => (
                 <a
@@ -415,15 +353,6 @@ export default async function LagerPage({
                 </a>
               ))}
             </div>
-            {lager ? (
-              <div className="mt-3">
-                <EditableLinks />
-              </div>
-            ) : null}
-          </section>
-        ) : lager ? (
-          <section>
-            <EditableLinks />
           </section>
         ) : null}
 
@@ -448,7 +377,7 @@ function DocumentRow({ doc }: { doc: DokumentRecord }) {
     <li>
       <a
         href={href}
-        className="flex items-center justify-between gap-4 p-4 transition hover:bg-ink/[0.02] sm:p-5"
+        className="flex items-center justify-between gap-4 p-4 transition hover:bg-accent/[0.04] sm:p-5"
       >
         <span className="flex min-w-0 items-center gap-3">
           {doc.sensibel ? (

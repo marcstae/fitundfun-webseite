@@ -190,15 +190,20 @@ export function SiteHeader({ aktuellesJahr }: SiteHeaderProps) {
                 Sponsoren
               </Link>
               {isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    logout();
-                  }}
-                  className="hover:text-white"
-                >
-                  Abmelden
-                </button>
+                <>
+                  <Link href="/admin" onClick={() => setOpen(false)} className="hover:text-white">
+                    Admin-Cockpit
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      logout();
+                    }}
+                    className="hover:text-white"
+                  >
+                    Abmelden
+                  </button>
+                </>
               ) : (
                 <Link
                   href={`/login?redirect=${encodeURIComponent(pathname)}`}

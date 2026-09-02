@@ -5,11 +5,10 @@ import {
   Play,
   UsersRound,
 } from "lucide-react";
-import { getArchiv, getLager } from "@/lib/data";
+import { getLager } from "@/lib/data";
 import { formatDateRange } from "@/lib/utils";
-import { NeuesLagerButton } from "@/components/edit/neues-lager-wizard";
-import { ArchivManager } from "@/components/edit/archiv-manager";
-import type { ArchivRecord, LagerRecord } from "@/lib/pb-types";
+import { richTextToPlainText } from "@/lib/sanitize";
+import type { LagerRecord } from "@/lib/pb-types";
 
 export const revalidate = 300;
 
@@ -19,17 +18,17 @@ export const metadata = {
 };
 
 export default async function ArchivPage() {
-  const [lager, archiv] = await Promise.all([getLager(), getArchiv()]);
-  const aktuelleLager = [...lager].sort((a, b) => b.jahr - a.jahr);
-  const vergangeneLager = [...archiv].sort((a, b) => b.jahr - a.jahr);
+  const lager = await getLager();
+  const aktuelleLager = lager.filter((eintrag) => eintrag.status === "veroeffentlicht");
+  const vergangeneLager = lager.filter((eintrag) => eintrag.status === "archiviert");
   const erstesJahr = vergangeneLager.at(-1)?.jahr || aktuelleLager.at(-1)?.jahr;
   const letztesJahr = aktuelleLager[0]?.jahr || vergangeneLager[0]?.jahr;
 
   return (
-    <main className="bg-[#f5efe2]">
+    <main className="bg-sand">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <header className="max-w-3xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#e85f35]">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
             {erstesJahr && letztesJahr ? `${erstesJahr} – ${letztesJahr}` : "Archiv"}
           </p>
           <h1 className="camp-display mt-4 text-4xl leading-none text-ink sm:text-6xl">
@@ -45,7 +44,6 @@ export default async function ArchivPage() {
           <section className="mt-12 sm:mt-16">
             <div className="mb-5 flex items-end justify-between gap-4">
               <h2 className="font-display text-xl uppercase text-ink">Aktuelles Lager</h2>
-              <NeuesLagerButton />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {aktuelleLager.map((eintrag) => (
@@ -72,15 +70,12 @@ export default async function ArchivPage() {
                 <ArchivedCampCard key={eintrag.id} lager={eintrag} />
               ))}
             </div>
-            <div className="mt-6">
-              <ArchivManager existing={vergangeneLager} />
-            </div>
           </section>
         ) : null}
 
         {aktuelleLager.length === 0 && vergangeneLager.length === 0 ? (
           <p className="mt-12 text-sm text-muted">
-            Noch keine Lager erfasst. Im Bearbeitungsmodus kannst du ein Lager anlegen.
+            Noch keine Lager veröffentlicht.
           </p>
         ) : null}
       </div>
@@ -96,11 +91,11 @@ function CurrentCampCard({ lager }: { lager: LagerRecord }) {
     >
       <div className="flex items-start justify-between gap-4">
         <span className="camp-display text-5xl leading-none">{lager.jahr}</span>
-        <ArrowUpRight className="size-5 text-[#ff8a61] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        <ArrowUpRight className="size-5 text-accent-light transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </div>
       <div>
         <span className="inline-flex items-center gap-2 text-sm font-semibold text-white/75">
-          <CalendarDays className="size-4 text-[#ff8a61]" />
+          <CalendarDays className="size-4 text-accent-light" />
           {formatDateRange(lager.datum_von, lager.datum_bis)}
         </span>
         <p className="mt-3 text-sm leading-relaxed text-white/60">
@@ -111,7 +106,7 @@ function CurrentCampCard({ lager }: { lager: LagerRecord }) {
   );
 }
 
-function ArchivedCampCard({ lager }: { lager: ArchivRecord }) {
+function ArchivedCampCard({ lager }: { lager: LagerRecord }) {
   const zeitraum =
     lager.datum_von && lager.datum_bis
       ? formatDateRange(lager.datum_von, lager.datum_bis)
@@ -124,7 +119,7 @@ function ArchivedCampCard({ lager }: { lager: ArchivRecord }) {
     >
       <div className="flex items-start justify-between gap-4">
         <span className="camp-display text-4xl leading-none text-ink">{lager.jahr}</span>
-        <ArrowUpRight className="size-5 text-muted transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#e85f35]" />
+        <ArrowUpRight className="size-5 text-muted transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
       </div>
 
       <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">
@@ -141,16 +136,16 @@ function ArchivedCampCard({ lager }: { lager: ArchivRecord }) {
       </div>
 
       <p className="mt-5 line-clamp-3 text-sm font-semibold leading-relaxed text-muted">
-        {lager.beschreibung || "Dokumente und Erinnerungen aus diesem Lagerjahr."}
+        {richTextToPlainText(lager.beschreibung || "") || "Dokumente und Erinnerungen aus diesem Lagerjahr."}
       </p>
 
       <div className="mt-auto flex items-center gap-3 pt-6 text-xs font-bold text-ink/60">
-        {lager.video_url ? (
+        {lager.youtube_url ? (
           <span className="inline-flex items-center gap-1.5">
             <Play className="size-3.5" /> Video
           </span>
         ) : null}
-        <span className="ml-auto text-[#e85f35]">Details</span>
+        <span className="ml-auto text-accent">Details</span>
       </div>
     </Link>
   );

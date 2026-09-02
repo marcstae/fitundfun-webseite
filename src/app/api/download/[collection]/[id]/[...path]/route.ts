@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   let pb = pbRequest();
 
   if (collection === "dokumente_intern") {
-    if (hasFamilyAccess(req.cookies.get(FAMILY_ACCESS_COOKIE)?.value)) {
+    if (await hasFamilyAccess(req.cookies.get(FAMILY_ACCESS_COOKIE)?.value)) {
       try {
         pb = await familyPocketBase();
       } catch {

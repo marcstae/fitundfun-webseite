@@ -4,11 +4,10 @@ import {
   formatDateRange,
   formatDateRangeLong,
   isValidHttpUrl,
-  lagerStatus,
-  pickAktuellesLager,
+  pickNeustesFotoalbum,
   youtubeId,
 } from "./utils.ts";
-import type { LagerRecord } from "./pb-types.ts";
+import type { FotoalbumRecord, LagerRecord } from "./pb-types.ts";
 
 test("formatDateRange: gleiches Jahr", () => {
   assert.equal(formatDateRange("2026-01-31", "2026-02-07"), "31. Jan – 7. Feb 2026");
@@ -50,57 +49,17 @@ test("isValidHttpUrl", () => {
   assert.equal(isValidHttpUrl(""), false);
 });
 
-test("lagerStatus: before/running/past", () => {
-  const future = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
-  const past = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
-  assert.equal(lagerStatus(future, "2030-01-01"), "before");
-  assert.equal(lagerStatus(past, "2030-01-01"), "running");
-  assert.equal(lagerStatus("2020-01-01", past), "past");
-});
+test("pickNeustesFotoalbum: neuestes Lager mit vorhandenem Link", () => {
+  const album2024 = { id: "album-2024", lager: "lager-2024", updated: "2026-01-01" } as FotoalbumRecord;
+  const album2025 = { id: "album-2025", lager: "lager-2025", updated: "2025-01-01" } as FotoalbumRecord;
+  const lager = [
+    { id: "lager-2026", jahr: 2026 },
+    { id: "lager-2025", jahr: 2025 },
+    { id: "lager-2024", jahr: 2024 },
+  ] as LagerRecord[];
 
-function lagerStub(jahr: number, datumBis: string): LagerRecord {
-  return {
-    id: `stub-${jahr}`,
-    jahr,
-    titel: `Lager ${jahr}`,
-    datum_von: "2020-01-31 00:00:00.000Z",
-    datum_bis: datumBis,
-    beschreibung: "",
-    youtube_url: "",
-    teilnehmer: null,
-    preise: [],
-    aktivitaeten: [],
-    created: "",
-    updated: "",
-  } as LagerRecord;
-}
-
-test("pickAktuellesLager: leere Liste", () => {
-  assert.equal(pickAktuellesLager([]), null);
-});
-
-test("pickAktuellesLager: kürzlich beendetes Lager gewinnt", () => {
-  const vorher = new Date(Date.now() - 30 * 86_400_000).toISOString();
-  const laenger = new Date(Date.now() - 100 * 86_400_000).toISOString();
-  assert.equal(
-    pickAktuellesLager([lagerStub(2025, laenger), lagerStub(2026, vorher)])?.jahr,
-    2026
-  );
-});
-
-test("pickAktuellesLager: alle älter als 60 Tage → höchstes Jahr", () => {
-  const alt = new Date(Date.now() - 200 * 86_400_000).toISOString();
-  assert.equal(
-    pickAktuellesLager([lagerStub(2024, alt), lagerStub(2025, alt)])?.jahr,
-    2025
-  );
-});
-
-test("pickAktuellesLager: unsortierte Eingabe wird sortiert", () => {
-  const vorher = new Date(Date.now() - 30 * 86_400_000).toISOString();
-  const alt = new Date(Date.now() - 200 * 86_400_000).toISOString();
-  assert.equal(
-    pickAktuellesLager([lagerStub(2026, vorher), lagerStub(2025, alt)])?.jahr,
-    2026
+  assert.deepEqual(
+    pickNeustesFotoalbum([album2024, album2025], lager),
+    { fotoalbum: album2025, jahr: 2025 }
   );
 });

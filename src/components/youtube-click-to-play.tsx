@@ -10,7 +10,7 @@ export function YoutubeClickToPlay({ id }: { id: string }) {
   const thumb = youtubeThumb(id);
   if (play) {
     return (
-      <div className="relative aspect-video overflow-hidden rounded-2xl border border-ink/10">
+      <div className="relative aspect-video overflow-hidden rounded-[1.75rem] border border-ink/10">
         <iframe
           className="size-full"
           src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}
@@ -22,7 +22,7 @@ export function YoutubeClickToPlay({ id }: { id: string }) {
     );
   }
   return (
-    <div className="relative aspect-video overflow-hidden rounded-2xl border border-ink/10">
+    <div className="relative aspect-video overflow-hidden rounded-[1.75rem] border border-ink/10">
       <button
         type="button"
         onClick={() => setPlay(true)}

@@ -10,6 +10,10 @@ services:
     environment:
       TZ: Europe/Zurich
       PB_ORIGINS: ${PB_ORIGINS}
+      # Bei bestehenden Installationen optional; eine Neuinstallation bricht
+      # ohne diese Werte mit einer klaren Migrationsmeldung ab.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       FAMILY_ACCESS_EMAIL: ${FAMILY_ACCESS_EMAIL:-familie@fitundfun.local}
       FAMILY_ACCESS_PASSWORD: ${FAMILY_ACCESS_PASSWORD:?FAMILY_ACCESS_PASSWORD ist erforderlich}
 

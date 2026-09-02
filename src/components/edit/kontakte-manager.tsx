@@ -1,24 +1,37 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEditMode } from "./edit-button";
 import { SaveDialog, useSaveAction } from "./save-dialog";
 import type { KontaktRecord } from "@/lib/pb-types";
 
 export function KontakteManager({ existing }: { existing: KontaktRecord[] }) {
-  const { canEdit, editMode } = useEditMode();
   const [items, setItems] = React.useState(existing);
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<KontaktRecord | null>(null);
-  if (!canEdit || !editMode) return null;
 
+  const move = async (index: number, delta: -1 | 1) => {
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const previous = items;
+    const next = [...items];
+    [next[index], next[target]] = [next[target], next[index]];
+    setItems(next);
+    try {
+      await Promise.all(next.map((item, sort) => pbBrowser().collection("kontakte").update(item.id, { sort: sort + 1 })));
+      await revalidatePath("/kontakt");
+      toast.success("Reihenfolge gespeichert");
+    } catch {
+      setItems(previous);
+      toast.error("Reihenfolge konnte nicht gespeichert werden.");
+    }
+  };
   const del = async (it: KontaktRecord) => {
     if (!window.confirm(`«${it.name}» löschen?`)) return;
     try {
@@ -43,13 +56,15 @@ export function KontakteManager({ existing }: { existing: KontaktRecord[] }) {
         </Button>
       </div>
       <ul className="mt-3 space-y-1.5">
-        {items.map((it) => (
+        {items.map((it, index) => (
           <li key={it.id} className="flex items-center justify-between gap-2 rounded-lg bg-ink/[0.03] px-3 py-2 text-sm">
             <span>
               <span className="font-semibold">{it.name}</span>
               <span className="ml-2 text-xs text-muted">{it.rolle}</span>
             </span>
             <span className="flex gap-1">
+              <button onClick={() => move(index, -1)} disabled={index === 0} className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.name} nach oben verschieben`}><ArrowUp className="size-4" /></button>
+              <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.name} nach unten verschieben`}><ArrowDown className="size-4" /></button>
               <button onClick={() => { setEditing(it); setOpen(true); }} className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink" aria-label="Bearbeiten">
                 <Pencil className="size-4" />
               </button>
@@ -63,7 +78,7 @@ export function KontakteManager({ existing }: { existing: KontaktRecord[] }) {
       {open && (
         <KontaktForm
           item={editing}
-          onSaved={() => setOpen(false)}
+          onSaved={() => { setOpen(false); window.location.reload(); }}
           onClose={() => setOpen(false)}
         />
       )}

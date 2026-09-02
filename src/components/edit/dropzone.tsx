@@ -73,7 +73,7 @@ export function Dropzone({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-white hover:bg-navy-600"
+        className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-white hover:bg-ink"
       >
         <UploadCloud className="size-5" />
         {label}

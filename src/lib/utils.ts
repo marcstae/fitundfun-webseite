@@ -1,19 +1,20 @@
-import type { LagerRecord } from "./pb-types";
+import type { FotoalbumRecord, LagerRecord } from "./pb-types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-/** Aktuelles Lager = höchstes Jahr dessen datum_bis <= 60 Tage zurück, sonst höchstes Jahr. */
-export function pickAktuellesLager(lager: LagerRecord[]): LagerRecord | null {
-  if (!lager.length) return null;
-  const sorted = [...lager].sort((a, b) => a.jahr - b.jahr);
-  const now = Date.now();
-  const cutoff = now - 60 * 86_400_000;
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    const l = sorted[i];
-    const bis = new Date(l.datum_bis).getTime();
-    if (bis >= cutoff) return l;
-  }
-  return sorted[sorted.length - 1];
+export function pickNeustesFotoalbum(
+  fotoalben: FotoalbumRecord[],
+  lager: LagerRecord[]
+): { fotoalbum: FotoalbumRecord; jahr: number } | null {
+  const jahre = new Map(lager.map((record) => [record.id, record.jahr] as const));
+  const jahrVon = (album: FotoalbumRecord) =>
+    jahre.get(album.lager) || 0;
+  const fotoalbum = [...fotoalben]
+    .filter((album) => jahrVon(album) > 0)
+    .sort(
+      (a, b) => jahrVon(b) - jahrVon(a) || b.updated.localeCompare(a.updated)
+    )[0];
+  return fotoalbum ? { fotoalbum, jahr: jahrVon(fotoalbum) } : null;
 }
 
 export function cn(...inputs: ClassValue[]) {
@@ -75,21 +76,6 @@ export function formatDateRangeLong(von: string | Date, bis: string | Date): str
 export function isoToDateInput(d: string | Date): string {
   const date = typeof d === "string" ? new Date(d) : d;
   return `${date.getFullYear()}-${dePad(date.getMonth() + 1)}-${dePad(date.getDate())}`;
-}
-
-
-export type LagerStatus = "before" | "running" | "past";
-
-export function lagerStatus(von: string | Date, bis: string | Date): LagerStatus {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const a = new Date(von);
-  a.setHours(0, 0, 0, 0);
-  const b = new Date(bis);
-  b.setHours(23, 59, 59, 999);
-  if (today < a) return "before";
-  if (today > b) return "past";
-  return "running";
 }
 
 

@@ -4,7 +4,6 @@ import { getAktuellesLager, getEinstellungen } from "@/lib/data";
 import { publicFileUrl } from "@/lib/pb";
 import { Button } from "@/components/ui/button";
 import { formatDateRange } from "@/lib/utils";
-import { EditableHero } from "@/components/edit/editable-hero";
 import { HeroVideo } from "@/components/hero-video";
 
 export const revalidate = 300;
@@ -16,9 +15,6 @@ export default async function HomePage() {
   ]);
 
   const heroTitel = einstellungen?.hero_titel || "fit&fun Lager Brigels";
-  const heroWillkommen =
-    einstellungen?.hero_willkommen ||
-    "Eine Woche Schnee, Sonne und Gemeinschaft — mit Familie und Freunden.";
   const heroVideoUrl = einstellungen?.hero_video
     ? publicFileUrl("einstellungen", einstellungen.id, einstellungen.hero_video)
     : "/hero.mp4";
@@ -29,7 +25,7 @@ export default async function HomePage() {
 
   return (
       <section
-        className="camp-hero relative h-dvh overflow-hidden bg-[#f5efe2] p-2 sm:p-3"
+        className="camp-hero relative h-dvh overflow-hidden bg-sand p-2 sm:p-3"
         aria-labelledby="hero-headline"
       >
         <div className="relative isolate h-full overflow-hidden rounded-[1.5rem] bg-navy-900 sm:rounded-[2rem]">
@@ -62,24 +58,11 @@ export default async function HomePage() {
                   id="hero-headline"
                   className="camp-hero-title max-w-[11ch] font-display text-[clamp(3.4rem,10vw,8.75rem)] leading-[0.8] tracking-[-0.075em] text-[#fffaf0]"
                 >
-                  <EditableHero field="hero_titel" label="Hero-Titel" value={heroTitel}>
-                    {renderHeroTitel(heroTitel)}
-                  </EditableHero>
+                  {renderHeroTitel(heroTitel)}
                 </h1>
               </div>
 
-              <div className="camp-hero-bottom order-3 mt-6 flex flex-col items-start justify-between gap-6 sm:mt-8 lg:flex-row lg:items-end xl:col-start-2 xl:mt-0 xl:min-w-0 xl:row-start-2">
-                <p className="camp-hero-copy max-w-xl text-balance text-base font-semibold leading-relaxed text-white/90 sm:text-lg">
-                  <EditableHero
-                    field="hero_willkommen"
-                    label="Willkommenstext"
-                    value={heroWillkommen}
-                    multiline
-                  >
-                    {heroWillkommen}
-                  </EditableHero>
-                </p>
-
+              <div className="camp-hero-bottom order-3 mt-6 flex justify-end sm:mt-8 xl:col-start-2 xl:mt-0 xl:min-w-0 xl:row-start-2">
                 <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                   <Button
                     asChild
@@ -97,10 +80,10 @@ export default async function HomePage() {
                     variant="white"
                     className="w-full rounded-full border border-white/35 bg-white/90 px-7 hover:bg-white sm:w-auto"
                   >
-                    <Link href="/lager">
+                    <a href="/fotos" target="_blank" rel="noopener noreferrer">
                       <Images />
-                      Frühere Lager
-                    </Link>
+                      Fotos &amp; Videos
+                    </a>
                   </Button>
                 </div>
               </div>
@@ -145,4 +128,3 @@ function renderHeroLine(line: string) {
     </>
   );
 }
-

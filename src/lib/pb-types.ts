@@ -13,6 +13,11 @@ export interface PreisEintrag {
   preis: string;
 }
 
+export type LagerPublikationsstatus =
+  | "entwurf"
+  | "veroeffentlicht"
+  | "archiviert";
+
 export interface LagerRecord {
   id: string;
   jahr: number;
@@ -24,6 +29,8 @@ export interface LagerRecord {
   teilnehmer: number | null;
   preise: PreisEintrag[] | null;
   aktivitaeten: string[] | null;
+  status: LagerPublikationsstatus;
+  quelle_url: string;
   created: string;
   updated: string;
 }
@@ -33,7 +40,6 @@ export interface DokumentRecord {
   name: string;
   datei: string;
   lager: string;
-  archiv: string;
   sensibel: boolean;
   sort: number;
   collection: "dokumente" | "dokumente_intern";
@@ -44,7 +50,6 @@ export interface DokumentRecord {
 export interface FotoalbumRecord {
   id: string;
   lager: string;
-  archiv: string;
   url: string;
   created: string;
   updated: string;
@@ -56,21 +61,6 @@ export interface SeiteRecord {
   titel: string;
   inhalt: string;
   bilder: string[];
-  created: string;
-  updated: string;
-}
-
-export interface ArchivRecord {
-  id: string;
-  jahr: number;
-  video_url: string;
-  beschreibung: string | null;
-  datum_von: string | null;
-  datum_bis: string | null;
-  teilnehmer: number | null;
-  preise: PreisEintrag[] | null;
-  aktivitaeten: string[] | null;
-  quelle_url: string | null;
   created: string;
   updated: string;
 }
@@ -113,16 +103,24 @@ export interface EinstellungenRecord {
   updated: string;
 }
 
+export interface FamilienzugangRecord {
+  id: string;
+  password_hash: string;
+  cookie_version: number;
+  created: string;
+  updated: string;
+}
+
 export interface CollectionSchema {
   lager: LagerRecord;
   dokumente: DokumentRecord;
   dokumente_intern: DokumentRecord;
   fotoalben: FotoalbumRecord;
   seiten: SeiteRecord;
-  archiv: ArchivRecord;
   sponsoren: SponsorRecord;
   links: LinkRecord;
   kontakte: KontaktRecord;
   einstellungen: EinstellungenRecord;
+  familienzugang: FamilienzugangRecord;
   users: UserRecord;
 }

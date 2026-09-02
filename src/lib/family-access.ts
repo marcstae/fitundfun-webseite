@@ -1,6 +1,8 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 import type PocketBase from "pocketbase";
 import { pbRequest } from "./pb.ts";
+import type { FamilienzugangRecord } from "./pb-types.ts";
 
 export const FAMILY_ACCESS_COOKIE = "fitundfun_family_access";
 // ponytail: 400 Tage = Chromium/Safari Cookie-Obergrenze; für 18 Monate wäre ein Refresh nötig.
@@ -20,18 +22,60 @@ function safeEqual(left: string, right: string): boolean {
   return timingSafeEqual(leftHash, rightHash);
 }
 
-export function isFamilyPassword(value: string): boolean {
-  return !!familyPassword && safeEqual(value, familyPassword);
+const scryptAsync = promisify(scrypt);
+
+export async function hashFamilyPassword(value: string): Promise<string> {
+  const salt = randomBytes(16);
+  const hash = (await scryptAsync(value, salt, 64)) as Buffer;
+  return `scrypt:${salt.toString("base64url")}:${hash.toString("base64url")}`;
 }
 
-export function familyAccessCookieValue(): string {
-  return createHmac("sha256", familyPassword)
-    .update("fitundfun-family-access-v1")
+export async function verifyFamilyPasswordHash(value: string, encoded: string): Promise<boolean> {
+  const [algorithm, saltValue, hashValue] = encoded.split(":");
+  if (algorithm !== "scrypt" || !saltValue || !hashValue) return false;
+  try {
+    const expected = Buffer.from(hashValue, "base64url");
+    const actual = (await scryptAsync(value, Buffer.from(saltValue, "base64url"), expected.length)) as Buffer;
+    return expected.length === actual.length && timingSafeEqual(expected, actual);
+  } catch {
+    return false;
+  }
+}
+
+async function familyConfig(): Promise<FamilienzugangRecord> {
+  const pb = await familyPocketBase();
+  const result = await pb.collection("familienzugang").getList<FamilienzugangRecord>(1, 1);
+  if (!result.items[0]) throw new Error("Familienzugang ist nicht eingerichtet");
+  return result.items[0];
+}
+
+export async function isFamilyPassword(value: string): Promise<boolean> {
+  if (!value || !familyPassword) return false;
+  try {
+    const config = await familyConfig();
+    return config.password_hash
+      ? verifyFamilyPasswordHash(value, config.password_hash)
+      : safeEqual(value, familyPassword);
+  } catch {
+    return false;
+  }
+}
+
+export async function familyAccessCookieValue(): Promise<string> {
+  const version = (await familyConfig()).cookie_version;
+  const signature = createHmac("sha256", familyPassword)
+    .update(`fitundfun-family-access-v2:${version}`)
     .digest("base64url");
+  return `${version}.${signature}`;
 }
 
-export function hasFamilyAccess(value?: string): boolean {
-  return !!familyPassword && !!value && safeEqual(value, familyAccessCookieValue());
+export async function hasFamilyAccess(value?: string): Promise<boolean> {
+  if (!familyPassword || !value) return false;
+  try {
+    return safeEqual(value, await familyAccessCookieValue());
+  } catch {
+    return false;
+  }
 }
 
 export async function familyPocketBase(): Promise<PocketBase> {

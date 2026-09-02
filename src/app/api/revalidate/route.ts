@@ -5,6 +5,7 @@ import { pbRequest, REVALIDATE_SECRET } from "@/lib/pb";
 /** On-Demand-Revalidation nach jedem Save. Geschützt: gültige PB-Session nötig. */
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization") || "";
+  const body = await req.json().catch(() => ({}));
 
   // Request-scoped Client — niemals den geteilten Server-AuthStore mutieren.
   const pb = pbRequest();
@@ -14,19 +15,20 @@ export async function POST(req: Request) {
       pb.authStore.save(token);
       await pb.collection("users").authRefresh();
     }
-    if (!pb.authStore.isValid || !pb.authStore.model) {
-      const body = await req.json().catch(() => ({}));
-      if (body?.secret && REVALIDATE_SECRET && body.secret === REVALIDATE_SECRET) {
-        // Server-to-Server Fallback
-      } else {
-        return NextResponse.json({ error: "nicht autorisiert" }, { status: 401 });
-      }
+    const model = pb.authStore.model as Record<string, unknown> | null;
+    const editor =
+      pb.authStore.isValid &&
+      model?.rolle === "editor" &&
+      model.muss_passwort_aendern !== true;
+    const server = body?.secret && REVALIDATE_SECRET && body.secret === REVALIDATE_SECRET;
+    if (!editor && !server) {
+      return NextResponse.json({ error: "nicht autorisiert" }, { status: 401 });
     }
   } catch {
     return NextResponse.json({ error: "session ungültig" }, { status: 401 });
   }
 
-  const { path } = await req.json().catch(() => ({ path: "/" }));
+  const { path } = body;
   if (typeof path === "string" && path.startsWith("/")) {
     revalidatePath(path);
     if (path === "/" || path.startsWith("/lager")) revalidatePath("/lager");

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, FileText, Images } from "lucide-react";
+import { ArrowRight, CalendarDays, Images } from "lucide-react";
 import { getAktuellesLager, getEinstellungen } from "@/lib/data";
 import { publicFileUrl } from "@/lib/pb";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default async function HomePage() {
   const heroPosterUrl = einstellungen?.hero_poster
     ? publicFileUrl("einstellungen", einstellungen.id, einstellungen.hero_poster)
     : "/hero-poster.jpg";
-  const dokumenteHref = lager ? `/lager/${lager.jahr}#dokumente` : "/lager";
+  const lagerHref = lager ? `/lager/${lager.jahr}` : "/lager";
 
   return (
       <section
@@ -67,9 +67,9 @@ export default async function HomePage() {
                     size="lg"
                     className="w-full rounded-full bg-accent-light px-7 text-ink shadow-[0_12px_35px_rgba(255,90,54,0.35)] hover:bg-white sm:w-auto"
                   >
-                    <Link href={dokumenteHref}>
-                      <FileText />
-                      {lager ? "Dokumente" : "Alle Lager"}
+                    <Link href={lagerHref}>
+                      {lager ? `Lager ${lager.jahr}` : "Alle Lager"}
+                      <ArrowRight />
                     </Link>
                   </Button>
                   <Button

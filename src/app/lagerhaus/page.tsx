@@ -1,15 +1,12 @@
 import {
   ArrowUpRight,
   BedDouble,
-  CookingPot,
   Gamepad2,
   Globe,
   MapPin,
-  Mountain,
-  Music,
-  Snowflake,
-  Sun,
-  Users,
+  Footprints,
+  Moon,
+  Car,
   UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
@@ -21,70 +18,42 @@ import { LAGERHAUS_ADRESSE as ADRESSE, LAGERHAUS_MAPS_URL as MAPS_URL } from "@/
 export const revalidate = 300;
 export const metadata = {
   title: "Lagerhaus",
-  description: "Ferienheim Albin in Brigels: Lage, Räume und Winterangebote rund ums Lagerhaus.",
+  description: "Ferienheim Albin in Brigels: Bettzeug, Verpflegung, Anreise und praktische Infos für unser Familienlager.",
 };
 
 const HAUS_URL = "https://www.ferienheim-albin.ch/";
 
 // Standardtext, solange die Lagerleitung im Cockpit keinen eigenen Text hinterlegt hat.
 const EINLEITUNG =
-  "<p>Das Ferienheim Albin liegt im alten Dorfkern von Brigels, ruhig auf einer Sonnenterrasse mit Blick auf die Bündner Berge. Hier schlafen, kochen, essen und verbringen wir die Abende gemeinsam. Skifahren, Schlitteln und Winterwandern beginnen direkt vor der Haustür: Die Talstation der Bergbahnen ist in 5 Minuten erreichbar.</p>";
+  "<p>Das Ferienheim Albin in Brigels ist unser Zuhause während der Lagerwoche. Hier essen wir gemeinsam und verbringen die Abende mit Spielen und Lagerprogramm.</p>";
 
-const FAKTEN: [string, string][] = [
-  ["bis 80", "Personen im Haus"],
-  ["5 Min.", "bis zur Talstation"],
-  ["40 km", "Piste, 5 Anlagen"],
-  ["80 m²", "Aula für den Abend"],
+const FAKTEN: { icon: LucideIcon; titel: string; text: string }[] = [
+  { icon: BedDouble, titel: "Bettzeug vorhanden", text: "Kein Bettanzug oder Schlafsack nötig" },
+  { icon: Footprints, titel: "Hausschuhe mitnehmen", text: "Im Haus Pflicht; Turnschuhe sind auch okay" },
+  { icon: UtensilsCrossed, titel: "3 Mahlzeiten", text: "In der Lagerpauschale inbegriffen" },
+  { icon: Moon, titel: "Ab 22 Uhr", text: "Nachtruhe, ausser im Aufenthaltsraum und Keller" },
 ];
 
-const IM_HAUS: { icon: LucideIcon; titel: string; text: string }[] = [
+const LAGERINFOS: { icon: LucideIcon; titel: string; text: string }[] = [
   {
-    icon: BedDouble,
-    titel: "Schlafen",
-    text: "Vierer- und Sechserzimmer auf mehreren Stockwerken, in jedem Zimmer ein Lavabo. Duschen und WC auf jedem Stock.",
+    icon: Car,
+    titel: "Ankommen & parkieren",
+    text: "Individuelle Anreise am Samstag, Hausbezug ab 16 Uhr. Zum Ausladen kurz vor dem Haus halten, danach auf dem Gemeindeparkplatz beim Restaurant Tödi parkieren.",
   },
   {
     icon: UtensilsCrossed,
-    titel: "Speisesaal",
-    text: "Tische und Stühle für 80 Personen, grosse Garderobe und WLAN.",
+    titel: "Lunch für die Piste",
+    text: "Am Vorabend bei der Küche anmelden und einen Tagesrucksack mitbringen. Tee steht immer bereit, die Kaffeemaschine ist gratis nutzbar.",
   },
   {
-    icon: CookingPot,
-    titel: "Grossküche",
-    text: "Professionell ausgestattet, mit Kombisteamer, Gastro-Geschirrspüler und grossem Kühlraum.",
-  },
-  {
-    icon: Music,
-    titel: "Aula",
-    text: "80 m² für Musik, Tanz, Spiele, Film und Präsentationen – ideal für den Abend.",
+    icon: BedDouble,
+    titel: "Zusammen im Haus",
+    text: "Essen und Trinken gehören in die Gemeinschaftsräume. Im ganzen Haus und auf den Balkonen gilt Rauchverbot. Zimmerwechsel bitte mit der Lagerleitung absprechen.",
   },
   {
     icon: Gamepad2,
-    titel: "Spielzimmer",
-    text: "60 m² mit zwei Tischfussballtischen und Tischtennis.",
-  },
-  {
-    icon: Sun,
-    titel: "Draussen",
-    text: "Grosse Terrasse, Volleyballfeld, Fussballplatz und Tischtennis.",
-  },
-];
-
-const IM_WINTER: { icon: LucideIcon; titel: string; text: string }[] = [
-  {
-    icon: Mountain,
-    titel: "Bergbahnen Brigels",
-    text: "Die Talstation ist in 5 Minuten erreichbar. Das Skigebiet hat 5 Anlagen und 40 km Piste.",
-  },
-  {
-    icon: Snowflake,
-    titel: "Talabfahrt bis zum Haus",
-    text: "Die beschneite Talabfahrt führt direkt zurück zum Ferienheim.",
-  },
-  {
-    icon: Users,
-    titel: "Auch ohne Lift",
-    text: "Skitouren und Winterwanderungen sind direkt ab Haus möglich. Für Kinder unter vier Jahren gibt es einen Skikindergarten in der Scoletta.",
+    titel: "Für die Lagerabende",
+    text: "Spiele, Bücher oder ein Musikinstrument sind willkommen. Für Tischtennis eigene Schläger und Bälle mitbringen; Beamer und Soundanlage sind vorhanden.",
   },
 ];
 
@@ -158,19 +127,19 @@ export default async function LagerhausPage() {
         />
 
         <ul aria-label="Kurzfakten" className="grid grid-cols-2 gap-2.5">
-          {FAKTEN.map(([zahl, text]) => (
-            <li key={text} className="rounded-2xl bg-ink px-4 py-4 text-white">
-              <span className="camp-display block text-3xl leading-none text-accent-light">{zahl}</span>
-              <span className="mt-1.5 block text-sm font-semibold text-white/80">{text}</span>
+          {FAKTEN.map(({ icon: Icon, titel, text }) => (
+            <li key={titel} className="rounded-2xl bg-ink px-4 py-4 text-white">
+              <Icon className="mb-2 size-6 text-accent-light" aria-hidden />
+              <span className="block font-bold leading-snug text-accent-light">{titel}</span>
+              <span className="mt-1.5 block text-sm text-white/80">{text}</span>
             </li>
           ))}
         </ul>
 
-        <Abschnitt titel="Im Haus" eintraege={IM_HAUS} />
-        <Abschnitt titel="Im Winter ums Haus" eintraege={IM_WINTER} />
+        <Abschnitt titel="Gut zu wissen fürs Lager" eintraege={LAGERINFOS} />
 
         <p className="px-1 text-xs text-muted">
-          Angaben laut Website des Ferienheims. Weitere Informationen zum Haus gibt es dort.
+          Stand: Lagerunterlagen 2026. Für künftige Lager gelten die jeweiligen aktuellen Lagerinfos.
         </p>
 
       </div>

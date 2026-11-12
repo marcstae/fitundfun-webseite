@@ -18,7 +18,9 @@ export type UnlockAction = (state: UnlockState, formData: FormData) => Promise<U
  * Gesperrt: Antippen fragt nach dem Lagerpasswort; ist es richtig, öffnet sich das Ziel
  * sofort. Der neue Tab wird schon beim Absenden geöffnet (sonst blockieren Handy-Browser
  * ihn nach der Prüfung) und erst danach zum Ziel geleitet; bei falschem Passwort schliesst
- * er sich wieder. Diese Komponente bleibt beim Neuladen nach dem Freischalten bestehen.
+ * er sich wieder. Wer direkt zur Passwortabfrage geschickt wurde (autoOpen: Startseite, Menü,
+ * E-Mail-Link), bekommt das Ziel im gleichen Tab, ohne zusätzlichen Tab.
+ * Diese Komponente bleibt beim Neuladen nach dem Freischalten bestehen.
  */
 export function FamilyUnlock({
   action,
@@ -44,6 +46,7 @@ export function FamilyUnlock({
   const geoeffnet = React.useRef(false);
 
   const tabVorbereiten = () => {
+    if (autoOpen) return;
     const tab = window.open("", "_blank");
     if (tab) tab.opener = null;
     tabRef.current = tab;
@@ -59,7 +62,7 @@ export function FamilyUnlock({
     if (!state.ok || !href || geoeffnet.current) return;
     geoeffnet.current = true;
     if (tabRef.current) tabRef.current.location.href = href;
-    else window.location.href = href; // Tab blockiert: im gleichen Fenster öffnen
+    else window.location.href = href; // autoOpen oder Tab blockiert: im gleichen Fenster
     tabRef.current = null;
     setOpen(false);
   }, [state, href]);

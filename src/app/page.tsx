@@ -79,7 +79,7 @@ export default async function HomePage() {
                     className="w-full rounded-full border border-white/35 bg-white/90 px-7 hover:bg-white sm:w-auto"
                   >
                     {/* /fotos leitet serverseitig zum Album oder zur Passwortabfrage weiter. */}
-                    <a href="/fotos">
+                    <a href="/fotos" target="_blank" rel="noopener noreferrer">
                       <Images />
                       Fotos &amp; Videos
                     </a>

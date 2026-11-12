@@ -61,6 +61,14 @@ export function SiteHeader({
     setOpen(false);
   }, [pathname]);
 
+  // Statusleiste der Handy-Browser (liegt ausserhalb der Seite) bei offenem Menü abdunkeln.
+  React.useEffect(() => {
+    if (!open) return;
+    const meta = Object.assign(document.createElement("meta"), { name: "theme-color", content: "#0b1726" });
+    document.head.append(meta);
+    return () => meta.remove();
+  }, [open]);
+
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <header
@@ -119,7 +127,7 @@ export function SiteHeader({
       </header>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-navy-950/85 transition-opacity duration-200 starting:opacity-0" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-navy-950/92 transition-opacity duration-200 starting:opacity-0" />
         <Dialog.Content
           aria-describedby={undefined}
           // Ein Handler für alle Links: schliesst auch bei Hash-Links und der aktuellen Seite.

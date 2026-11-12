@@ -11,7 +11,6 @@ import {
   FileText,
   History,
   House,
-  Images,
   Mail,
   Menu,
   X,
@@ -19,11 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers";
 
-// Reihenfolge: Fotos, Lagerhaus, frühere Lager, Kontakt.
 const NAV = [
-  { href: "/fotos", label: "Fotos & Videos", hint: "Fotoalbum · mit Lagerpasswort", Icon: Images },
+  { href: "/lager", label: "Alle Lagerjahre", hint: "Alle Lager seit 2007", Icon: History },
   { href: "/lagerhaus", label: "Lagerhaus", hint: "Unterkunft & Lage in Brigels", Icon: House },
-  { href: "/lager", label: "Frühere Lager", hint: "Alle Lager seit 2007", Icon: History },
   { href: "/kontakt", label: "Kontakt", hint: "Fragen an die Lagerleitung", Icon: Mail },
 ];
 
@@ -209,26 +206,13 @@ export function SiteHeader({
                 );
                 return (
                   <li key={href}>
-                    {href === "/fotos" ? (
-                      // /fotos leitet serverseitig aufs externe Album (oder zur Passwortabfrage) um: neuer Tab.
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setOpen(false)}
-                        className={ROW}
-                      >
-                        {inner}
-                      </a>
-                    ) : (
-                      <Link
-                        href={href}
-                        aria-current={isActive(href) ? "page" : undefined}
-                        className={ROW}
-                      >
-                        {inner}
-                      </Link>
-                    )}
+                    <Link
+                      href={href}
+                      aria-current={isActive(href) ? "page" : undefined}
+                      className={ROW}
+                    >
+                      {inner}
+                    </Link>
                   </li>
                 );
               })}

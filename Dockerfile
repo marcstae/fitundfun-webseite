@@ -10,6 +10,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_PB_URL
 ENV NEXT_PUBLIC_PB_URL=$NEXT_PUBLIC_PB_URL
+# Für absolute URLs in vorgerenderten Seiten (z. B. Link-Vorschaubild für WhatsApp).
+ARG SITE_URL
+ENV SITE_URL=$SITE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

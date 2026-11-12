@@ -147,13 +147,6 @@ export default async function LagerPage({
 
   const hatGeschuetzte = dokumente.some((d) => d.sensibel);
   const hinweis = countdown(lager);
-  const sprungziele = [
-    ["dokumente", "Dokumente"],
-    beschreibung || aktivitaeten.length ? ["infos", "Infos"] : null,
-    zeigeFotos || validVideoUrl ? ["fotos", "Fotos & Video"] : null,
-    links.length || altLink ? ["links", "Links"] : null,
-  ].filter((x): x is [string, string] => !!x);
-
   return (
     <article className="bg-sand pb-10">
       {lager.status === "entwurf" ? (
@@ -199,27 +192,6 @@ export default async function LagerPage({
           </div>
         </header>
       </div>
-
-      {/* Sprungleiste: bleibt beim Scrollen unter der Kopfzeile stehen. */}
-      {sprungziele.length > 1 ? (
-        <nav
-          aria-label="Abschnitte"
-          className="sticky top-16 z-30 bg-sand/90 backdrop-blur-md"
-        >
-          <ul className="mx-auto flex max-w-2xl gap-2 overflow-x-auto px-3 py-2.5 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden">
-            {sprungziele.map(([id, label]) => (
-              <li key={id} className="shrink-0">
-                <a
-                  href={`#${id}`}
-                  className="inline-flex h-10 items-center rounded-full border border-ink/10 bg-white px-4 text-sm font-bold text-ink transition hover:border-ink/25 active:bg-ink active:text-white"
-                >
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      ) : null}
 
       <div className="mx-auto max-w-2xl space-y-8 px-3 pt-3 sm:space-y-10 sm:px-6">
         <section id="dokumente" aria-labelledby="dokumente-titel" className={ANKER}>
@@ -392,8 +364,8 @@ function hostname(url: string) {
   }
 }
 
-// Sprungziele landen unter Kopfzeile (4rem) und Sprungleiste (3.75rem).
-const ANKER = "scroll-mt-32";
+// Sprungziele (z. B. #dokumente) landen unter der Kopfzeile (4rem).
+const ANKER = "scroll-mt-20";
 const H2 = "camp-display mb-3 px-1 text-2xl text-ink";
 const LINK_KARTE =
   "flex min-h-16 w-full items-center gap-3 rounded-2xl bg-white px-4 py-3 text-ink transition hover:bg-white/70 active:bg-ink/5";

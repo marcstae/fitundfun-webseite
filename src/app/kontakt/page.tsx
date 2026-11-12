@@ -12,11 +12,13 @@ export const metadata = { title: "Kontakt" };
 type Sichtbar = ReturnType<typeof sichtbarerKontakt>;
 
 export default async function KontaktPage() {
-  const [kontakte, gruppen, seite, cookieStore] = await Promise.all([
+  // Cookies zuerst: macht die Seite dynamisch, bevor Kontakte gelesen werden (sonst liefe die
+  // Abfrage beim Build an, wo es weder PocketBase noch das Familien-Secret gibt).
+  const cookieStore = await cookies();
+  const [kontakte, gruppen, seite] = await Promise.all([
     getKontakte(),
     getKontaktgruppen(),
     getSeite("kontakt").catch(() => null),
-    cookies(),
   ]);
   const zugang = await hasFamilyAccess(cookieStore.get(FAMILY_ACCESS_COOKIE)?.value);
   // Titel, Einleitung, Gruppen und Personen sind im Cockpit unter «Inhaltsseiten» bearbeitbar.

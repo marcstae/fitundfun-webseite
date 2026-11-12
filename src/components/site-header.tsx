@@ -28,7 +28,7 @@ const NAV = [
 ];
 
 const ROW =
-  "-mx-3 flex min-h-[3.75rem] items-center gap-3.5 rounded-r-xl px-3 py-2 text-ink hover:bg-sand active:bg-sand aria-[current=page]:text-accent aria-[current=page]:shadow-[inset_4px_0_0_var(--color-accent)]";
+  "-mx-3 flex min-h-[3.75rem] items-center gap-3.5 rounded-r-xl px-3 py-2 text-ink hover:bg-sand active:bg-sand aria-[current=page]:bg-sand aria-[current=page]:shadow-[inset_3px_0_0_var(--color-ink)]";
 const META =
   "flex min-h-12 items-center rounded-xl px-2 text-sm font-semibold text-muted hover:bg-sand hover:text-ink active:bg-sand aria-[current=page]:text-ink aria-[current=page]:underline aria-[current=page]:underline-offset-4";
 const ON_NAVY_FOCUS =
@@ -190,7 +190,7 @@ export function SiteHeader({
               {NAV.map(({ href, label, hint, Icon }) => {
                 const inner = (
                   <>
-                    <Icon aria-hidden className="size-6 shrink-0 text-accent" />
+                    <Icon aria-hidden className="size-6 shrink-0 text-ink/55" />
                     <span className="min-w-0 flex-1">
                       <span className="block text-base font-bold leading-snug">{label}</span>
                       <span className="block text-sm leading-snug text-muted">{hint}</span>

@@ -8,10 +8,11 @@
   --color-navy-600: #2a4bd0;
   --color-navy-700: #1c3854;
   --color-navy-800: #122741;
-  /* Farbkonzept «Alpenglühen»: Schneeweiss, Nachtblau, Abendrot – abgeleitet aus dem Startbild. */
+  /* Farbkonzept: Schneeweiss und Nachtblau; Eisblau (accent) auf hellem Grund,
+     Signalorange (accent-light) nur auf dunklen Flächen. */
   --color-navy-900: #0f1e33;
   --color-navy-950: #0b1726;
-  --color-accent: #c13f26;
+  --color-accent: #2563eb;
   --color-accent-light: #ff5a36;
   --color-ink: #0f1e33;
   --color-muted: #55617a;

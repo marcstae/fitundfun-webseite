@@ -69,7 +69,7 @@ export default async function HomePage() {
                   >
                     <Link href={dokumenteHref}>
                       <FileText />
-                      {lager ? "Anmeldung & Dokumente" : "Alle Lager"}
+                      {lager ? "Dokumente" : "Alle Lager"}
                     </Link>
                   </Button>
                   <Button

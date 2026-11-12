@@ -181,7 +181,7 @@ export function SiteHeader({
                   )}
                 >
                   <FileText aria-hidden className="size-5" />
-                  Anmeldung &amp; Dokumente
+                  Dokumente
                 </Link>
               </div>
             ) : null}

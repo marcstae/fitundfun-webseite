@@ -322,7 +322,8 @@ function statusLabel(lager: LagerRecord) {
 function countdown(lager: LagerRecord) {
   if (lager.status === "archiviert" || !lager.datum_von || !lager.datum_bis) return "";
   const bisStart = tageBis(lager.datum_von);
-  if (bisStart > 1) return `Noch ${bisStart} Tage`;
+  // Kalendertage bis zum Start = Nächte bis zum Start.
+  if (bisStart > 1) return `Noch ${bisStart}-mal schlafen`;
   if (bisStart === 1) return "Morgen geht's los";
   if (tageBis(lager.datum_bis) >= 0) return "Das Lager läuft";
   return "";

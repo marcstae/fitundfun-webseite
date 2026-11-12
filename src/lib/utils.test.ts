@@ -9,6 +9,7 @@ import {
   isoToDateInput,
   isValidHttpUrl,
   pickNeustesFotoalbum,
+  fokusLager,
   tageBis,
   youtubeId,
 } from "./utils.ts";
@@ -92,6 +93,20 @@ test("pickNeustesFotoalbum: neuestes Lager mit vorhandenem Link", () => {
     pickNeustesFotoalbum([album2024, album2025], lager),
     { fotoalbum: album2025, jahr: 2025 }
   );
+});
+
+test("fokusLager: aktives Lager und nächster anstehender Entwurf", () => {
+  const lager = (jahr: number, status: LagerRecord["status"]) => ({ id: `${status}-${jahr}`, jahr, status }) as LagerRecord;
+  const fokus = fokusLager(
+    [lager(2028, "entwurf"), lager(2026, "veroeffentlicht"), lager(2024, "archiviert"), lager(2027, "entwurf"), lager(2023, "entwurf")],
+    2026
+  );
+  assert.equal(fokus.aktiv?.jahr, 2026);
+  assert.equal(fokus.entwurf?.jahr, 2027);
+  assert.deepEqual(fokus.weitereEntwuerfe.map((l) => l.jahr), [2028, 2023]);
+  // Nur alte Entwürfe: der neueste; ohne Lager: nichts im Fokus.
+  assert.equal(fokusLager([lager(2023, "entwurf"), lager(2024, "entwurf")], 2026).entwurf?.jahr, 2024);
+  assert.deepEqual(fokusLager([], 2026), { aktiv: null, entwurf: null, weitereEntwuerfe: [] });
 });
 
 test("formatDateRangeWithDays: Wochentage für Samstag-Lager", () => {

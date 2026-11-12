@@ -17,6 +17,22 @@ export function pickNeustesFotoalbum(
   return fotoalbum ? { fotoalbum, jahr: jahrVon(fotoalbum) } : null;
 }
 
+/**
+ * Admin-Übersicht: welches Lager im Entwurf und welches aktive Lager im Fokus steht.
+ * Aktiv: das veröffentlichte Lager (die DB erlaubt nur eines, siehe Migration 14).
+ * Entwurf: von mehreren der nächste anstehende (frühestes Jahr ab heute), sonst der neueste.
+ */
+export function fokusLager(lager: LagerRecord[], jahrHeute: number) {
+  const entwuerfe = lager.filter((l) => l.status === "entwurf").sort((a, b) => b.jahr - a.jahr);
+  const anstehend = entwuerfe.filter((l) => l.jahr >= jahrHeute);
+  const entwurf = anstehend[anstehend.length - 1] ?? entwuerfe[0] ?? null;
+  return {
+    aktiv: lager.find((l) => l.status === "veroeffentlicht") ?? null,
+    entwurf,
+    weitereEntwuerfe: entwuerfe.filter((l) => l !== entwurf),
+  };
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

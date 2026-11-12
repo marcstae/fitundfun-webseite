@@ -91,6 +91,8 @@ export interface EinstellungenRecord {
 export interface FamilienzugangRecord {
   id: string;
   password_hash: string;
+  /** Lesbar für eingeloggte Admins; leer, wenn vor Migration 24 gesetzt. */
+  passwort?: string;
   cookie_version: number;
   created: string;
   updated: string;

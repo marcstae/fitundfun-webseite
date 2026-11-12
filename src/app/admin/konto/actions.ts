@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { hashFamilyPassword } from "@/lib/family-access";
+import { hashFamilyPassword, verifyFamilyPasswordHash } from "@/lib/family-access";
 import { pbRequest } from "@/lib/pb";
 import type { FamilienzugangRecord } from "@/lib/pb-types";
 
@@ -33,9 +33,14 @@ export async function changeFamilyPassword(
       .collection("familienzugang")
       .getList<FamilienzugangRecord>(1, 1);
     const current = result.items[0];
+    // Gleiches Passwort nochmals gespeichert (z. B. damit es im Konto lesbar wird):
+    // bestehende Zugänge der Familien nicht abmelden.
+    const unveraendert =
+      !!current?.password_hash && (await verifyFamilyPasswordHash(password, current.password_hash));
     const data = {
       password_hash: await hashFamilyPassword(password),
-      cookie_version: (current?.cookie_version || 0) + 1,
+      passwort: password,
+      cookie_version: (current?.cookie_version || 0) + (unveraendert ? 0 : 1),
     };
     if (current) {
       await pb.collection("familienzugang").update(current.id, data);
@@ -44,7 +49,9 @@ export async function changeFamilyPassword(
     }
     return {
       ok: true,
-      message: "Lagerpasswort gespeichert. Bestehende Zugänge wurden abgemeldet.",
+      message: unveraendert
+        ? "Lagerpasswort gespeichert. Es ist unverändert, bestehende Zugänge bleiben gültig."
+        : "Lagerpasswort gespeichert. Bestehende Zugänge wurden abgemeldet.",
     };
   } catch {
     return { ok: false, message: "Das Lagerpasswort konnte nicht gespeichert werden." };

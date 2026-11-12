@@ -15,7 +15,7 @@ export type UnlockAction = (state: UnlockState, formData: FormData) => Promise<U
 
 /**
  * Geschützter Inhalt (Dokument oder Fotoalbum), öffnet im neuen Tab.
- * Gesperrt: Antippen fragt nach dem Familienpasswort. Danach setzt der Server das Cookie
+ * Gesperrt: Antippen fragt nach dem Lagerpasswort. Danach setzt der Server das Cookie
  * und Next lädt die Seite neu; diese Komponente bleibt dabei bestehen (gleiche Position),
  * damit das Fenster einen echten Link «Dokument öffnen» anbieten kann. Ein Tab aus einem
  * Skript nach der Passwortprüfung würde von Handy-Browsern blockiert.
@@ -68,7 +68,7 @@ export function FamilyUnlock({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{state.ok ? "Freigeschaltet" : "Familienpasswort"}</DialogTitle>
+            <DialogTitle>{state.ok ? "Freigeschaltet" : "Lagerpasswort"}</DialogTitle>
             <DialogDescription className="mt-1">
               {state.ok
                 ? "Der Zugang ist auf diesem Gerät gespeichert. Geschützte Inhalte öffnen sich ab jetzt direkt."
@@ -92,7 +92,7 @@ export function FamilyUnlock({
           ) : (
             <form action={formAction} className="space-y-3">
               <label htmlFor={inputId} className="sr-only">
-                Familienpasswort
+                Lagerpasswort
               </label>
               <input
                 id={inputId}
@@ -101,14 +101,14 @@ export function FamilyUnlock({
                 autoComplete="current-password"
                 required
                 aria-describedby={state.fehler ? `${inputId}-fehler` : undefined}
-                placeholder="Familienpasswort"
+                placeholder="Lagerpasswort"
                 className="h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
               {state.fehler ? (
                 <p id={`${inputId}-fehler`} role="alert" className="text-sm font-semibold text-red-700">
                   {state.fehler === "blockiert"
                     ? "Zu viele Versuche – bitte in einer Stunde erneut versuchen."
-                    : "Das Familienpasswort ist nicht korrekt."}
+                    : "Das Lagerpasswort ist nicht korrekt."}
                 </p>
               ) : null}
               <button

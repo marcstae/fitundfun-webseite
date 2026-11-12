@@ -94,23 +94,23 @@ export function AccountSettings() {
 
       <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-8">
         <KeyRound className="size-7 text-accent" />
-        <h2 className="mt-4 font-display text-2xl text-ink">Familienpasswort</h2>
+        <h2 className="mt-4 font-display text-2xl text-ink">Lagerpasswort</h2>
         <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
-          Gemeinsames Passwort für geschützte Dokumente und Fotoalben. Eine Änderung meldet bestehende Familienzugänge automatisch ab.
+          Gemeinsames Lagerpasswort für geschützte Dokumente und Fotoalben. Eine Änderung meldet bestehende Zugänge automatisch ab.
         </p>
         {familySet === false ? (
           <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">
-            Noch kein Familienpasswort gesetzt – Familien können geschützte Dokumente erst öffnen, wenn hier eines gespeichert ist.
+            Noch kein Lagerpasswort gesetzt – Teilnehmende können geschützte Dokumente erst öffnen, wenn hier eines gespeichert ist.
           </p>
         ) : familySet ? (
           <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
-            Ein Familienpasswort ist gesetzt.
+            Ein Lagerpasswort ist gesetzt.
           </p>
         ) : null}
         <form onSubmit={saveFamilyPassword} className="mt-6 space-y-4">
-          <Field label="Neues Familienpasswort" id="family-new" value={familyPassword} onChange={setFamilyPassword} autoComplete="new-password" minLength={1} />
-          <Field label="Familienpasswort wiederholen" id="family-confirm" value={familyConfirmation} onChange={setFamilyConfirmation} autoComplete="new-password" minLength={1} />
-          <Button type="submit" disabled={savingFamily}>{savingFamily ? "Speichert…" : familySet ? "Familienpasswort ändern" : "Familienpasswort setzen"}</Button>
+          <Field label="Neues Lagerpasswort" id="family-new" value={familyPassword} onChange={setFamilyPassword} autoComplete="new-password" minLength={1} />
+          <Field label="Lagerpasswort wiederholen" id="family-confirm" value={familyConfirmation} onChange={setFamilyConfirmation} autoComplete="new-password" minLength={1} />
+          <Button type="submit" disabled={savingFamily}>{savingFamily ? "Speichert…" : familySet ? "Lagerpasswort ändern" : "Lagerpasswort setzen"}</Button>
         </form>
       </section>
     </div>

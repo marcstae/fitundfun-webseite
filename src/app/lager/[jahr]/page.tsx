@@ -9,6 +9,7 @@ import {
   Download,
   Images,
   Lock,
+  LockOpen,
   Mail,
   UsersRound,
 } from "lucide-react";
@@ -144,8 +145,7 @@ export default async function LagerPage({
     return { ok: true };
   }
 
-  const offen = dokumente.filter((d) => !d.sensibel);
-  const geschuetzt = dokumente.filter((d) => d.sensibel);
+  const hatGeschuetzte = dokumente.some((d) => d.sensibel);
   const hinweis = countdown(lager);
   const sprungziele = [
     ["dokumente", "Dokumente"],
@@ -229,31 +229,25 @@ export default async function LagerPage({
               Noch keine Dokumente – sie erscheinen hier, sobald die Lagerleitung sie hochlädt.
             </p>
           ) : (
-            <div className="space-y-5">
-              {offen.length ? (
-                <DocumentGroup titel={geschuetzt.length ? "Für alle" : ""}>
-                  {offen.map((d) => (
-                    <DocumentRow key={d.id} doc={d} unlock={null} locked={false} autoOpen={false} />
-                  ))}
-                </DocumentGroup>
+            <>
+              {/* Eine Liste in der Reihenfolge, die die Lagerleitung im Cockpit festlegt. */}
+              <ul className="divide-y divide-ink/[0.07] overflow-hidden rounded-2xl bg-white">
+                {dokumente.map((d) => (
+                  <DocumentRow
+                    key={d.id}
+                    doc={d}
+                    unlock={d.sensibel ? unlockFamilyAccess : null}
+                    locked={locked}
+                    autoOpen={d.id === weiterId}
+                  />
+                ))}
+              </ul>
+              {hatGeschuetzte && locked ? (
+                <p className="mt-2 px-1 text-xs text-muted">
+                  Dokumente mit Schloss öffnen nach der einmaligen Eingabe des Lagerpassworts.
+                </p>
               ) : null}
-              {geschuetzt.length ? (
-                <DocumentGroup
-                  titel="Für Familien"
-                  hinweis={locked ? "Beim ersten Öffnen fragen wir einmal nach dem Familienpasswort." : ""}
-                >
-                  {geschuetzt.map((d) => (
-                    <DocumentRow
-                      key={d.id}
-                      doc={d}
-                      unlock={unlockFamilyAccess}
-                      locked={locked}
-                      autoOpen={d.id === weiterId}
-                    />
-                  ))}
-                </DocumentGroup>
-              ) : null}
-            </div>
+            </>
           )}
         </section>
 
@@ -301,7 +295,7 @@ export default async function LagerPage({
                   <span className="min-w-0 flex-1">
                     <span className="block font-bold">Fotoalbum</span>
                     <span className="block text-sm text-white/70">
-                      {locked ? "Mit Familienpasswort" : "Ansehen und eigene Fotos hochladen"}
+                      {locked ? "Mit Lagerpasswort" : "Ansehen und eigene Fotos hochladen"}
                     </span>
                   </span>
                   <ArrowUpRight className="size-5 shrink-0 text-white/60" aria-hidden />
@@ -406,29 +400,6 @@ const LINK_KARTE =
 const ROW =
   "flex min-h-[4.5rem] w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-sand/60 active:bg-sand";
 
-function DocumentGroup({
-  titel,
-  hinweis,
-  children,
-}: {
-  titel: string;
-  hinweis?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      {titel ? (
-        <h3 className="mb-2 flex items-center gap-1.5 px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">
-          {titel === "Für Familien" ? <Lock className="size-3.5" aria-hidden /> : null}
-          {titel}
-        </h3>
-      ) : null}
-      <ul className="divide-y divide-ink/[0.07] overflow-hidden rounded-2xl bg-white">{children}</ul>
-      {hinweis ? <p className="mt-2 px-1 text-xs text-muted">{hinweis}</p> : null}
-    </div>
-  );
-}
-
 function DocumentRow({
   doc,
   unlock,
@@ -447,12 +418,16 @@ function DocumentRow({
         {fileType}
       </span>
       <span className="min-w-0 flex-1 text-[1.02rem] font-semibold leading-snug text-ink">{doc.name}</span>
-      <span
-        className={`grid size-10 shrink-0 place-items-center rounded-full ${
-          unlock && locked ? "bg-ink text-white" : "bg-accent text-white"
-        }`}
-      >
-        {unlock && locked ? <Lock className="size-[1.1rem]" aria-hidden /> : <Download className="size-[1.1rem]" aria-hidden />}
+      {/* Geschützt: Schloss links vom Download-Knopf, geschlossen bis das Passwort stimmt, danach offen. */}
+      {unlock ? (
+        locked ? (
+          <Lock className="size-5 shrink-0 text-ink/60" aria-label="Mit Lagerpasswort geschützt" />
+        ) : (
+          <LockOpen className="size-5 shrink-0 text-accent" aria-label="Freigeschaltet" />
+        )
+      ) : null}
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-white">
+        <Download className="size-[1.1rem]" aria-hidden />
       </span>
     </>
   );

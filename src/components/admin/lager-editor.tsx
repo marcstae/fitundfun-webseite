@@ -284,7 +284,7 @@ export function LagerEditor({ id }: { id: string }) {
           </Field>
         </Section>
 
-        <Section title="Fotos und Video" description="Das Fotoalbum ist durch das Familienpasswort geschützt. Video-Links sind öffentlich.">
+        <Section title="Fotos und Video" description="Das Fotoalbum ist durch das Lagerpasswort geschützt. Video-Links sind öffentlich.">
           <Field label="Immich-Fotoalbum">
             <EditableImmich lagerId={id} albumId={loaded.fotoalbum?.id} current={loaded.fotoalbum?.url || ""} />
           </Field>

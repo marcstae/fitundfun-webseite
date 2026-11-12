@@ -91,7 +91,7 @@ export default function AdminDashboard() {
               href="/admin/konto"
               className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900"
             >
-              <span>Noch kein Familienpasswort gesetzt – geschützte Dokumente sind für Familien noch nicht erreichbar.</span>
+              <span>Noch kein Lagerpasswort gesetzt – geschützte Dokumente sind für Teilnehmende noch nicht erreichbar.</span>
               <ArrowRight className="size-4 shrink-0" />
             </Link>
           ) : null}

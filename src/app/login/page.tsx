@@ -103,10 +103,6 @@ function LoginForm() {
           {busy ? "Anmelden…" : "Anmelden"}
         </Button>
       </form>
-      <p className="mt-4 text-xs text-muted">
-        Geschützte Familieninhalte werden direkt beim jeweiligen Lager
-        freigeschaltet.
-      </p>
     </div>
   );
 }

@@ -21,7 +21,7 @@ import { useAuth } from "@/components/providers";
 
 // Reihenfolge nach Häufigkeit: Fotos und Kontakt vor Lagerhaus und Archiv.
 const NAV = [
-  { href: "/fotos", label: "Fotos & Videos", hint: "Fotoalbum · mit Familienpasswort", Icon: Images },
+  { href: "/fotos", label: "Fotos & Videos", hint: "Fotoalbum · mit Lagerpasswort", Icon: Images },
   { href: "/kontakt", label: "Kontakt", hint: "Fragen an die Lagerleitung", Icon: Mail },
   { href: "/lagerhaus", label: "Lagerhaus", hint: "Unterkunft & Lage in Brigels", Icon: House },
   { href: "/lager", label: "Frühere Lager", hint: "Alle Lager seit 2007", Icon: History },

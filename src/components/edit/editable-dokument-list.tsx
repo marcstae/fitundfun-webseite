@@ -86,7 +86,7 @@ export function EditableDokumentList({
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{d.name}</span>
                   <span className="block text-xs text-muted">
-                    {d.sensibel ? "Geschützt (Familienpasswort)" : "Öffentlich"}
+                    {d.sensibel ? "Geschützt (Lagerpasswort)" : "Öffentlich"}
                   </span>
                 </span>
               </span>
@@ -260,7 +260,7 @@ function DokumentForm({
           <VisibilityOption
             checked={sensibel}
             onChange={() => setSensibel(true)}
-            title="Nur mit Familienpasswort"
+            title="Nur mit Lagerpasswort"
             text="Für Teilnehmerliste, Zimmerplan und alles mit Namen."
           />
           <VisibilityOption

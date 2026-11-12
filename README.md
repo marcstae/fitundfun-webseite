@@ -4,16 +4,16 @@ Website des fit&fun Familienlagers in Brigels. Sie dient vor allem dazu, allen F
 
 ## Admin-Cockpit
 
-- **Übersicht:** nächstes Lager im Fokus, fehlende Angaben, Hinweis falls noch kein Familienpasswort gesetzt ist
+- **Übersicht:** nächstes Lager im Fokus, fehlende Angaben, Hinweis falls noch kein Lagerpasswort gesetzt ist
 - **Lager:** Entwürfe, Veröffentlichung, Archiv; pro Lager Dokumente, Beschreibung, Aktivitäten, Fotoalbum, Video
 - **Website:** Startseite und Lagerhaus
 - **Organisation:** Kontakte (mit E-Mail für die Kontaktseite) und nützliche Links
-- **Konto:** Admin-Passwort und Familienpasswort
+- **Konto:** Admin-Passwort und Lagerpasswort
 
 Dokumente:
 
-- Neue Dokumente sind standardmässig **geschützt** (nur mit Familienpasswort). Für Anmeldeformular, Programm usw. beim Hochladen «Für alle sichtbar» wählen.
-- **Link kopieren** liefert einen dauerhaften Link für Mails. Er bleibt gültig, wenn später eine neue Fassung (z. B. Teilnehmerliste R2) über «Bearbeiten» hochgeladen wird. Dokumente öffnen sich in einem neuen Tab; bei geschützten fragt die Seite beim ersten Mal nach dem Familienpasswort und merkt es sich auf dem Gerät.
+- Neue Dokumente sind standardmässig **geschützt** (nur mit Lagerpasswort). Für Anmeldeformular, Programm usw. beim Hochladen «Für alle sichtbar» wählen.
+- **Link kopieren** liefert einen dauerhaften Link für Mails. Er bleibt gültig, wenn später eine neue Fassung (z. B. Teilnehmerliste R2) über «Bearbeiten» hochgeladen wird. Dokumente öffnen sich in einem neuen Tab; bei geschützten fragt die Seite beim ersten Mal nach dem Lagerpasswort und merkt es sich auf dem Gerät.
 - Hochladen, Ersetzen und Sortieren wird sofort gespeichert; Texte und Status mit «Speichern».
 
 Ein neues Lager beginnt als Entwurf. Beim Veröffentlichen wird das bisher aktuelle Lager automatisch archiviert. Entwürfe sind nur im Cockpit und in der Vorschau sichtbar.
@@ -23,7 +23,7 @@ Ein neues Lager beginnt als Entwurf. Beim Veröffentlichen wird das bisher aktue
 1. `.env.example` nach `.env` kopieren und alle Platzhalter ersetzen. `FAMILY_ACCESS_SECRET` mit `openssl rand -base64 48` erzeugen. Dieses Geheimnis bekommen Familien **nie**.
 2. `docker compose up -d --build` ausführen. PocketBase wendet die Migrationen beim Start automatisch an. Beim ersten Start werden die Dokumente 2011–2026 von der alten Jimdo-Seite übernommen (ca. 60 MB, rund eine Minute) und das Lager 2027 als Entwurf angelegt.
 3. Mit `ADMIN_EMAIL` und `ADMIN_PASSWORD` unter `/admin` anmelden und das Startpasswort ändern.
-4. Unter **Konto** das Familienpasswort setzen und den Familien mitteilen. Vorher bleiben geschützte Dokumente für Familien verschlossen.
+4. Unter **Konto** das Lagerpasswort setzen und den Familien mitteilen. Vorher bleiben geschützte Dokumente für Familien verschlossen.
 
 Die Daten liegen im Ordner `pb_data` neben der Compose-Datei. Der PocketBase-Container setzt die Besitzrechte beim Start selbst.
 
@@ -32,7 +32,7 @@ Die Daten liegen im Ordner `pb_data` neben der Compose-Datei. Der PocketBase-Con
 1. `pb_data` sichern (siehe unten).
 2. In der `.env` die Zeile `FAMILY_ACCESS_PASSWORD=…` durch `FAMILY_ACCESS_SECRET=<openssl rand -base64 48>` ersetzen.
 3. `git pull && docker compose up -d --build`
-4. Im Cockpit unter **Konto** ein **neues** Familienpasswort setzen und den Familien mitteilen. Das alte Startpasswort und bestehende Freischaltungen auf den Geräten gelten danach nicht mehr.
+4. Im Cockpit unter **Konto** ein **neues** Lagerpasswort setzen und den Familien mitteilen. Das alte Startpasswort und bestehende Freischaltungen auf den Geräten gelten danach nicht mehr.
 
 Lager, die bereits Dokumente haben, übergeht der Jimdo-Import. Es wird nichts überschrieben.
 

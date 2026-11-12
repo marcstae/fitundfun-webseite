@@ -51,7 +51,7 @@ async function familyConfig(): Promise<FamilienzugangRecord> {
   return result.items[0];
 }
 
-/** Ohne im Cockpit gesetztes Familienpasswort ist der Familienzugang geschlossen. */
+/** Ohne im Cockpit gesetztes Lagerpasswort ist der Familienzugang geschlossen. */
 export async function isFamilyPassword(value: string): Promise<boolean> {
   if (!value || !familySecret) return false;
   try {
@@ -101,7 +101,7 @@ const unlockAttempts = new Map<string, Attempts>();
 const MAX_UNLOCK_ATTEMPTS = 10;
 // Die Client-IP stammt aus Headern, die ohne Reverse Proxy frei setzbar sind. Deshalb zählt
 // zusätzlich jeder Fehlversuch global. ponytail: Ein Angreifer kann so das Freischalten bis zu
-// einer Stunde für alle blockieren; besser als unbegrenztes Durchprobieren des Familienpassworts.
+// einer Stunde für alle blockieren; besser als unbegrenztes Durchprobieren des Lagerpassworts.
 let globalAttempts: Attempts = { count: 0, resetAt: 0 };
 const MAX_GLOBAL_UNLOCK_ATTEMPTS = 50;
 const UNLOCK_WINDOW_MS = 60 * 60 * 1000;

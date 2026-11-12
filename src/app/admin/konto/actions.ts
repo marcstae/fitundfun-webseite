@@ -12,7 +12,7 @@ export async function changeFamilyPassword(
   // Bewusst keine Längen- oder Zeichenvorgaben: Die Lagerleitung wählt ein Passwort, das
   // sich Familien merken können. Schutz gegen Durchprobieren bietet das Versuchslimit.
   if (!password) {
-    return { ok: false, message: "Bitte ein Familienpasswort eingeben." };
+    return { ok: false, message: "Bitte ein Lagerpasswort eingeben." };
   }
   if (password !== confirmation) {
     return { ok: false, message: "Die Passwörter stimmen nicht überein." };
@@ -44,9 +44,9 @@ export async function changeFamilyPassword(
     }
     return {
       ok: true,
-      message: "Familienpasswort gespeichert. Bestehende Familienzugänge wurden abgemeldet.",
+      message: "Lagerpasswort gespeichert. Bestehende Zugänge wurden abgemeldet.",
     };
   } catch {
-    return { ok: false, message: "Das Familienpasswort konnte nicht gespeichert werden." };
+    return { ok: false, message: "Das Lagerpasswort konnte nicht gespeichert werden." };
   }
 }

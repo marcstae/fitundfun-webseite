@@ -101,8 +101,10 @@ export const getLinks = unstable_cache(
   { revalidate: REVALIDATE }
 );
 
+// Kontakte sind nicht öffentlich lesbar (geschützte E-Mail/Telefon, Migration 26): lesen über das
+// Familienkonto des Servers; was Besucher sehen, entscheidet lib/inhaltsseiten sichtbarerKontakt.
 export const getKontakte = unstable_cache(
-  async () => listAll<KontaktRecord>("kontakte", "sort"),
+  async () => (await familyPocketBase()).collection("kontakte").getFullList<KontaktRecord>({ sort: "sort" }),
   ["kontakte"],
   { revalidate: REVALIDATE }
 );

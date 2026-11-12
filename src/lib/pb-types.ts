@@ -55,6 +55,8 @@ export interface SeiteRecord {
   titel: string;
   inhalt: string;
   bilder: string[];
+  /** Bausteine der Inhaltsseiten, geprüft über lib/inhaltsseiten. */
+  daten?: unknown;
   created: string;
   updated: string;
 }
@@ -70,9 +72,13 @@ export interface LinkRecord {
 
 export interface KontaktRecord {
   id: string;
-  rolle: "Lagerleiter" | "Website";
+  rolle: "Lagerleiter" | "Skilehrer" | "Snowboardlehrer" | "Kueche" | "Website";
   name: string;
   email: string;
+  telefon?: string;
+  /** true = nur mit Lagerpasswort sichtbar */
+  email_geschuetzt?: boolean;
+  telefon_geschuetzt?: boolean;
   sort: number;
   created: string;
   updated: string;
@@ -84,6 +90,8 @@ export interface EinstellungenRecord {
   hero_poster: string;
   hero_titel: string;
   hero_willkommen: string;
+  /** #rrggbb; leer = Standard-Eisblau. */
+  akzentfarbe?: string;
   created: string;
   updated: string;
 }

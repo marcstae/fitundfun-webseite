@@ -1,0 +1,40 @@
+import {
+  Backpack,
+  BedDouble,
+  Car,
+  Clock,
+  Footprints,
+  Gamepad2,
+  House,
+  Info,
+  Moon,
+  MountainSnow,
+  Music,
+  ShowerHead,
+  Snowflake,
+  Sun,
+  UtensilsCrossed,
+  Wifi,
+  type LucideIcon,
+} from "lucide-react";
+import type { IconKey } from "@/lib/inhaltsseiten";
+
+/** Symbole der Inhaltsseiten-Einträge (Auswahl und Beschriftung in lib/inhaltsseiten). */
+export const INHALT_ICONS: Record<IconKey, LucideIcon> = {
+  bett: BedDouble,
+  schuhe: Footprints,
+  essen: UtensilsCrossed,
+  mond: Moon,
+  auto: Car,
+  spiel: Gamepad2,
+  rucksack: Backpack,
+  ski: MountainSnow,
+  schnee: Snowflake,
+  haus: House,
+  uhr: Clock,
+  dusche: ShowerHead,
+  wlan: Wifi,
+  musik: Music,
+  sonne: Sun,
+  info: Info,
+};

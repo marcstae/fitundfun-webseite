@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp, Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Lock, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SaveDialog, useSaveAction } from "./save-dialog";
+import { KONTAKT_ROLLEN } from "@/lib/inhaltsseiten";
 import type { KontaktRecord } from "@/lib/pb-types";
 
 export function KontakteManager({ existing }: { existing: KontaktRecord[] }) {
@@ -61,10 +62,18 @@ export function KontakteManager({ existing }: { existing: KontaktRecord[] }) {
           <li key={it.id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-ink/[0.03] px-3 py-2 text-sm">
             <span className="min-w-0 flex-1 basis-40">
               <span className="block truncate font-semibold">{it.name}</span>
-              <span className="block truncate text-xs text-muted">
-                {it.rolle === "Lagerleiter" ? "Lagerleitung" : it.rolle}
-                {it.email ? ` · ${it.email}` : " · keine E-Mail"}
-              </span>
+              <span className="block text-xs font-semibold text-muted">{KONTAKT_ROLLEN[it.rolle] ?? it.rolle}</span>
+              {[
+                [it.email, it.email_geschuetzt],
+                [it.telefon, it.telefon_geschuetzt],
+              ].map(([wert, geschuetzt], i) =>
+                wert ? (
+                  <span key={i} className="flex items-center gap-1 text-xs text-muted">
+                    <span className="truncate">{wert}</span>
+                    {geschuetzt ? <Lock className="size-3 shrink-0" aria-label="nur mit Lagerpasswort" /> : null}
+                  </span>
+                ) : null
+              )}
             </span>
             <span className="flex shrink-0 gap-1">
               <button onClick={() => move(index, -1)} disabled={index === 0} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.name} nach oben verschieben`}><ArrowUp className="size-4" /></button>
@@ -104,6 +113,10 @@ function KontaktForm({
 }) {
   const [name, setName] = React.useState(item?.name || "");
   const [email, setEmail] = React.useState(item?.email || "");
+  const [telefon, setTelefon] = React.useState(item?.telefon || "");
+  // Neue Kontakte: Angaben zuerst nur mit Lagerpasswort (Datenschutz durch Voreinstellung).
+  const [emailGeschuetzt, setEmailGeschuetzt] = React.useState(item ? !!item.email_geschuetzt : true);
+  const [telefonGeschuetzt, setTelefonGeschuetzt] = React.useState(item ? !!item.telefon_geschuetzt : true);
   const [rolle, setRolle] = React.useState<KontaktRecord["rolle"]>(item?.rolle || "Lagerleiter");
   const { saving, run } = useSaveAction();
 
@@ -116,9 +129,20 @@ function KontaktForm({
       toast.error("Bitte eine gültige E-Mail-Adresse eingeben oder das Feld leer lassen.");
       return;
     }
+    if (telefon.trim() && !/^\+?[\d\s()/.-]{6,40}$/.test(telefon.trim())) {
+      toast.error("Bitte eine gültige Telefonnummer eingeben (Ziffern, Leerzeichen, +) oder das Feld leer lassen.");
+      return;
+    }
     const ok = await run(async () => {
       const pb = pbBrowser();
-      const data = { name: name.trim(), email: email.trim(), rolle };
+      const data = {
+        name: name.trim(),
+        email: email.trim(),
+        telefon: telefon.trim(),
+        email_geschuetzt: emailGeschuetzt,
+        telefon_geschuetzt: telefonGeschuetzt,
+        rolle,
+      };
       if (item) {
         await pb.collection("kontakte").update(item.id, data);
       } else {
@@ -138,11 +162,24 @@ function KontaktForm({
       onSave={save}
     >
       <div className="space-y-2">
+        <Label htmlFor="k-rolle">Gruppe</Label>
+        <select
+          id="k-rolle"
+          value={rolle}
+          onChange={(e) => setRolle(e.target.value as KontaktRecord["rolle"])}
+          className="flex h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+        >
+          {(Object.entries(KONTAKT_ROLLEN) as [KontaktRecord["rolle"], string][]).map(([wert, label]) => (
+            <option key={wert} value={wert}>{label}</option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="k-name">Name</Label>
         <Input id="k-name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="k-email">E-Mail (wird auf der Kontaktseite angezeigt)</Label>
+        <Label htmlFor="k-email">E-Mail</Label>
         <Input
           id="k-email"
           type="email"
@@ -152,19 +189,36 @@ function KontaktForm({
           placeholder="optional"
           onChange={(e) => setEmail(e.target.value)}
         />
+        <NurMitPasswort id="k-email-geschuetzt" checked={emailGeschuetzt} onChange={setEmailGeschuetzt} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="k-rolle">Rolle</Label>
-        <select
-          id="k-rolle"
-          value={rolle}
-          onChange={(e) => setRolle(e.target.value as KontaktRecord["rolle"])}
-          className="flex h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
-        >
-          <option value="Lagerleiter">Lagerleitung</option>
-          <option value="Website">Website</option>
-        </select>
+        <Label htmlFor="k-telefon">Telefon</Label>
+        <Input
+          id="k-telefon"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          value={telefon}
+          placeholder="optional, z. B. 079 123 45 67"
+          onChange={(e) => setTelefon(e.target.value)}
+        />
+        <NurMitPasswort id="k-telefon-geschuetzt" checked={telefonGeschuetzt} onChange={setTelefonGeschuetzt} />
       </div>
     </SaveDialog>
+  );
+}
+
+function NurMitPasswort({ id, checked, onChange }: { id: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <label htmlFor={id} className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-ink">
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="size-5 accent-[var(--color-accent)]"
+      />
+      Nur mit Lagerpasswort sichtbar
+    </label>
   );
 }

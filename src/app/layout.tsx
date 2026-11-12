@@ -3,9 +3,9 @@ import { Archivo, Fredoka } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteChrome } from "@/components/site-chrome";
-import { getAktuellesLager } from "@/lib/data";
+import { getAktuellesLager, getEinstellungen } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
-import { formatDateRange } from "@/lib/utils";
+import { akzentfarbe, formatDateRange } from "@/lib/utils";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -44,11 +44,17 @@ export const viewport: Viewport = { viewportFit: "cover" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Ohne PB nur den Menüeintrag des aktuellen Lagers weglassen, nicht jede Seite brechen.
-  const aktuellesLager = await getAktuellesLager().catch(() => null);
+  const [aktuellesLager, einstellungen] = await Promise.all([
+    getAktuellesLager().catch(() => null),
+    getEinstellungen().catch(() => null),
+  ]);
+  // Akzentfarbe aus dem Cockpit überschreibt --color-accent aus globals.css (nur geprüfte Werte).
+  const akzent = akzentfarbe(einstellungen?.akzentfarbe);
   return (
     <html
       lang="de-CH"
       className={`${archivo.variable} ${fredoka.variable}`}
+      style={akzent ? ({ "--color-accent": akzent } as React.CSSProperties) : undefined}
     >
       <body className="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <Providers>

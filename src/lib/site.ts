@@ -11,8 +11,3 @@ export function siteUrl(): string {
   }
   return "http://localhost:3000";
 }
-/** Lagerhaus (Ferienheim Albin) – gemeinsam für Lager- und Lagerhaus-Seite. */
-export const LAGERHAUS_ADRESSE = "Via Cadruvi Sut 20, 7165 Breil/Brigels";
-export const LAGERHAUS_MAPS_URL =
-  "https://www.google.com/maps/search/?api=1&query=" +
-  encodeURIComponent(`Ferienheim Albin, ${LAGERHAUS_ADRESSE}`);

@@ -33,6 +33,25 @@ export function fokusLager(lager: LagerRecord[], jahrHeute: number) {
   };
 }
 
+/** WCAG-Kontrast von Weiss auf der Farbe (#rrggbb): 1 bis 21. */
+export function kontrastZuWeiss(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05);
+}
+
+/** Standard-Akzentfarbe (Eisblau), gleich wie --color-accent in globals.css. */
+export const AKZENT_STANDARD = "#2563eb";
+
+/** Akzentfarbe aus dem Cockpit, nur wenn gültig und mit lesbarer weisser Schrift (≥ 4.5:1). */
+export function akzentfarbe(wert: unknown): string | null {
+  return typeof wert === "string" && /^#[0-9a-f]{6}$/i.test(wert) && kontrastZuWeiss(wert) >= 4.5
+    ? wert.toLowerCase()
+    : null;
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

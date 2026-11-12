@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -17,19 +17,14 @@ import {
   getEinstellungen,
   getLagerByJahr,
   getLinks,
+  getSeite,
 } from "@/lib/data";
-import {
-  FAMILY_ACCESS_COOKIE,
-  FAMILY_ACCESS_MAX_AGE,
-  clientIp,
-  familyAccessCookieValue,
-  hasFamilyAccess,
-  isFamilyPassword,
-  recordUnlockFailure,
-  unlockAttemptAllowed,
-} from "@/lib/family-access";
+import { FAMILY_ACCESS_COOKIE, hasFamilyAccess } from "@/lib/family-access";
+// Passwortabfrage erst beim ersten geschützten Download (oder Fotoalbum); danach bleibt der
+// Zugang per Cookie auf dem Gerät gespeichert.
+import { unlockFamilyAccess } from "@/lib/familien-freischalten";
 import { publicFileUrl } from "@/lib/pb";
-import { LAGERHAUS_MAPS_URL } from "@/lib/site";
+import { lagerhausInhalt, mapsUrl } from "@/lib/inhaltsseiten";
 import {
   documentHref,
   formatDateRangeWithDays,
@@ -40,7 +35,7 @@ import {
 import { richTextToPlainText, sanitizeRichText } from "@/lib/sanitize";
 import type { DokumentRecord, LagerRecord } from "@/lib/pb-types";
 import { YoutubeClickToPlay } from "@/components/youtube-click-to-play";
-import { FamilyUnlock, type UnlockAction, type UnlockState } from "@/components/family-unlock";
+import { FamilyUnlock, type UnlockAction } from "@/components/family-unlock";
 
 export const dynamic = "force-dynamic";
 
@@ -93,10 +88,11 @@ export default async function LagerPage({
   const familyAccess = await hasFamilyAccess(
     cookieStore.get(FAMILY_ACCESS_COOKIE)?.value
   );
-  const [documentResult, links, einstellungen] = await Promise.all([
+  const [documentResult, links, einstellungen, lagerhaus] = await Promise.all([
     getDokumenteForLager(lager.id, authCookie, familyAccess),
     getLinks(),
     getEinstellungen().catch(() => null),
+    getSeite("lagerhaus").catch(() => null),
   ]);
   const dokumente = documentResult.items;
 
@@ -120,30 +116,6 @@ export default async function LagerPage({
   const weiterId = weiter.split("/")[4] || "";
   const vonFotos = search?.fotos === "1";
   const zeigeFotos = (validFotosUrl && !locked) || (documentResult.hasProtectedPhoto && locked);
-
-  // Passwortabfrage erst beim ersten geschützten Download (oder Fotoalbum). Danach bleibt
-  // der Zugang per Cookie auf dem Gerät gespeichert; das Fenster bietet den Link im neuen Tab an.
-  async function unlockFamilyAccess(_state: UnlockState, formData: FormData): Promise<UnlockState> {
-    "use server";
-    const headerStore = await headers();
-    const ip = clientIp(headerStore);
-    if (!unlockAttemptAllowed(ip)) return { fehler: "blockiert" };
-
-    const password = formData.get("password");
-    if (typeof password !== "string" || !(await isFamilyPassword(password))) {
-      recordUnlockFailure(ip);
-      return { fehler: "falsch" };
-    }
-
-    (await cookies()).set(FAMILY_ACCESS_COOKIE, await familyAccessCookieValue(), {
-      httpOnly: true,
-      maxAge: FAMILY_ACCESS_MAX_AGE,
-      path: "/",
-      sameSite: "lax",
-      secure: headerStore.get("x-forwarded-proto") === "https",
-    });
-    return { ok: true };
-  }
 
   const hatGeschuetzte = dokumente.some((d) => d.sensibel);
   const hinweis = countdown(lager);
@@ -318,7 +290,7 @@ export default async function LagerPage({
         ) : null}
 
         <nav aria-label="Weiter" className="space-y-2.5">
-          <a href={LAGERHAUS_MAPS_URL} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
+          <a href={mapsUrl(lagerhausInhalt(lagerhaus?.daten))} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sand text-accent">
               <MapPin className="size-5" aria-hidden />
             </span>

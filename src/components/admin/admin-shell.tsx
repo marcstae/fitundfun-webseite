@@ -5,11 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
   ExternalLink,
-  FileText,
+  Files,
+  Globe,
   LayoutDashboard,
   LogOut,
   Settings,
-  UsersRound,
 } from "lucide-react";
 import { useAuth } from "@/components/providers";
 import { cn } from "@/lib/utils";
@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils";
 const nav = [
   { href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true },
   { href: "/admin/lager", label: "Lager", icon: CalendarDays },
-  { href: "/admin/website", label: "Website", icon: FileText },
-  { href: "/admin/organisation", label: "Organisation", icon: UsersRound },
+  { href: "/admin/inhaltsseiten", label: "Inhaltsseiten", icon: Files },
+  { href: "/admin/website", label: "Website", icon: Globe },
   { href: "/admin/konto", label: "Konto", icon: Settings },
 ];
 

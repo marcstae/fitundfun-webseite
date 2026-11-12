@@ -1,59 +1,115 @@
-import { Mail } from "lucide-react";
-import { getKontakte } from "@/lib/data";
+import { cookies } from "next/headers";
+import { Lock, Mail, Phone } from "lucide-react";
+import { FamilyUnlock } from "@/components/family-unlock";
+import { getKontakte, getSeite } from "@/lib/data";
+import { FAMILY_ACCESS_COOKIE, hasFamilyAccess } from "@/lib/family-access";
+import { unlockFamilyAccess } from "@/lib/familien-freischalten";
+import { KONTAKT_EINLEITUNG, KONTAKT_ROLLEN, KONTAKT_TITEL, kontaktInhalt, sichtbarerKontakt } from "@/lib/inhaltsseiten";
+import { sanitizeRichText } from "@/lib/sanitize";
 import type { KontaktRecord } from "@/lib/pb-types";
-
-export const revalidate = 300;
 
 export const metadata = { title: "Kontakt" };
 
+type Sichtbar = ReturnType<typeof sichtbarerKontakt>;
+
 export default async function KontaktPage() {
-  const kontakte = await getKontakte();
-  const lagerleitung = kontakte.filter((k) => k.rolle === "Lagerleiter");
-  const website = kontakte.filter((k) => k.rolle === "Website");
+  const [kontakte, seite, cookieStore] = await Promise.all([
+    getKontakte(),
+    getSeite("kontakt").catch(() => null),
+    cookies(),
+  ]);
+  const zugang = await hasFamilyAccess(cookieStore.get(FAMILY_ACCESS_COOKIE)?.value);
+  // Titel, Einleitung, Gruppen und Personen sind im Cockpit unter «Inhaltsseiten» bearbeitbar.
+  const { gruppen } = kontaktInhalt(seite?.daten);
+  const sichtbar = kontakte.map((k) => sichtbarerKontakt(k, zugang));
+  const gesperrt = sichtbar.some((k) => k.emailGesperrt || k.telefonGesperrt);
+  const bloecke = (Object.keys(KONTAKT_ROLLEN) as KontaktRecord["rolle"][])
+    .map((rolle) => ({ rolle, titel: gruppen[rolle], items: sichtbar.filter((k) => k.rolle === rolle) }))
+    .filter((block) => block.items.length > 0);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
       <header className="max-w-3xl">
         <h1 className="camp-display text-4xl leading-none text-ink sm:text-6xl">
-          Kontakt
+          {seite?.titel || KONTAKT_TITEL}
         </h1>
-        <p className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-muted">
-          Fragen zum Lager oder zur Website beantworten wir gerne per E-Mail.
-        </p>
+        <div
+          className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-muted [&_a]:text-accent [&_a]:underline [&_p+p]:mt-3"
+          dangerouslySetInnerHTML={{ __html: sanitizeRichText(seite?.inhalt || KONTAKT_EINLEITUNG) }}
+        />
       </header>
 
-      <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2">
-        <KontaktBlock titel="Lagerleitung" items={lagerleitung} />
-        {website.length > 0 ? <KontaktBlock titel="Website" items={website} /> : null}
-      </div>
+      {gesperrt ? (
+        <div className="mt-8 flex flex-col gap-3 rounded-[1.5rem] bg-ink p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <p className="flex items-start gap-3 text-sm font-semibold leading-relaxed text-white/85">
+            <Lock className="mt-0.5 size-5 shrink-0 text-accent-light" aria-hidden />
+            Einige Telefonnummern und E-Mail-Adressen sind nur mit dem Lagerpasswort sichtbar.
+          </p>
+          <FamilyUnlock
+            action={unlockFamilyAccess}
+            href={null}
+            locked
+            nurFreischalten
+            className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-light px-5 font-bold text-ink transition hover:bg-white"
+          >
+            Lagerpasswort eingeben
+          </FamilyUnlock>
+        </div>
+      ) : null}
+
+      {bloecke.length > 0 ? (
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2">
+          {bloecke.map((block) => (
+            <KontaktBlock key={block.rolle} titel={block.titel} items={block.items} />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-8 text-sm font-semibold text-muted">Noch keine Kontaktpersonen eingetragen.</p>
+      )}
     </div>
   );
 }
 
-function KontaktBlock({ titel, items }: { titel: string; items: KontaktRecord[] }) {
+function KontaktBlock({ titel, items }: { titel: string; items: Sichtbar[] }) {
   return (
     <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-7">
       <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted">{titel}</h2>
-      {items.length === 0 ? (
-        <p className="mt-4 text-sm font-semibold text-muted">Noch niemand eingetragen.</p>
-      ) : (
-        <ul className="mt-4 space-y-5">
-          {items.map((k) => (
-            <li key={k.id}>
-              <p className="camp-display text-2xl text-ink">{k.name}</p>
-              {k.email ? (
-                <a
-                  href={`mailto:${k.email}`}
-                  className="mt-2 inline-flex min-h-12 max-w-full items-center gap-2 rounded-xl bg-accent px-4 text-base font-bold text-white transition hover:bg-ink"
-                >
-                  <Mail className="size-5 shrink-0" aria-hidden />
-                  <span className="truncate">{k.email}</span>
-                </a>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="mt-4 space-y-6">
+        {items.map((k) => (
+          <li key={k.id}>
+            <p className="camp-display text-2xl text-ink">{k.name}</p>
+            {k.email || k.telefon ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {k.email ? (
+                  <a
+                    href={`mailto:${k.email}`}
+                    className="inline-flex min-h-12 max-w-full items-center gap-2 rounded-xl bg-accent px-4 text-base font-bold text-white transition hover:bg-ink"
+                  >
+                    <Mail className="size-5 shrink-0" aria-hidden />
+                    <span className="truncate">{k.email}</span>
+                  </a>
+                ) : null}
+                {k.telefon ? (
+                  <a
+                    href={`tel:${k.telefon.replace(/[^\d+]/g, "")}`}
+                    className="inline-flex min-h-12 max-w-full items-center gap-2 rounded-xl border border-ink/15 px-4 text-base font-bold text-ink transition hover:bg-sand"
+                  >
+                    <Phone className="size-5 shrink-0 text-accent" aria-hidden />
+                    <span className="truncate">{k.telefon}</span>
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+            {k.emailGesperrt || k.telefonGesperrt ? (
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-muted">
+                <Lock className="size-4 shrink-0" aria-hidden />
+                {k.emailGesperrt && k.telefonGesperrt ? "E-Mail und Telefon" : k.emailGesperrt ? "E-Mail" : "Telefon"} nur mit
+                Lagerpasswort
+              </p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

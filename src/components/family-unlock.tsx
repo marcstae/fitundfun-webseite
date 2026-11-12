@@ -27,6 +27,7 @@ export function FamilyUnlock({
   href,
   locked,
   autoOpen = false,
+  nurFreischalten = false,
   className,
   children,
 }: {
@@ -35,6 +36,8 @@ export function FamilyUnlock({
   href: string | null;
   locked: boolean;
   autoOpen?: boolean;
+  /** Kein Ziel öffnen, nur freischalten: Die Seite zeigt danach die geschützten Angaben. */
+  nurFreischalten?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -46,7 +49,7 @@ export function FamilyUnlock({
   const geoeffnet = React.useRef(false);
 
   const tabVorbereiten = () => {
-    if (autoOpen) return;
+    if (autoOpen || nurFreischalten) return;
     const tab = window.open("", "_blank");
     if (tab) tab.opener = null;
     tabRef.current = tab;
@@ -58,6 +61,10 @@ export function FamilyUnlock({
       tabRef.current = null;
       return;
     }
+    if (state.ok && nurFreischalten) {
+      setOpen(false);
+      return;
+    }
     // Beim Fotoalbum kommt href erst mit dem Neuladen nach dem Freischalten.
     if (!state.ok || !href || geoeffnet.current) return;
     geoeffnet.current = true;
@@ -65,7 +72,7 @@ export function FamilyUnlock({
     else window.location.href = href; // autoOpen oder Tab blockiert: im gleichen Fenster
     tabRef.current = null;
     setOpen(false);
-  }, [state, href]);
+  }, [state, href, nurFreischalten]);
 
   React.useEffect(() => {
     // Zurück aus dem Dokument (Back-Forward-Cache) zeigt sonst noch den gesperrten Stand.

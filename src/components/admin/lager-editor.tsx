@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { EditableDokumentList } from "@/components/edit/editable-dokument-list";
 import { EditableImmich } from "@/components/edit/editable-immich";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
-import { useSaveAction } from "@/components/edit/save-dialog";
+import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { isValidHttpUrl, isoToDateInput } from "@/lib/utils";
@@ -76,27 +76,7 @@ export function LagerEditor({ id }: { id: string }) {
       .catch(() => setLoadError(true));
   }, [id]);
 
-  React.useEffect(() => {
-    if (!dirty) return;
-    const beforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    // Klicks auf Links und «Abmelden» abfangen: Next-Navigation löst kein beforeunload aus.
-    // Capture-Phase auf document läuft vor den React-Handlern.
-    // ponytail: Der Zurück-Knopf des Browsers (popstate) wird nicht abgefangen.
-    const onClick = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const target = (event.target as Element | null)?.closest('a[href]:not([target="_blank"]), [data-leave-guard]');
-      if (target && !window.confirm("Ungespeicherte Änderungen verwerfen?")) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-    document.addEventListener("click", onClick, true);
-    return () => {
-      window.removeEventListener("beforeunload", beforeUnload);
-      document.removeEventListener("click", onClick, true);
-    };
-  }, [dirty]);
+  useLeaveGuard(dirty);
 
   const change = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
     setter(value);
@@ -307,16 +287,7 @@ export function LagerEditor({ id }: { id: string }) {
         </section>
       </div>
 
-      {dirty ? (
-        <div className="sticky bottom-0 z-20 -mx-4 mt-6 border-t border-ink/10 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-ink">Ungespeicherte Änderungen</p>
-            <Button onClick={save} disabled={saving} className="h-11 shrink-0">
-              <Save className="size-4" /> {saving ? "Speichert…" : "Speichern"}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <DirtySaveBar dirty={dirty} saving={saving} onSave={save} />
     </div>
   );
 }

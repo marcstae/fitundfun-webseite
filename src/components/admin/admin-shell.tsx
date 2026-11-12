@@ -41,7 +41,7 @@ export function AdminShell({
 
   return (
     <div className="min-h-dvh bg-sand lg:grid lg:grid-cols-[17rem_1fr]">
-      <aside className="border-b border-white/10 bg-navy-900 text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:border-b-0 lg:border-r">
+      <aside className="border-b border-white/10 bg-navy-900 pt-[env(safe-area-inset-top)] text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:block lg:px-6 lg:py-7">
           <Link href="/admin" className="whitespace-nowrap font-display text-lg uppercase tracking-tight sm:text-xl">
             fit<span className="text-accent-light">&amp;</span>fun Admin

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, Fredoka } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -38,6 +38,10 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+// Seite reicht bis hinter Statusleiste und Notch (Startbild randlos auf dem Handy). Alles, was
+// oben oder seitlich klebt, hält mit env(safe-area-inset-*) Abstand; seitlich macht das der body.
+export const viewport: Viewport = { viewportFit: "cover" };
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Ohne PB nur den Menüeintrag des aktuellen Lagers weglassen, nicht jede Seite brechen.
   const aktuellesLager = await getAktuellesLager().catch(() => null);
@@ -46,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang="de-CH"
       className={`${archivo.variable} ${fredoka.variable}`}
     >
-      <body className="min-h-dvh flex flex-col">
+      <body className="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <Providers>
           <SiteChrome
             aktuellesJahr={aktuellesLager?.jahr ?? null}

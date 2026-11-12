@@ -74,18 +74,19 @@ export function SiteHeader({
       <header
         className={cn(
           "z-40",
-          // Startseite: Logo und Menü sitzen gleich weit vom Rahmen entfernt wie der Inhalt
-          // (Rahmen 20/28 px vom Rand + 16/24/32 px Abstand).
+          // Startseite: Logo und Menü sitzen gleich weit vom Rand entfernt wie der Inhalt
+          // (Handy randlos: 24 px seitlich, 20 px unter der Statusleiste; ab sm Rahmen 28 px
+          // vom Rand + 24/32 px Abstand).
           isHome
-            ? "absolute inset-x-0 top-9 bg-transparent sm:top-[3.25rem] lg:top-[3.75rem]"
-            : "sticky top-0 border-b border-ink/[0.08] bg-white/[0.92] shadow-[0_8px_30px_rgba(14,28,48,0.04)] backdrop-blur-xl"
+            ? "absolute left-[env(safe-area-inset-left)] right-[env(safe-area-inset-right)] top-[calc(1.25rem+env(safe-area-inset-top))] bg-transparent sm:top-[3.25rem] lg:top-[3.75rem]"
+            : "sticky top-0 pt-[env(safe-area-inset-top)] border-b border-ink/[0.08] bg-white/[0.92] shadow-[0_8px_30px_rgba(14,28,48,0.04)] backdrop-blur-xl"
         )}
       >
         <div
           className={cn(
             "mx-auto flex max-w-[96rem] items-center justify-between",
             isHome
-              ? "h-10 px-9 sm:h-12 sm:px-[3.25rem] lg:px-[3.75rem]"
+              ? "h-10 px-6 sm:h-12 sm:px-[3.25rem] lg:px-[3.75rem]"
               : "h-16 px-4 sm:px-6 lg:px-8"
           )}
         >
@@ -134,7 +135,7 @@ export function SiteHeader({
           onClick={(event) => {
             if ((event.target as Element).closest("a")) setOpen(false);
           }}
-          className="fixed inset-x-0 bottom-0 z-[51] flex max-h-[calc(100dvh-3rem)] flex-col overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink shadow-[0_-12px_40px_rgba(14,28,48,0.18)] outline-none transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:translate-y-full sm:inset-y-0 sm:left-auto sm:max-h-none sm:w-96 sm:rounded-l-[1.75rem] sm:rounded-tr-none sm:px-5 sm:starting:translate-x-full sm:starting:translate-y-0"
+          className="fixed inset-x-0 bottom-0 z-[51] flex max-h-[calc(100dvh-3rem-env(safe-area-inset-top))] flex-col overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink shadow-[0_-12px_40px_rgba(14,28,48,0.18)] outline-none transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:translate-y-full sm:inset-y-0 sm:left-auto sm:max-h-none sm:w-96 sm:rounded-l-[1.75rem] sm:rounded-tr-none sm:px-5 sm:pr-[max(1.25rem,env(safe-area-inset-right))] sm:starting:translate-x-full sm:starting:translate-y-0"
         >
           <Dialog.Title className="sr-only">Menü</Dialog.Title>
 

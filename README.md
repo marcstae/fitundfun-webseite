@@ -2,7 +2,29 @@
 
 Website des fit&fun Familienlagers in Brigels (nur auf Einladung). Hauptzweck: Familien kommen schnell an die Lagerdokumente. Die Lagerleitung pflegt alles im Cockpit unter `/admin`.
 
-**Aufbau:** Next.js 16 (Container `web`, Port 3843) und PocketBase 0.40 (Container `pb`, Port 8090). Inhalte und Uploads liegen nur in `pb_data` (`PB_DATA_DIR`), nie im Repository.
+## Aufbau
+
+```mermaid
+flowchart LR
+  B["Browser<br/>Familien und Lagerleitung"]
+  subgraph RP["Reverse Proxy (HTTPS)"]
+    D1["Website-Domain"]
+    D2["API-Domain"]
+  end
+  subgraph S["Server: docker compose"]
+    W["web<br/>Next.js 16, Port 3843"]
+    PB["pb<br/>PocketBase 0.40, Port 8090"]
+    V[("pb_data<br/>SQLite und Uploads")]
+  end
+  X["Immich-Album, YouTube, Google Maps"]
+  B --> D1 --> W
+  B -- "Cockpit-Daten, Bilder, Video" --> D2 --> PB
+  W -- "intern über pb:8090<br/>Seiten, Downloads, Familienkonto" --> PB
+  PB --- V
+  W -. "Links und Einbettung" .-> X
+```
+
+Für Familien gehen geschützte Inhalte immer über `web` (Lagerpasswort-Cookie), nie direkt aus der API. Inhalte und Uploads liegen nur in `pb_data` (`PB_DATA_DIR`), nie im Repository.
 
 ## Cockpit
 

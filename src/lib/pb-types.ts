@@ -8,11 +8,6 @@ export interface UserRecord {
   updated: string;
 }
 
-export interface PreisEintrag {
-  label: string;
-  preis: string;
-}
-
 export type LagerPublikationsstatus =
   | "entwurf"
   | "veroeffentlicht"
@@ -27,7 +22,6 @@ export interface LagerRecord {
   beschreibung: string;
   youtube_url: string;
   teilnehmer: number | null;
-  preise: PreisEintrag[] | null;
   aktivitaeten: string[] | null;
   status: LagerPublikationsstatus;
   quelle_url: string;
@@ -65,16 +59,6 @@ export interface SeiteRecord {
   updated: string;
 }
 
-export interface SponsorRecord {
-  id: string;
-  name: string;
-  logo: string;
-  url: string;
-  sort: number;
-  created: string;
-  updated: string;
-}
-
 export interface LinkRecord {
   id: string;
   titel: string;
@@ -88,6 +72,7 @@ export interface KontaktRecord {
   id: string;
   rolle: "Lagerleiter" | "Website";
   name: string;
+  email: string;
   sort: number;
   created: string;
   updated: string;
@@ -117,7 +102,6 @@ export interface CollectionSchema {
   dokumente_intern: DokumentRecord;
   fotoalben: FotoalbumRecord;
   seiten: SeiteRecord;
-  sponsoren: SponsorRecord;
   links: LinkRecord;
   kontakte: KontaktRecord;
   einstellungen: EinstellungenRecord;

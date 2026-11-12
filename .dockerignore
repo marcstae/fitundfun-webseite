@@ -7,3 +7,5 @@ node_modules
 pb
 README*.md
 ANLEITUNG*.md
+pb_data
+.pb-local

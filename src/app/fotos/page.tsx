@@ -17,7 +17,7 @@ export default async function FotosRedirect() {
   if (isValidHttpUrl(albumUrl)) redirect(albumUrl);
   if (album.fotoalbum && album.jahr) redirect(`/lager/${album.jahr}`);
   if (album.hasFotoalbum && album.jahr) {
-    redirect(`/lager/${album.jahr}?fotos=1#familienzugang`);
+    redirect(`/lager/${album.jahr}?fotos=1#fotos`);
   }
   redirect("/lager");
 }

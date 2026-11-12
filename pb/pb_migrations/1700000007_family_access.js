@@ -2,12 +2,8 @@
 migrate(
   (app) => {
     const email = $os.getenv("FAMILY_ACCESS_EMAIL") || "familie@fitundfun.local";
-    const password = $os.getenv("FAMILY_ACCESS_PASSWORD");
-    if (!password) {
-      throw new Error("FAMILY_ACCESS_PASSWORD ist nicht gesetzt — Familienkonto kann nicht provisioniert werden.");
-    }
-    // Muss exakt family-access.ts (familyPocketBase) entsprechen.
-    const accountPassword = `${password}-internal`;
+    // Vorläufiges Zufallspasswort; 1700000016_haertung.js setzt das Konto auf FAMILY_ACCESS_SECRET.
+    const accountPassword = $security.randomString(48);
     const users = app.findCollectionByNameOrId("users");
 
     let record;

@@ -66,6 +66,7 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
           >
             <Dropzone
               accept="video/mp4,video/webm"
+              formats="ein MP4- oder WebM-Video"
               maxSizeMB={60}
               currentName={removeVideo ? null : video?.name || record?.hero_video}
               label="Video wählen"
@@ -81,6 +82,7 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
           >
             <Dropzone
               accept="image/*"
+              formats="ein Bild (JPG, PNG oder WebP)"
               maxSizeMB={5}
               currentName={removePoster ? null : poster?.name || record?.hero_poster}
               label="Bild wählen"

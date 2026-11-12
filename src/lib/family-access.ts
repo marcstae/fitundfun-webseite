@@ -9,10 +9,12 @@ export const FAMILY_ACCESS_COOKIE = "fitundfun_family_access";
 export const FAMILY_ACCESS_MAX_AGE = 400 * 24 * 60 * 60;
 
 const familyEmail = process.env.FAMILY_ACCESS_EMAIL || "familie@fitundfun.local";
-const familyPassword = process.env.FAMILY_ACCESS_PASSWORD || "";
-if (!familyPassword) {
+// Internes Servergeheimnis: Cookie-Signatur und Passwort des PB-Familienkontos.
+// Geht nie an Familien; deren Passwort wird nur im Cockpit gesetzt (password_hash).
+const familySecret = process.env.FAMILY_ACCESS_SECRET || "";
+if (!familySecret) {
   console.error(
-    "fitundfun: FAMILY_ACCESS_PASSWORD ist nicht gesetzt — Familienzugang deaktiviert."
+    "fitundfun: FAMILY_ACCESS_SECRET ist nicht gesetzt — Familienzugang deaktiviert."
   );
 }
 
@@ -49,13 +51,12 @@ async function familyConfig(): Promise<FamilienzugangRecord> {
   return result.items[0];
 }
 
+/** Ohne im Cockpit gesetztes Familienpasswort ist der Familienzugang geschlossen. */
 export async function isFamilyPassword(value: string): Promise<boolean> {
-  if (!value || !familyPassword) return false;
+  if (!value || !familySecret) return false;
   try {
     const config = await familyConfig();
-    return config.password_hash
-      ? verifyFamilyPasswordHash(value, config.password_hash)
-      : safeEqual(value, familyPassword);
+    return !!config.password_hash && (await verifyFamilyPasswordHash(value, config.password_hash));
   } catch {
     return false;
   }
@@ -63,14 +64,14 @@ export async function isFamilyPassword(value: string): Promise<boolean> {
 
 export async function familyAccessCookieValue(): Promise<string> {
   const version = (await familyConfig()).cookie_version;
-  const signature = createHmac("sha256", familyPassword)
-    .update(`fitundfun-family-access-v2:${version}`)
+  const signature = createHmac("sha256", familySecret)
+    .update(`fitundfun-family-access-v3:${version}`)
     .digest("base64url");
   return `${version}.${signature}`;
 }
 
 export async function hasFamilyAccess(value?: string): Promise<boolean> {
-  if (!familyPassword || !value) return false;
+  if (!familySecret || !value) return false;
   try {
     return safeEqual(value, await familyAccessCookieValue());
   } catch {
@@ -78,21 +79,42 @@ export async function hasFamilyAccess(value?: string): Promise<boolean> {
   }
 }
 
+// Token des Familienkontos wiederverwenden, statt bei jedem Aufruf neu anzumelden
+// (PocketBase begrenzt Anmeldungen pro IP, und alle kommen vom Webserver).
+let familyToken = "";
+
 export async function familyPocketBase(): Promise<PocketBase> {
-  if (!familyPassword) throw new Error("FAMILY_ACCESS_PASSWORD nicht gesetzt");
+  if (!familySecret) throw new Error("FAMILY_ACCESS_SECRET nicht gesetzt");
   const pb = pbRequest();
-  // ponytail: eine Auth-Anfrage pro geschützter Seite/Download; cachen erst wenn messbar nötig.
-  await pb
-    .collection("users")
-    .authWithPassword(familyEmail, `${familyPassword}-internal`);
+  if (familyToken) {
+    pb.authStore.save(familyToken);
+    if (pb.authStore.isValid) return pb;
+  }
+  await pb.collection("users").authWithPassword(familyEmail, familySecret);
+  familyToken = pb.authStore.token;
   return pb;
 }
 
-// ponytail: in-memory per-IP Rate-Limit für die Server-Action; globales Limit nur bei Multi-Instanz nötig.
-const unlockAttempts = new Map<string, { count: number; resetAt: number }>();
+// ponytail: In-Memory-Limits pro Prozess; bei mehreren Web-Instanzen bräuchte es einen geteilten Speicher.
+type Attempts = { count: number; resetAt: number };
+const unlockAttempts = new Map<string, Attempts>();
 const MAX_UNLOCK_ATTEMPTS = 10;
+// Die Client-IP stammt aus Headern, die ohne Reverse Proxy frei setzbar sind. Deshalb zählt
+// zusätzlich jeder Fehlversuch global. ponytail: Ein Angreifer kann so das Freischalten bis zu
+// einer Stunde für alle blockieren; besser als unbegrenztes Durchprobieren des Familienpassworts.
+let globalAttempts: Attempts = { count: 0, resetAt: 0 };
+const MAX_GLOBAL_UNLOCK_ATTEMPTS = 50;
 const UNLOCK_WINDOW_MS = 60 * 60 * 1000;
 const MAX_UNLOCK_TRACKED_IPS = 10_000;
+
+function within(entry: Attempts | undefined, max: number): boolean {
+  return !entry || Date.now() > entry.resetAt || entry.count < max;
+}
+
+function counted(entry: Attempts | undefined): Attempts {
+  if (!entry || Date.now() > entry.resetAt) return { count: 1, resetAt: Date.now() + UNLOCK_WINDOW_MS };
+  return { ...entry, count: entry.count + 1 };
+}
 
 export function clientIp(requestHeaders: Headers): string {
   // X-Real-IP wird vom Reverse Proxy verlässlich überschrieben; X-Forwarded-For
@@ -105,25 +127,18 @@ export function clientIp(requestHeaders: Headers): string {
 }
 
 export function unlockAttemptAllowed(ip: string): boolean {
-  const entry = unlockAttempts.get(ip);
-  if (!entry) return true;
-  if (Date.now() > entry.resetAt) {
-    unlockAttempts.delete(ip);
-    return true;
-  }
-  return entry.count < MAX_UNLOCK_ATTEMPTS;
+  return (
+    within(globalAttempts, MAX_GLOBAL_UNLOCK_ATTEMPTS) &&
+    within(unlockAttempts.get(ip), MAX_UNLOCK_ATTEMPTS)
+  );
 }
 
 export function recordUnlockFailure(ip: string): void {
-  const entry = unlockAttempts.get(ip);
-  if (!entry || Date.now() > entry.resetAt) {
-    // ponytail: Cap statt Alters-Sweeping; reicht, solange die Map unter 10k bleibt.
-    if (unlockAttempts.size >= MAX_UNLOCK_TRACKED_IPS) {
-      const oldest = unlockAttempts.keys().next().value;
-      if (oldest !== undefined) unlockAttempts.delete(oldest);
-    }
-    unlockAttempts.set(ip, { count: 1, resetAt: Date.now() + UNLOCK_WINDOW_MS });
-  } else {
-    entry.count++;
+  globalAttempts = counted(globalAttempts);
+  // ponytail: Cap statt Alters-Sweeping; reicht, solange die Map unter 10k bleibt.
+  if (!unlockAttempts.has(ip) && unlockAttempts.size >= MAX_UNLOCK_TRACKED_IPS) {
+    const oldest = unlockAttempts.keys().next().value;
+    if (oldest !== undefined) unlockAttempts.delete(oldest);
   }
+  unlockAttempts.set(ip, counted(unlockAttempts.get(ip)));
 }

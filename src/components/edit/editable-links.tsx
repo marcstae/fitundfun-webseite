@@ -47,11 +47,12 @@ function LinkManager() {
     const target = index + delta;
     if (target < 0 || target >= items.length) return;
     const previous = items;
-    const next = [...items];
-    [next[index], next[target]] = [next[target], next[index]];
+    const swapped = [...items];
+    [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
+    const next = swapped.map((item, sort) => ({ ...item, sort: sort + 1 }));
     setItems(next);
     try {
-      await Promise.all(next.map((item, sort) => pbBrowser().collection("links").update(item.id, { sort: sort + 1 })));
+      await Promise.all(next.map((item) => pbBrowser().collection("links").update(item.id, { sort: item.sort })));
       await revalidatePath("/lager");
       toast.success("Reihenfolge gespeichert");
     } catch {
@@ -91,22 +92,22 @@ function LinkManager() {
           {items.map((it, index) => (
             <li
               key={it.id}
-              className="flex items-center justify-between gap-2 rounded-lg bg-ink/[0.03] px-3 py-2 text-sm"
+              className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-ink/[0.03] px-3 py-2 text-sm"
             >
-              <span className="truncate font-semibold">{it.titel}</span>
+              <span className="min-w-0 flex-1 basis-40 truncate font-semibold">{it.titel}</span>
               <span className="flex shrink-0 gap-1">
-                <button onClick={() => move(index, -1)} disabled={index === 0} className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.titel} nach oben verschieben`}><ArrowUp className="size-4" /></button>
-                <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.titel} nach unten verschieben`}><ArrowDown className="size-4" /></button>
+                <button onClick={() => move(index, -1)} disabled={index === 0} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.titel} nach oben verschieben`}><ArrowUp className="size-4" /></button>
+                <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.titel} nach unten verschieben`}><ArrowDown className="size-4" /></button>
                 <button
                   onClick={() => { setEditing(it); setOpen(true); }}
-                  className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink"
+                  className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 hover:text-ink"
                   aria-label="Bearbeiten"
                 >
                   <Pencil className="size-4" />
                 </button>
                 <button
                   onClick={() => del(it)}
-                  className="inline-flex size-7 items-center justify-center rounded-md text-red-600/70 hover:bg-red-50 hover:text-red-600"
+                  className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-red-600/70 hover:bg-red-50 hover:text-red-600"
                   aria-label="Löschen"
                 >
                   <Trash2 className="size-4" />
@@ -119,6 +120,7 @@ function LinkManager() {
       {open && (
         <LinkForm
           item={editing}
+          nextSort={Math.max(0, ...items.map((item) => item.sort || 0)) + 1}
           onSaved={() => { load(); setOpen(false); }}
           onClose={() => setOpen(false)}
         />
@@ -129,10 +131,12 @@ function LinkManager() {
 
 function LinkForm({
   item,
+  nextSort,
   onSaved,
   onClose,
 }: {
   item: LinkRecord | null;
+  nextSort: number;
   onSaved: () => void;
   onClose: () => void;
 }) {
@@ -150,7 +154,7 @@ function LinkForm({
       if (item) {
         await pb.collection("links").update(item.id, { titel, url });
       } else {
-        await pb.collection("links").create({ titel, url, sort: 0 });
+        await pb.collection("links").create({ titel, url, sort: nextSort });
       }
       await revalidatePath(window.location.pathname);
     });

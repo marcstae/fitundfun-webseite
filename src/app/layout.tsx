@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { SiteChrome } from "@/components/site-chrome";
 import { getAktuellesLager } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
+import { formatDateRange } from "@/lib/utils";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -32,11 +33,11 @@ export const metadata: Metadata = {
     template: "%s · fit&fun Lager Brigels",
   },
   description:
-    "Eine Woche Schnee, Sonne und Familie — seit 2007. Familien-Skilager in Brigels, Graubünden.",
+    "Informationen und Dokumente zum fit&fun Familienlager in Brigels, Graubünden.",
   openGraph: {
     title: "fit&fun Lager Brigels",
     description:
-      "Eine Woche Schnee, Sonne und Familie — seit 2007. Skilager in Brigels.",
+      "Informationen und Dokumente zum fit&fun Familienlager in Brigels.",
     locale: "de_CH",
     type: "website",
   },
@@ -44,7 +45,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const aktuellesLager = await getAktuellesLager();
+  // Ohne PB nur den Menüeintrag des aktuellen Lagers weglassen, nicht jede Seite brechen.
+  const aktuellesLager = await getAktuellesLager().catch(() => null);
   return (
     <html
       lang="de-CH"
@@ -52,7 +54,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <body className="min-h-dvh flex flex-col">
         <Providers>
-          <SiteChrome aktuellesJahr={aktuellesLager?.jahr ?? null}>
+          <SiteChrome
+            aktuellesJahr={aktuellesLager?.jahr ?? null}
+            lagerZeitraum={
+              aktuellesLager?.datum_von && aktuellesLager.datum_bis
+                ? formatDateRange(aktuellesLager.datum_von, aktuellesLager.datum_bis)
+                : null
+            }
+          >
             {children}
           </SiteChrome>
         </Providers>

@@ -1,4 +1,4 @@
-import type { FotoalbumRecord, LagerRecord } from "./pb-types";
+import type { DokumentRecord, FotoalbumRecord, LagerRecord } from "./pb-types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -50,32 +50,51 @@ const NB_LONG = [
   "Dezember",
 ];
 
-function dePad(n: number) {
-  return n < 10 ? `0${n}` : `${n}`;
-}
+// Lagerdaten sind reine Kalendertage, gespeichert als UTC-Mitternacht. Deshalb überall
+// UTC lesen, sonst verschiebt sich das Datum westlich von UTC um einen Tag.
+const asDate = (d: string | Date) => (typeof d === "string" ? new Date(d) : d);
 
 /** "30. Jan – 6. Feb 2027" — de-CH, ohne führende Null beim Tag. */
 export function formatDateRange(von: string | Date, bis: string | Date): string {
-  const a = typeof von === "string" ? new Date(von) : von;
-  const b = typeof bis === "string" ? new Date(bis) : bis;
-  const sameYear = a.getFullYear() === b.getFullYear();
-  const start = `${a.getDate()}. ${NB[a.getMonth()]}`;
-  const end = sameYear
-    ? `${b.getDate()}. ${NB[b.getMonth()]} ${b.getFullYear()}`
-    : `${b.getDate()}. ${NB[b.getMonth()]} ${b.getFullYear()}`;
-  return `${start} – ${end}`;
+  const a = asDate(von);
+  const b = asDate(bis);
+  return `${a.getUTCDate()}. ${NB[a.getUTCMonth()]} – ${b.getUTCDate()}. ${NB[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
 }
 
 /** "30. Januar – 6. Februar 2027" */
 export function formatDateRangeLong(von: string | Date, bis: string | Date): string {
-  const a = typeof von === "string" ? new Date(von) : von;
-  const b = typeof bis === "string" ? new Date(bis) : bis;
-  return `${a.getDate()}. ${NB_LONG[a.getMonth()]} – ${b.getDate()}. ${NB_LONG[b.getMonth()]} ${b.getFullYear()}`;
+  const a = asDate(von);
+  const b = asDate(bis);
+  return `${a.getUTCDate()}. ${NB_LONG[a.getUTCMonth()]} – ${b.getUTCDate()}. ${NB_LONG[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
 }
 
 export function isoToDateInput(d: string | Date): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return `${date.getFullYear()}-${dePad(date.getMonth() + 1)}-${dePad(date.getDate())}`;
+  return asDate(d).toISOString().slice(0, 10);
+}
+
+/** Dauerhafter Download-Link mit lesbarem Namen, z. B. für Mails der Lagerleitung. */
+export function documentHref(doc: Pick<DokumentRecord, "collection" | "id" | "name" | "datei">): string {
+  const extension = doc.datei.toLowerCase().endsWith(".docx") ? ".docx" : ".pdf";
+  const slug =
+    doc.name
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^A-Za-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "dokument";
+  return `/api/download/${doc.collection}/${doc.id}/${slug}${extension}`;
+}
+
+/** Content-Disposition, die auch «–», „“ oder Emoji im Dokumentnamen übersteht (RFC 6266/5987). */
+export function contentDisposition(filename: string): string {
+  const ascii = filename
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7e]|["\\/]/g, "_");
+  const utf8 = encodeURIComponent(filename).replace(
+    /['()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `inline; filename="${ascii}"; filename*=UTF-8''${utf8}`;
 }
 
 
@@ -104,8 +123,4 @@ export function youtubeId(url: string): string | null {
     if (m) return m[1];
   }
   return null;
-}
-
-export function youtubeThumb(id: string): string {
-  return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 }

@@ -1,17 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp, Plus, Pencil, Trash2, FileText } from "lucide-react";
+import { ArrowDown, ArrowUp, FileText, Link2, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
+import { documentHref } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Dropzone } from "./dropzone";
 import { SaveDialog, useSaveAction } from "./save-dialog";
 import type { DokumentRecord } from "@/lib/pb-types";
+
+const ICON_BUTTON =
+  "inline-flex size-10 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink disabled:opacity-25 sm:size-8";
 
 export function EditableDokumentList({
   lagerId,
@@ -25,70 +28,101 @@ export function EditableDokumentList({
   const [editing, setEditing] = React.useState<DokumentRecord | null>(null);
 
   const move = async (index: number, delta: -1 | 1) => {
-    const nextIndex = index + delta;
-    if (nextIndex < 0 || nextIndex >= items.length) return;
-    const next = [...items];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const previous = items;
+    const swapped = [...items];
+    [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
+    const next = swapped.map((document, sort) => ({ ...document, sort: sort + 1 }));
     setItems(next);
     try {
       await Promise.all(
-        next.map((document, sort) =>
-          pbBrowser().collection(document.collection).update(document.id, { sort: sort + 1 })
+        next.map((document) =>
+          pbBrowser().collection(document.collection).update(document.id, { sort: document.sort })
         )
       );
       await revalidatePath(window.location.pathname);
       toast.success("Reihenfolge gespeichert");
     } catch {
-      setItems(items);
+      setItems(previous);
       toast.error("Reihenfolge konnte nicht gespeichert werden.");
     }
   };
 
+  const copyLink = async (document: DokumentRecord) => {
+    const url = new URL(documentHref(document), window.location.origin).href;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link kopiert – er bleibt auch nach einer neuen Fassung gültig.");
+    } catch {
+      // Ohne HTTPS gibt es keine Zwischenablage-API: Link zum manuellen Kopieren anzeigen.
+      window.prompt("Link zum Kopieren:", url);
+    }
+  };
+
   return (
-    <div className="rounded-2xl border border-dashed border-accent/30 p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-muted">
-          Dokumente verwalten
-        </span>
-        <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
-          <Plus /> Hinzufügen
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">
+          {items.length === 0 ? "Noch keine Dokumente." : `${items.length} Dokument${items.length === 1 ? "" : "e"}`}
+        </p>
+        <Button onClick={() => { setEditing(null); setOpen(true); }}>
+          <Plus /> Dokument hochladen
         </Button>
       </div>
       {items.length > 0 && (
-        <ul className="mt-3 space-y-1.5">
+        <ul className="mt-4 space-y-2">
           {items.map((d, index) => (
             <li
               key={d.id}
-              className="flex items-center justify-between gap-2 rounded-lg bg-ink/[0.03] px-3 py-2 text-sm"
+              className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-xl bg-ink/[0.03] px-3 py-2 text-sm"
             >
-              <span className="flex items-center gap-2 truncate">
-                <FileText className="size-4 text-accent" />
-                <span className="truncate font-semibold">{d.name}</span>
-                {d.sensibel && (
-                  <span className="text-xs text-muted">🔒 sensibel</span>
+              <span className="flex min-w-0 flex-1 basis-48 items-center gap-2">
+                {d.sensibel ? (
+                  <Lock className="size-4 shrink-0 text-muted" aria-hidden />
+                ) : (
+                  <FileText className="size-4 shrink-0 text-accent" aria-hidden />
                 )}
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{d.name}</span>
+                  <span className="block text-xs text-muted">
+                    {d.sensibel ? "Geschützt (Familienpasswort)" : "Öffentlich"}
+                  </span>
+                </span>
               </span>
               <span className="flex shrink-0 gap-1">
                 <button
+                  type="button"
+                  onClick={() => copyLink(d)}
+                  className={ICON_BUTTON}
+                  aria-label={`Link zu ${d.name} kopieren`}
+                  title="Link kopieren"
+                >
+                  <Link2 className="size-4" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
-                  className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink disabled:opacity-25"
+                  className={ICON_BUTTON}
                   aria-label={`${d.name} nach oben verschieben`}
                 >
                   <ArrowUp className="size-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => move(index, 1)}
                   disabled={index === items.length - 1}
-                  className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink disabled:opacity-25"
+                  className={ICON_BUTTON}
                   aria-label={`${d.name} nach unten verschieben`}
                 >
                   <ArrowDown className="size-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => { setEditing(d); setOpen(true); }}
-                  className="inline-flex size-7 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink"
-                  aria-label="Bearbeiten"
+                  className={ICON_BUTTON}
+                  aria-label={`${d.name} bearbeiten oder neue Fassung hochladen`}
                 >
                   <Pencil className="size-4" />
                 </button>
@@ -102,6 +136,7 @@ export function EditableDokumentList({
         <DokumentForm
           lagerId={lagerId}
           doc={editing}
+          nextSort={Math.max(0, ...items.map((item) => item.sort || 0)) + 1}
           onSaved={(saved) => {
             setItems((current) => [
               ...current.filter((item) => item.id !== editing?.id),
@@ -119,16 +154,20 @@ export function EditableDokumentList({
 function DokumentForm({
   lagerId,
   doc,
+  nextSort,
   onSaved,
   onClose,
 }: {
   lagerId: string;
   doc: DokumentRecord | null;
+  nextSort: number;
   onSaved: (document: DokumentRecord) => void;
   onClose: () => void;
 }) {
   const [name, setName] = React.useState(doc?.name || "");
-  const [sensibel, setSensibel] = React.useState(doc?.sensibel ?? false);
+  // Neue Dokumente sind geschützt, bis bewusst «Für alle sichtbar» gewählt wird:
+  // Teilnehmerlisten und Zimmerpläne enthalten Personendaten von Kindern.
+  const [sensibel, setSensibel] = React.useState(doc?.sensibel ?? true);
   const [file, setFile] = React.useState<File | null>(null);
   const { saving, run } = useSaveAction();
 
@@ -140,7 +179,7 @@ function DokumentForm({
       return;
     }
     if (!doc && !file) {
-      toast.error("Bitte eine PDF- oder DOCX-Datei wählen.");
+      toast.error("Bitte eine PDF- oder Word-Datei wählen.");
       return;
     }
     let saved: DokumentRecord | null = null;
@@ -150,24 +189,26 @@ function DokumentForm({
       form.set("name", name.trim());
       form.set("lager", lagerId);
       form.set("sensibel", sensibel ? "true" : "false");
-      form.set("sort", String(doc?.sort ?? 0));
+      form.set("sort", String(doc?.sort ?? nextSort));
       if (file) form.set("datei", file);
 
-      // Sammlung kann sich beim Sensibel-Toggle ändern → verschieben:
-      // erst in die Ziel-Sammlung anlegen, erst danach das Original löschen
-      // (kein Datenverlustfenster, anders als Delete-then-Create).
       if (doc && doc.collection !== collection) {
+        // Sichtbarkeit gewechselt: erst in der Zielsammlung anlegen, dann das Original löschen.
         if (!file) {
-          const response = await fetch(
-            `/api/download/${doc.collection}/${doc.id}/${encodeURIComponent(doc.datei)}`
-          );
+          const response = await fetch(documentHref(doc));
           if (!response.ok) throw new Error("Bestehende Datei konnte nicht geladen werden");
           const blob = await response.blob();
           form.set("datei", new File([blob], doc.datei, { type: blob.type }));
         }
         const created = await pb.collection(collection).create<DokumentRecord>(form);
+        try {
+          await pb.collection(doc.collection).delete(doc.id);
+        } catch (error) {
+          // Keine doppelte (und womöglich weiterhin öffentliche) Kopie zurücklassen.
+          await pb.collection(collection).delete(created.id).catch(() => {});
+          throw error;
+        }
         saved = { ...created, collection };
-        await pb.collection(doc.collection).delete(doc.id);
       } else if (doc) {
         const updated = await pb.collection(collection).update<DokumentRecord>(doc.id, form);
         saved = { ...updated, collection };
@@ -185,7 +226,11 @@ function DokumentForm({
       open
       onOpenChange={(o) => { if (!o) onClose(); }}
       title={doc ? "Dokument bearbeiten" : "Dokument hochladen"}
-      description="PDF oder DOCX, max. 20 MB."
+      description={
+        doc
+          ? "Neue Fassung hochladen oder Angaben ändern. Bereits verschickte Links bleiben gültig, solange die Sichtbarkeit gleich bleibt."
+          : "PDF oder Word (.docx), höchstens 25 MB."
+      }
       saving={saving}
       onSave={save}
     >
@@ -194,37 +239,78 @@ function DokumentForm({
         <Input
           id="doc-name"
           value={name}
-          placeholder="z. B. Packliste"
+          placeholder="z. B. Anmeldeformular 2027"
           onChange={(e) => setName(e.target.value)}
         />
       </div>
       <div className="space-y-2">
-        <Label>Dokument</Label>
+        <Label>{doc ? "Neue Fassung (optional)" : "Datei"}</Label>
         <Dropzone
-          accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          maxSizeMB={20}
+          accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.docx"
+          formats="PDF oder Word (.docx)"
+          maxSizeMB={25}
           onFile={setFile}
           currentName={file ? file.name : doc?.datei}
+          hint="PDF oder Word (.docx) hierher ziehen oder"
         />
       </div>
-      <label className="flex items-center justify-between rounded-xl border border-ink/10 px-4 py-3">
-        <span className="flex items-center gap-2 text-sm font-semibold">
-          🔒 Sensibel
-          <span className="text-xs font-normal text-muted">
-            nur für eingeloggte Familie
-          </span>
-        </span>
-        <Switch checked={sensibel} onCheckedChange={setSensibel} />
-      </label>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold text-ink">Wer darf es sehen?</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <VisibilityOption
+            checked={sensibel}
+            onChange={() => setSensibel(true)}
+            title="Nur mit Familienpasswort"
+            text="Für Teilnehmerliste, Zimmerplan und alles mit Namen."
+          />
+          <VisibilityOption
+            checked={!sensibel}
+            onChange={() => setSensibel(false)}
+            title="Für alle sichtbar"
+            text="Für Anmeldeformular, Programm und allgemeine Infos."
+          />
+        </div>
+      </fieldset>
     </SaveDialog>
   );
 }
 
+function VisibilityOption({
+  checked,
+  onChange,
+  title,
+  text,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  title: string;
+  text: string;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition ${
+        checked ? "border-accent bg-accent/5" : "border-ink/15 hover:border-ink/30"
+      }`}
+    >
+      <input
+        type="radio"
+        name="sichtbarkeit"
+        checked={checked}
+        onChange={onChange}
+        className="mt-1 size-4 accent-[var(--color-accent)]"
+      />
+      <span>
+        <span className="block text-sm font-bold text-ink">{title}</span>
+        <span className="block text-xs text-muted">{text}</span>
+      </span>
+    </label>
+  );
+}
 
 function DeleteDoc({ doc, onDeleted }: { doc: DokumentRecord; onDeleted: () => void }) {
   const [busy, setBusy] = React.useState(false);
   const del = async () => {
-    if (!window.confirm(`Dokument «${doc.name}» wirklich löschen?`)) return;
+    if (!window.confirm(`Dokument «${doc.name}» wirklich löschen? Verschickte Links funktionieren danach nicht mehr.`)) return;
     setBusy(true);
     try {
       await pbBrowser().collection(doc.collection).delete(doc.id);
@@ -240,10 +326,11 @@ function DeleteDoc({ doc, onDeleted }: { doc: DokumentRecord; onDeleted: () => v
   };
   return (
     <button
+      type="button"
       onClick={del}
       disabled={busy}
-      className="inline-flex size-7 items-center justify-center rounded-md text-red-600/70 hover:bg-red-50 hover:text-red-600"
-      aria-label="Löschen"
+      className="inline-flex size-10 items-center justify-center rounded-md text-red-600/80 hover:bg-red-50 hover:text-red-600 sm:size-8"
+      aria-label={`${doc.name} löschen`}
     >
       <Trash2 className="size-4" />
     </button>

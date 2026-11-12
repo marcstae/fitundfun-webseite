@@ -4,6 +4,9 @@ import type { CollectionSchema } from "./pb-types";
 export const PB_URL =
   process.env.NEXT_PUBLIC_PB_URL || "http://localhost:8090";
 
+/** Server-seitig erreichbare PB-URL (z. B. http://pb:8090 im Compose-Netz); im Browser undefined. */
+export const PB_INTERNAL_URL = process.env.PB_INTERNAL_URL || PB_URL;
+
 export const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || "";
 
 let _server: PocketBase | null = null;
@@ -11,7 +14,7 @@ let _server: PocketBase | null = null;
 /** Server-side PocketBase client (one per Node process). */
 export function pbServer(): PocketBase {
   if (!_server) {
-    _server = new PocketBase(PB_URL);
+    _server = new PocketBase(PB_INTERNAL_URL);
     _server.autoCancellation(false);
   }
   return _server;
@@ -19,7 +22,7 @@ export function pbServer(): PocketBase {
 
 /** Request-scoped client. Never mutate the shared server client's auth store. */
 export function pbRequest(cookieHeader = ""): PocketBase {
-  const pb = new PocketBase(PB_URL);
+  const pb = new PocketBase(PB_INTERNAL_URL);
   pb.autoCancellation(false);
   if (cookieHeader) {
     pb.authStore.loadFromCookie(cookieHeader);

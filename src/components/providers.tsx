@@ -133,7 +133,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={auth}>
       {children}
       <Toaster
+        containerAriaLabel="Benachrichtigungen"
         position="bottom-center"
+        mobileOffset={{ bottom: 80 }}
         toastOptions={{
           style: { borderRadius: "12px", fontFamily: "var(--font-archivo)" },
         }}

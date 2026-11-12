@@ -25,7 +25,7 @@ export default async function ArchivPage() {
   const letztesJahr = aktuelleLager[0]?.jahr || vergangeneLager[0]?.jahr;
 
   return (
-    <main className="bg-sand">
+    <div className="bg-sand">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <header className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
@@ -79,7 +79,7 @@ export default async function ArchivPage() {
           </p>
         ) : null}
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -115,14 +115,14 @@ function ArchivedCampCard({ lager }: { lager: LagerRecord }) {
   return (
     <Link
       href={`/lager/${lager.jahr}`}
-      className="group flex min-h-64 flex-col rounded-[1.75rem] border border-ink/10 bg-white p-6 transition hover:-translate-y-1 hover:border-ink/20 hover:shadow-[0_18px_45px_rgba(14,28,48,0.08)] sm:p-7"
+      className="group flex flex-col rounded-[1.5rem] border border-ink/10 bg-white p-5 transition md:min-h-64 hover:-translate-y-1 hover:border-ink/20 hover:shadow-[0_18px_45px_rgba(14,28,48,0.08)] sm:p-7"
     >
       <div className="flex items-start justify-between gap-4">
         <span className="camp-display text-4xl leading-none text-ink">{lager.jahr}</span>
         <ArrowUpRight className="size-5 text-muted transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold uppercase tracking-[0.12em] text-muted sm:mt-6">
         {zeitraum ? (
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="size-3.5" /> {zeitraum}
@@ -130,16 +130,17 @@ function ArchivedCampCard({ lager }: { lager: LagerRecord }) {
         ) : null}
         {lager.teilnehmer ? (
           <span className="inline-flex items-center gap-1.5">
-            <UsersRound className="size-3.5" /> {lager.teilnehmer}
+            <UsersRound className="size-3.5" aria-hidden /> {lager.teilnehmer}
+            <span className="sr-only"> Teilnehmende</span>
           </span>
         ) : null}
       </div>
 
-      <p className="mt-5 line-clamp-3 text-sm font-semibold leading-relaxed text-muted">
+      <p className="mt-3 line-clamp-2 text-sm font-semibold leading-relaxed text-muted sm:mt-5 sm:line-clamp-3">
         {richTextToPlainText(lager.beschreibung || "") || "Dokumente und Erinnerungen aus diesem Lagerjahr."}
       </p>
 
-      <div className="mt-auto flex items-center gap-3 pt-6 text-xs font-bold text-ink/60">
+      <div className="mt-auto flex items-center gap-3 pt-3 text-xs font-bold text-ink/60 sm:pt-6">
         {lager.youtube_url ? (
           <span className="inline-flex items-center gap-1.5">
             <Play className="size-3.5" /> Video

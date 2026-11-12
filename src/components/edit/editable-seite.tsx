@@ -54,7 +54,7 @@ export function EditableSeite({ slug, seite, defaultTitel }: Props) {
         </div>
         <div className="space-y-2">
           <Label>Inhalt</Label>
-          <MinimalEditor value={inhalt} onChange={setInhalt} placeholder="Text erfassen…" />
+          <MinimalEditor label="Inhalt" value={inhalt} onChange={setInhalt} placeholder="Text erfassen…" />
         </div>
       </SaveDialog>
     </>

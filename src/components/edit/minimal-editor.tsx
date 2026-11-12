@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface MinimalEditorProps {
   value: string;
   onChange: (html: string) => void;
+  label: string;
   placeholder?: string;
   className?: string;
 }
@@ -14,11 +15,12 @@ interface MinimalEditorProps {
 /**
  * Minimaler Rich-Text-Editor (Bold, Kursiv, Aufzählung, Link).
  * Bewusst kein TipTap — weniger Dependencies, gleiche DAU-Sicherheit.
- * Ausgabe wird beim Rendern sanitized (Whitelist p/br/strong/em/ul/ol/li/a).
+ * Ausgabe wird beim Rendern sanitized (div/b/i werden zu p/strong/em, siehe sanitize.ts).
  */
 export function MinimalEditor({
   value,
   onChange,
+  label,
   placeholder,
   className,
 }: MinimalEditorProps) {
@@ -49,7 +51,7 @@ export function MinimalEditor({
   ];
 
   return (
-    <div className={cn("rounded-xl border border-ink/15", className)}>
+    <div className={cn("rounded-xl border border-ink/15 focus-within:ring-2 focus-within:ring-accent/30", className)}>
       <div className="flex items-center gap-1 border-b border-ink/10 bg-ink/[0.02] px-2 py-1.5">
         {tools.map((t) => (
           <button
@@ -58,7 +60,7 @@ export function MinimalEditor({
             title={t.label}
             aria-label={t.label}
             onClick={() => exec(t.cmd)}
-            className="inline-flex size-8 items-center justify-center rounded-md text-ink/70 hover:bg-ink/10 hover:text-ink"
+            className="inline-flex size-10 items-center justify-center rounded-md text-ink/70 hover:bg-ink/10 hover:text-ink"
           >
             <t.icon className="size-4" />
           </button>
@@ -68,7 +70,7 @@ export function MinimalEditor({
           title="Link"
           aria-label="Link einfügen"
           onClick={addLink}
-          className="inline-flex size-8 items-center justify-center rounded-md text-ink/70 hover:bg-ink/10 hover:text-ink"
+          className="inline-flex size-10 items-center justify-center rounded-md text-ink/70 hover:bg-ink/10 hover:text-ink"
         >
           <LinkIcon className="size-4" />
         </button>
@@ -76,10 +78,13 @@ export function MinimalEditor({
       <div
         ref={ref}
         contentEditable
+        role="textbox"
+        aria-multiline="true"
+        aria-label={label}
         suppressContentEditableWarning
         data-placeholder={placeholder}
         onInput={() => onChange(ref.current?.innerHTML || "")}
-        className="min-h-[120px] px-4 py-3 text-base text-ink focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-accent [&_a]:underline empty:before:content-[attr(data-placeholder)] empty:before:text-muted/60"
+        className="min-h-[120px] px-4 py-3 text-base text-ink focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-accent [&_a]:underline empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
       />
     </div>
   );

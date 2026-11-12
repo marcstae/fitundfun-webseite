@@ -1,13 +1,41 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  contentDisposition,
+  documentHref,
   formatDateRange,
   formatDateRangeLong,
+  isoToDateInput,
   isValidHttpUrl,
   pickNeustesFotoalbum,
   youtubeId,
 } from "./utils.ts";
 import type { FotoalbumRecord, LagerRecord } from "./pb-types.ts";
+
+test("isoToDateInput: gespeicherte UTC-Mitternacht bleibt derselbe Kalendertag", () => {
+  assert.equal(isoToDateInput("2027-02-06 00:00:00.000Z"), "2027-02-06");
+  assert.equal(isoToDateInput(new Date("2027-02-13").toISOString()), "2027-02-13");
+});
+
+test("documentHref: lesbarer, dauerhafter Link unabhängig vom PB-Dateinamen", () => {
+  assert.equal(
+    documentHref({ collection: "dokumente_intern", id: "abc123", name: "Zimmerplan 2027 (R2) – Änderung", datei: "zimmer_x1y2.pdf" }),
+    "/api/download/dokumente_intern/abc123/Zimmerplan-2027-R2-Anderung.pdf"
+  );
+  assert.equal(
+    documentHref({ collection: "dokumente", id: "def456", name: "„“", datei: "anmeldung.DOCX" }),
+    "/api/download/dokumente/def456/dokument.docx"
+  );
+});
+
+test("contentDisposition: Gedankenstrich, Umlaute und Anführungszeichen sind gültige Header", () => {
+  const header = contentDisposition("Teilnehmerliste – Ä „2027“.pdf");
+  assert.doesNotThrow(() => new Headers({ "Content-Disposition": header }));
+  assert.equal(
+    header,
+    "inline; filename=\"Teilnehmerliste _ A _2027_.pdf\"; filename*=UTF-8''Teilnehmerliste%20%E2%80%93%20%C3%84%20%E2%80%9E2027%E2%80%9C.pdf"
+  );
+});
 
 test("formatDateRange: gleiches Jahr", () => {
   assert.equal(formatDateRange("2026-01-31", "2026-02-07"), "31. Jan – 7. Feb 2026");

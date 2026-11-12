@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 // Muss vor dem Modul-Import gesetzt sein: family-access liest die Env beim Laden.
-process.env.FAMILY_ACCESS_PASSWORD = "TestPasswort123";
+process.env.FAMILY_ACCESS_SECRET = "test-geheimnis-nur-fuer-den-server";
 
 const familyAccess = await import("./family-access.ts");
 test("Passwort-Hash: richtig/falsch", async () => {
@@ -38,4 +38,10 @@ test("Rate-Limit: 10 erlaubt, 11. blockiert", () => {
 test("Rate-Limit: andere IP bleibt unberührt", () => {
   for (let i = 0; i < 10; i++) familyAccess.recordUnlockFailure("andere-ip");
   assert.equal(familyAccess.unlockAttemptAllowed("ganz-andere-ip"), true);
+});
+
+test("Rate-Limit: wechselnde (gefälschte) IPs stossen an das globale Limit", () => {
+  // Bisher 20 Fehlversuche; 30 weitere mit je neuer IP erreichen das globale Maximum von 50.
+  for (let i = 0; i < 30; i++) familyAccess.recordUnlockFailure(`10.0.0.${i}`);
+  assert.equal(familyAccess.unlockAttemptAllowed("nie-gesehene-ip"), false);
 });

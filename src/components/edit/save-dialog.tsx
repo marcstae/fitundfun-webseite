@@ -1,15 +1,29 @@
 "use client";
 
 import * as React from "react";
+import { ClientResponseError } from "pocketbase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+/** Verständlicher Grund aus einer PocketBase-Validierung, sonst null. */
+function fieldProblem(error: unknown): string | null {
+  if (!(error instanceof ClientResponseError)) return null;
+  const fields = Object.values((error.response?.data || {}) as Record<string, { code?: string }>);
+  const codes = fields.map((field) => field?.code || "");
+  if (codes.some((code) => code.includes("file_size"))) return "Datei zu gross – bitte eine kleinere Datei wählen.";
+  if (codes.some((code) => code.includes("mime_type"))) return "Dieses Dateiformat ist hier nicht erlaubt.";
+  if (codes.some((code) => code === "validation_not_unique")) return "Dieser Eintrag existiert bereits (z. B. das gleiche Lagerjahr).";
+  if (error.status === 401 || error.status === 403) return "Die Anmeldung ist abgelaufen – bitte neu anmelden.";
+  return null;
+}
 
 /** Gemeinsames Speichern-Gerüst: saving-State + Fehler-Toast. */
 export function useSaveAction() {
@@ -23,7 +37,7 @@ export function useSaveAction() {
         toast.success("Gespeichert ✓");
         return true;
       } catch (e) {
-        toast.error(errorMessage);
+        toast.error(fieldProblem(e) || errorMessage);
         console.error(e);
         return false;
       } finally {
@@ -65,7 +79,7 @@ export function SaveDialog({
       <DialogContent className={className}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description ? <p className="text-sm text-muted">{description}</p> : null}
+          {description ? <DialogDescription className="mt-1">{description}</DialogDescription> : null}
         </DialogHeader>
         <div className="space-y-4">{children}</div>
         <DialogFooter>

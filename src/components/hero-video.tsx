@@ -9,30 +9,29 @@ interface HeroVideoProps {
   className?: string;
 }
 
-/** Autoplaying hero video with a persistent poster fallback. */
+/**
+ * Hintergrundvideo mit Posterbild. Startet nur per Skript (kein autoPlay-Attribut), damit
+ * bei «Bewegung reduzieren» nur das Posterbild erscheint und keine Videodaten geladen werden.
+ */
 export function HeroVideo({ videoUrl, posterUrl, className }: HeroVideoProps) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   React.useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const requestPlayback = () => {
+      if (document.hidden) return;
       video.muted = true;
-      if (!document.hidden) {
-        void video.play().catch(() => undefined);
-      }
-    };
-    const resumeWhenVisible = () => {
-      if (!document.hidden) requestPlayback();
+      void video.play().catch(() => undefined);
     };
 
     requestPlayback();
     video.addEventListener("canplay", requestPlayback);
-    document.addEventListener("visibilitychange", resumeWhenVisible);
+    document.addEventListener("visibilitychange", requestPlayback);
     return () => {
       video.removeEventListener("canplay", requestPlayback);
-      document.removeEventListener("visibilitychange", resumeWhenVisible);
+      document.removeEventListener("visibilitychange", requestPlayback);
     };
   }, [videoUrl]);
 
@@ -51,11 +50,10 @@ export function HeroVideo({ videoUrl, posterUrl, className }: HeroVideoProps) {
           ref={videoRef}
           className="absolute inset-0 size-full object-cover"
           src={videoUrl}
-          autoPlay
           muted
           loop
           playsInline
-          preload="auto"
+          preload="none"
           poster={posterUrl || undefined}
           aria-hidden="true"
         />

@@ -13,13 +13,14 @@ import {
   Video,
 } from "lucide-react";
 import { pbBrowser } from "@/lib/pb";
-import type { DokumentRecord, FotoalbumRecord, LagerRecord } from "@/lib/pb-types";
+import type { DokumentRecord, FamilienzugangRecord, FotoalbumRecord, LagerRecord } from "@/lib/pb-types";
 
 export default function AdminDashboard() {
   const [data, setData] = React.useState<{
     lager: LagerRecord[];
     dokumente: DokumentRecord[];
     fotoalben: FotoalbumRecord[];
+    familienpasswort: boolean;
   } | null>(null);
   const [error, setError] = React.useState(false);
 
@@ -32,15 +33,17 @@ export default function AdminDashboard() {
         pb.collection("dokumente_intern").getFullList<DokumentRecord>(),
       ]).then(([publicDocs, privateDocs]) => [...publicDocs, ...privateDocs]),
       pb.collection("fotoalben").getFullList<FotoalbumRecord>(),
+      pb.collection("familienzugang").getList<FamilienzugangRecord>(1, 1),
     ])
-      .then(([lager, dokumente, fotoalben]) => setData({ lager, dokumente, fotoalben }))
+      .then(([lager, dokumente, fotoalben, familienzugang]) =>
+        setData({ lager, dokumente, fotoalben, familienpasswort: !!familienzugang.items[0]?.password_hash })
+      )
       .catch(() => setError(true));
   }, []);
 
-  const fokus =
-    data?.lager.find((lager) => lager.status === "veroeffentlicht") ||
-    data?.lager.find((lager) => lager.status === "entwurf") ||
-    data?.lager[0];
+  // Neuestes nicht archiviertes Lager (Liste ist nach Jahr absteigend sortiert):
+  // Ein Entwurf fürs nächste Jahr hat Vorrang vor dem vergangenen, noch veröffentlichten Lager.
+  const fokus = data?.lager.find((lager) => lager.status !== "archiviert") || data?.lager[0];
   const docs = fokus
     ? data?.dokumente.filter((dokument) => dokument.lager === fokus.id) || []
     : [];
@@ -83,14 +86,23 @@ export default function AdminDashboard() {
         <div className="mt-8 h-64 animate-pulse rounded-[1.75rem] bg-white/70" />
       ) : (
         <>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          {!data.familienpasswort ? (
+            <Link
+              href="/admin/konto"
+              className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900"
+            >
+              <span>Noch kein Familienpasswort gesetzt – geschützte Dokumente sind für Familien noch nicht erreichbar.</span>
+              <ArrowRight className="size-4 shrink-0" />
+            </Link>
+          ) : null}
+          <div className="mt-6 grid grid-cols-3 gap-2 sm:mt-8 sm:gap-4">
             <Stat label="Entwürfe" value={data.lager.filter((l) => l.status === "entwurf").length} />
             <Stat label="Veröffentlicht" value={data.lager.filter((l) => l.status === "veroeffentlicht").length} />
             <Stat label="Archiviert" value={data.lager.filter((l) => l.status === "archiviert").length} />
           </div>
 
           {fokus ? (
-            <section className="mt-6 rounded-[1.75rem] border border-ink/10 bg-white p-6 sm:p-8">
+            <section className="mt-6 rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted">Im Fokus</p>
@@ -101,7 +113,7 @@ export default function AdminDashboard() {
                   Lager bearbeiten <ArrowRight className="size-4" />
                 </Link>
               </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
                 {checks.map((check) => (
                   <div key={check.label} className="rounded-xl bg-sand px-4 py-3">
                     <span className="flex items-center gap-2 text-sm font-bold text-ink">
@@ -125,8 +137,8 @@ export default function AdminDashboard() {
           )}
 
           <section className="mt-6 grid gap-4 md:grid-cols-2">
-            <QuickLink href="/admin/website" title="Website-Inhalte" description="Startseite, Lagerhaus und Rechtstexte bearbeiten" />
-            <QuickLink href="/admin/organisation" title="Organisation" description="Sponsoren, Kontakte und nützliche Links verwalten" />
+            <QuickLink href="/admin/website" title="Website-Inhalte" description="Startseite und Lagerhaus bearbeiten" />
+            <QuickLink href="/admin/organisation" title="Organisation" description="Kontakte und nützliche Links verwalten" />
           </section>
         </>
       )}
@@ -136,9 +148,9 @@ export default function AdminDashboard() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-ink/10 bg-white p-5">
-      <span className="camp-display text-3xl text-ink">{value}</span>
-      <span className="mt-1 block text-xs font-bold uppercase tracking-wider text-muted">{label}</span>
+    <div className="min-w-0 rounded-2xl border border-ink/10 bg-white p-3 sm:p-5">
+      <span className="camp-display text-2xl text-ink sm:text-3xl">{value}</span>
+      <span className="mt-1 block truncate text-[0.65rem] font-bold uppercase tracking-wider text-muted sm:text-xs">{label}</span>
     </div>
   );
 }

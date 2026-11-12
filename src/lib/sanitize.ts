@@ -4,7 +4,11 @@ const WHITELIST = {
   allowedTags: ["p", "br", "strong", "em", "h2", "h3", "ul", "ol", "li", "a"],
   allowedAttributes: { a: ["href", "title", "target", "rel"] },
   allowedSchemes: ["http", "https", "mailto"],
+  // Der contentEditable-Editor erzeugt je nach Browser <div>, <b> und <i>.
   transformTags: {
+    div: "p",
+    b: "strong",
+    i: "em",
     a: ((_tag: string, attribs: Record<string, string>) => {
       const external = /^https?:\/\//i.test(attribs.href || "");
       return {

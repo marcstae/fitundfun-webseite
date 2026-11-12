@@ -10,15 +10,15 @@ export default function GlobalError({ reset }: { reset: () => void }) {
           minHeight: "100dvh",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f5efe2",
+          background: "#f2f5f8",
           fontFamily: "system-ui, sans-serif",
         }}
       >
         <main style={{ textAlign: "center", padding: "2rem" }}>
-          <h1 style={{ fontSize: "1.75rem", color: "#0e1c30" }}>
+          <h1 style={{ fontSize: "1.75rem", color: "#0f1e33" }}>
             Etwas ist schiefgelaufen.
           </h1>
-          <p style={{ color: "#6b7686" }}>
+          <p style={{ color: "#55617a" }}>
             Bitte Seite neu laden oder die Lagerleitung kontaktieren.
           </p>
           <button
@@ -28,7 +28,7 @@ export default function GlobalError({ reset }: { reset: () => void }) {
               padding: "0.75rem 1.5rem",
               borderRadius: "9999px",
               border: "none",
-              background: "#bd401d",
+              background: "#c13f26",
               color: "#fff",
               fontWeight: 700,
               cursor: "pointer",

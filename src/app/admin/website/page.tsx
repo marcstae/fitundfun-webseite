@@ -6,8 +6,6 @@ import { getEinstellungen, getSeite } from "@/lib/data";
 
 const pages = [
   { slug: "lagerhaus", title: "Lagerhaus", href: "/lagerhaus" },
-  { slug: "impressum", title: "Impressum", href: "/impressum" },
-  { slug: "datenschutz", title: "Datenschutz", href: "/datenschutz" },
 ] as const;
 
 export default async function AdminWebsitePage() {

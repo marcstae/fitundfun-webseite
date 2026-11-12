@@ -1,14 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
 export function SiteChrome({
   aktuellesJahr,
+  lagerZeitraum,
   children,
 }: {
   aktuellesJahr: number | null;
+  lagerZeitraum: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -18,9 +19,8 @@ export function SiteChrome({
 
   return (
     <>
-      <SiteHeader aktuellesJahr={aktuellesJahr} />
+      <SiteHeader aktuellesJahr={aktuellesJahr} lagerZeitraum={lagerZeitraum} />
       <main className="flex-1">{children}</main>
-      <SiteFooter />
     </>
   );
 }

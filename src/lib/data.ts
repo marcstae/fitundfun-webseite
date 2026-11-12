@@ -11,7 +11,6 @@ import type {
   LagerRecord,
   LinkRecord,
   SeiteRecord,
-  SponsorRecord,
 } from "./pb-types";
 
 const REVALIDATE = 300; // 5 Minuten
@@ -33,9 +32,11 @@ async function listAll<T>(collection: string, sort = ""): Promise<T[]> {
         sort,
       });
     } catch (e) {
-      // PB nicht erreichbar (z. B. zur Build-Zeit) → leer liefern
-      console.error(`fitundfun: PBS-Abfrage ${collection} fehlgeschlagen`, e);
-      return out;
+      console.error(`fitundfun: PB-Abfrage ${collection} fehlgeschlagen`, e);
+      // Nur beim Build leer liefern (PB läuft dann nicht). Zur Laufzeit werfen, damit
+      // unstable_cache den letzten guten Stand behält statt «leer» für 5 Minuten zu cachen.
+      if (process.env.NEXT_PHASE === "phase-production-build") return out;
+      throw e;
     }
     out.push(...res.items);
     if (res.items.length < perPage || page >= 1000) break;
@@ -94,12 +95,6 @@ export async function getNeustesFotoalbum(
   }
 }
 
-export const getSponsoren = unstable_cache(
-  async () => listAll<SponsorRecord>("sponsoren", "sort"),
-  ["sponsoren"],
-  { revalidate: REVALIDATE }
-);
-
 export const getLinks = unstable_cache(
   async () => listAll<LinkRecord>("links", "sort"),
   ["links"],
@@ -128,7 +123,8 @@ export const getEinstellungen = unstable_cache(
       return res.items[0] ?? null;
     } catch (e) {
       console.error("fitundfun: einstellungen-Abfrage fehlgeschlagen", e);
-      return null;
+      if (process.env.NEXT_PHASE === "phase-production-build") return null;
+      throw e;
     }
   },
   ["einstellungen"],
@@ -195,8 +191,11 @@ async function getDokumenteForRelation(
   familyAccess = false
 ): Promise<LagerInhaltResult> {
   const out: DokumentRecord[] = [];
+  // Mit Editor-Sitzung lesen, damit die Entwurfsvorschau auch öffentliche Dokumente zeigt.
+  const session = authCookie ? pbRequest(authCookie) : null;
   try {
-    const pub = await pbServer().collection("dokumente").getList<DokumentRecord>(1, 500, {
+    const reader = session?.authStore.isValid ? session : pbServer();
+    const pub = await reader.collection("dokumente").getList<DokumentRecord>(1, 500, {
       filter: `lager = "${recordId}"`,
       sort: "sort,name",
     });
@@ -218,19 +217,13 @@ async function getDokumenteForRelation(
   let protectedLoaded = false;
   let revealProtected = false;
 
-  if (authCookie) {
-    const authenticated = pbRequest(authCookie);
-    if (authenticated.authStore.isValid) {
-      try {
-        protectedContent = await loadProtectedContent(
-          authenticated,
-          recordId
-        );
-        protectedLoaded = true;
-        revealProtected = true;
-      } catch (e) {
-        console.error("fitundfun: geschützte Inhalte mit Admin-Cookie fehlgeschlagen", e);
-      }
+  if (session?.authStore.isValid) {
+    try {
+      protectedContent = await loadProtectedContent(session, recordId);
+      protectedLoaded = true;
+      revealProtected = true;
+    } catch (e) {
+      console.error("fitundfun: geschützte Inhalte mit Admin-Cookie fehlgeschlagen", e);
     }
   }
 
@@ -244,19 +237,19 @@ async function getDokumenteForRelation(
       protectedLoaded = true;
       revealProtected = familyAccess;
     } catch (e) {
-      console.error("fitundfun: Familienzugang-Auth fehlgeschlagen — FAMILY_ACCESS_PASSWORD prüfen", e);
+      console.error("fitundfun: Familienzugang-Auth fehlgeschlagen — FAMILY_ACCESS_SECRET prüfen", e);
     }
   }
 
-  if (revealProtected) {
-    out.push(
-      ...protectedContent.documents.map((document) => ({
-        ...document,
-        sensibel: true,
-        collection: "dokumente_intern" as const,
-      }))
-    );
-  }
+  // Namen geschützter Dokumente sind sichtbar (mit Schloss); die Datei selbst gibt es
+  // nur mit Familienzugang, sonst führt der Link zur Passwortabfrage.
+  out.push(
+    ...protectedContent.documents.map((document) => ({
+      ...document,
+      sensibel: true,
+      collection: "dokumente_intern" as const,
+    }))
+  );
 
   return {
     items: out.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),

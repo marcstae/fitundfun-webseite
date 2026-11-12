@@ -48,7 +48,6 @@ export function NeuesLagerButton({ defaultOpen = false }: { defaultOpen?: boolea
           youtube_url: "",
           quelle_url: "",
           teilnehmer: null,
-          preise: [],
           aktivitaeten: [],
           status: "entwurf",
         });
@@ -93,7 +92,7 @@ export function NeuesLagerButton({ defaultOpen = false }: { defaultOpen?: boolea
             onChange={(e) => setJahr(e.target.value)}
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="nl-von">Datum von (optional)</Label>
             <Input

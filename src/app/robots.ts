@@ -1,9 +1,12 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/site";
+
+// Zur Laufzeit auswerten: SITE_URL steht beim Docker-Build nicht zur Verfügung.
+export const dynamic = "force-dynamic";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.SITE_URL || "http://localhost:3000";
   return {
     rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/login"] },
-    sitemap: `${base}/sitemap.xml`,
+    sitemap: `${siteUrl()}/sitemap.xml`,
   };
 }

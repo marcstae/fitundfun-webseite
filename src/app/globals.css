@@ -8,13 +8,14 @@
   --color-navy-600: #2a4bd0;
   --color-navy-700: #1c3854;
   --color-navy-800: #122741;
-  --color-navy-900: #0a1728;
-  --color-navy-950: #0e1c30;
-  --color-accent: #bd401d;
-  --color-accent-light: #ff9b76;
-  --color-ink: #0e1c30;
-  --color-muted: #6b7686;
-  --color-sand: #f5efe2;
+  /* Farbkonzept «Alpenglühen»: Schneeweiss, Nachtblau, Abendrot – abgeleitet aus dem Startbild. */
+  --color-navy-900: #0f1e33;
+  --color-navy-950: #0b1726;
+  --color-accent: #c13f26;
+  --color-accent-light: #ff5a36;
+  --color-ink: #0f1e33;
+  --color-muted: #55617a;
+  --color-sand: #f2f5f8;
 
   --font-sans: var(--font-archivo), system-ui, sans-serif;
   --font-display: var(--font-archivo-black), var(--font-archivo), sans-serif;
@@ -118,7 +119,7 @@
 }
 
 .camp-hero-amp {
-  color: #ff845a;
+  color: var(--color-accent-light);
   text-shadow: 0 0 35px rgba(255, 116, 68, 0.34);
 }
 

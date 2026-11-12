@@ -1,12 +1,23 @@
+name: fitundfun-webseite
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-file: "3"
+    max-size: 50m
+
 services:
   pb:
     build: ./pb
+    image: fitundfun-webseite-pb
     container_name: fitundfun-pb
     restart: unless-stopped
+    logging: *logging
     ports:
       - "8090:8090"
     volumes:
-      - ./pb_data:/pb/pb_data
+      # Standard ./pb_data; auf dem Server per PB_DATA_DIR nach ~/docker-data verlegt.
+      - ${PB_DATA_DIR:-./pb_data}:/pb/pb_data
     environment:
       TZ: Europe/Zurich
       PB_ORIGINS: ${PB_ORIGINS}
@@ -15,23 +26,27 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       FAMILY_ACCESS_EMAIL: ${FAMILY_ACCESS_EMAIL:-familie@fitundfun.local}
-      FAMILY_ACCESS_PASSWORD: ${FAMILY_ACCESS_PASSWORD:?FAMILY_ACCESS_PASSWORD ist erforderlich}
+      FAMILY_ACCESS_SECRET: ${FAMILY_ACCESS_SECRET:?FAMILY_ACCESS_SECRET ist erforderlich}
 
   web:
     build:
       context: .
       args:
         - NEXT_PUBLIC_PB_URL=${NEXT_PUBLIC_PB_URL}
+    image: fitundfun-webseite-web
     container_name: fitundfun-web
     restart: unless-stopped
+    logging: *logging
     depends_on:
       - pb
     ports:
       - "3843:3000"
     environment:
       NEXT_PUBLIC_PB_URL: ${NEXT_PUBLIC_PB_URL}
+      # Serverseitige Aufrufe direkt im Compose-Netz, unabhängig von DNS/HTTPS der öffentlichen URL.
+      PB_INTERNAL_URL: http://pb:8090
       SITE_URL: ${SITE_URL}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
       FAMILY_ACCESS_EMAIL: ${FAMILY_ACCESS_EMAIL:-familie@fitundfun.local}
-      FAMILY_ACCESS_PASSWORD: ${FAMILY_ACCESS_PASSWORD:?FAMILY_ACCESS_PASSWORD ist erforderlich}
+      FAMILY_ACCESS_SECRET: ${FAMILY_ACCESS_SECRET:?FAMILY_ACCESS_SECRET ist erforderlich}
       TZ: Europe/Zurich

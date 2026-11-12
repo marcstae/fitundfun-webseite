@@ -19,8 +19,8 @@ migrate(
     app.save(collection);
 
     const record = new Record(collection);
-    // Leerer Hash = bestehendes FAMILY_ACCESS_PASSWORD gilt bis zur ersten
-    // Änderung im Cockpit. Das Passwort selbst wird nie in PocketBase gespeichert.
+    // Leerer Hash = Familienzugang geschlossen, bis die Lagerleitung im Cockpit ein
+    // Familienpasswort setzt. Gespeichert wird nur der scrypt-Hash, nie das Passwort.
     record.set("password_hash", "");
     record.set("cookie_version", 1);
     app.save(record);

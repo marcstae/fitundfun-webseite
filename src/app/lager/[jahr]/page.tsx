@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { cookies, headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
+  ArrowLeft,
   Download,
   ExternalLink,
   FileText,
   Images,
-  KeyRound,
   Lock,
   UsersRound,
 } from "lucide-react";
@@ -26,6 +26,7 @@ import {
   unlockAttemptAllowed,
 } from "@/lib/family-access";
 import {
+  documentHref,
   formatDateRangeLong,
   isValidHttpUrl,
   youtubeId,
@@ -33,8 +34,12 @@ import {
 import { richTextToPlainText, sanitizeRichText } from "@/lib/sanitize";
 import type { DokumentRecord } from "@/lib/pb-types";
 import { YoutubeClickToPlay } from "@/components/youtube-click-to-play";
+import { FamilyUnlock, type UnlockAction, type UnlockState } from "@/components/family-unlock";
 
 export const dynamic = "force-dynamic";
+
+// Nur Links auf geschützte Dokumente dürfen nach dem Freischalten das Ziel sein.
+const WEITER = /^\/api\/download\/dokumente_intern\/[a-z0-9]+\/[^/?#]+$/;
 
 export async function generateMetadata({
   params,
@@ -43,7 +48,7 @@ export async function generateMetadata({
 }) {
   const { jahr: jahrParam } = await params;
   const jahr = Number(jahrParam);
-  const lager = await getLagerByJahr(jahr);
+  const lager = await getLagerByJahr(jahr).catch(() => null);
   const titel = lager?.titel || `Lager ${jahr}`;
   const beschreibung =
     richTextToPlainText(lager?.beschreibung || "").slice(0, 160) ||
@@ -60,9 +65,9 @@ export default async function LagerPage({
 }: {
   params: Promise<{ jahr: string }>;
   searchParams?: Promise<{
-    familienzugang?: string;
     fotos?: string;
     vorschau?: string;
+    weiter?: string;
   }>;
 }) {
   const { jahr: jahrParam } = await params;
@@ -93,42 +98,39 @@ export default async function LagerPage({
       ? formatDateRangeLong(lager.datum_von, lager.datum_bis)
       : `Lager ${jahr}`;
   const beschreibung = sanitizeRichText(lager.beschreibung || "");
-  const preise = lager.preise || [];
   const aktivitaeten = lager.aktivitaeten || [];
   const fotosUrl = documentResult.fotoalbum?.url || "";
   const validFotosUrl = !!fotosUrl && isValidHttpUrl(fotosUrl);
   const validVideoUrl = !!lager.youtube_url && isValidHttpUrl(lager.youtube_url);
   const ytId = youtubeId(lager.youtube_url);
 
-  const showFamilyGate =
-    !documentResult.accessGranted &&
-    (documentResult.hasProtected || documentResult.hasProtectedPhoto);
-  const returnToPhotos = search?.fotos === "1";
-  const photosQuery = returnToPhotos ? "&fotos=1" : "";
+  const locked = !documentResult.accessGranted;
+  const weiter = search?.weiter && WEITER.test(search.weiter) ? search.weiter : "";
+  const weiterId = weiter.split("/")[4] || "";
+  const vonFotos = search?.fotos === "1";
 
-  async function unlockFamilyAccess(formData: FormData) {
+  // Passwortabfrage erst beim ersten geschützten Download (oder Fotoalbum). Danach bleibt
+  // der Zugang per Cookie auf dem Gerät gespeichert; das Fenster bietet den Link im neuen Tab an.
+  async function unlockFamilyAccess(_state: UnlockState, formData: FormData): Promise<UnlockState> {
     "use server";
     const headerStore = await headers();
     const ip = clientIp(headerStore);
-    if (!unlockAttemptAllowed(ip)) {
-      redirect(`/lager/${jahr}?familienzugang=blockiert${photosQuery}#familienzugang`);
-    }
+    if (!unlockAttemptAllowed(ip)) return { fehler: "blockiert" };
 
     const password = formData.get("password");
     if (typeof password !== "string" || !(await isFamilyPassword(password))) {
       recordUnlockFailure(ip);
-      redirect(`/lager/${jahr}?familienzugang=fehler${photosQuery}#familienzugang`);
+      return { fehler: "falsch" };
     }
 
-    const cookieStore2 = await cookies();
-    cookieStore2.set(FAMILY_ACCESS_COOKIE, await familyAccessCookieValue(), {
+    (await cookies()).set(FAMILY_ACCESS_COOKIE, await familyAccessCookieValue(), {
       httpOnly: true,
       maxAge: FAMILY_ACCESS_MAX_AGE,
       path: "/",
       sameSite: "lax",
       secure: headerStore.get("x-forwarded-proto") === "https",
     });
-    redirect(returnToPhotos ? "/fotos" : `/lager/${jahr}#dokumente`);
+    return { ok: true };
   }
 
   return (
@@ -139,261 +141,218 @@ export default async function LagerPage({
         </div>
       ) : null}
       <header className="bg-ink text-white">
-        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-14 lg:px-8">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
             {zeitraum}
           </p>
-          <h1 className="camp-display mt-4 text-4xl leading-none sm:text-5xl">
+          <h1 className="camp-display mt-3 text-3xl leading-none sm:text-5xl">
             {lager.titel || `Lager ${jahr}`}
           </h1>
-          {beschreibung ? (
-            <div
-              className="mt-5 max-w-2xl font-semibold leading-relaxed text-white/80 [&_a]:text-accent-light [&_a]:underline [&_p+p]:mt-4"
-              dangerouslySetInnerHTML={{ __html: beschreibung }}
-            />
+          {lager.teilnehmer ? (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
+              <UsersRound className="size-4 text-accent-light" aria-hidden />
+              {lager.teilnehmer} Teilnehmende
+            </p>
           ) : null}
-
-          <div className="mt-6 flex flex-wrap gap-2">
-            {lager.teilnehmer ? (
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
-                <UsersRound className="size-4 text-accent-light" />
-                {lager.teilnehmer} Teilnehmende
-              </span>
-            ) : null}
-            {preise.slice(0, 2).map((preis) => (
-              <span
-                key={`${preis.label}-${preis.preis}`}
-                className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold"
-              >
-                {preis.label}: {preis.preis}
-              </span>
-            ))}
-          </div>
-
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl space-y-14 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {aktivitaeten.length > 0 ? (
-          <section>
-            <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
-              Was dabei war
+      <div className="mx-auto max-w-5xl space-y-12 px-4 py-8 sm:space-y-14 sm:px-6 sm:py-14 lg:px-8">
+        <section id="dokumente" aria-labelledby="dokumente-titel" className="scroll-mt-20">
+          <h2 id="dokumente-titel" className="camp-display mb-4 text-2xl text-ink sm:mb-5 sm:text-3xl">
+            Dokumente
+          </h2>
+
+          {dokumente.length === 0 ? (
+            <p className="text-sm text-muted">Noch keine Dokumente vorhanden.</p>
+          ) : (
+            <ul className="divide-y divide-ink/8 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white">
+              {dokumente.map((document) => (
+                <DocumentRow
+                  key={document.id}
+                  doc={document}
+                  unlock={document.sensibel ? unlockFamilyAccess : null}
+                  locked={locked}
+                  autoOpen={document.id === weiterId}
+                />
+              ))}
+            </ul>
+          )}
+
+        </section>
+
+        {beschreibung ? (
+          <section aria-labelledby="infos-titel">
+            <h2 id="infos-titel" className="camp-display mb-4 text-2xl text-ink sm:mb-5 sm:text-3xl">
+              Infos
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div
+              className="rounded-[1.5rem] bg-white p-5 wrap-break-word text-base leading-relaxed text-ink/80 sm:p-6 [&_a]:text-accent [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-4 [&_ul]:list-disc [&_ul]:pl-5"
+              dangerouslySetInnerHTML={{ __html: beschreibung }}
+            />
+          </section>
+        ) : null}
+
+        {aktivitaeten.length > 0 ? (
+          <section aria-labelledby="aktivitaeten-titel">
+            <h2 id="aktivitaeten-titel" className="camp-display mb-4 text-2xl text-ink sm:mb-5 sm:text-3xl">
+              Aktivitäten
+            </h2>
+            <ul className="flex flex-wrap gap-2">
               {aktivitaeten.map((aktivitaet) => (
-                <span
+                <li
                   key={aktivitaet}
                   className="rounded-full border border-ink/10 bg-white px-3 py-1.5 text-sm font-semibold text-ink"
                 >
                   {aktivitaet}
-                </span>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {showFamilyGate ? (
-          <section
-            id="familienzugang"
-            className="scroll-mt-20 rounded-[1.75rem] border border-ink/10 bg-white p-6 sm:p-8"
-          >
-            <div className="flex items-start gap-3">
-              <KeyRound className="mt-0.5 size-6 shrink-0 text-accent" />
-              <div>
-                <h2 className="camp-display text-2xl text-ink">
-                  Familienzugang
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                  Mit dem gemeinsamen Familienpasswort werden{" "}
-                  {documentResult.hasProtectedPhoto
-                    ? documentResult.hasProtected
-                      ? "das Fotoalbum und die geschützten Lagerdokumente"
-                      : "das Fotoalbum"
-                    : "Zimmerplan, Teilnehmerliste und weitere geschützte Dateien"}{" "}
-                  freigeschaltet.
-                </p>
-              </div>
-            </div>
-            <form
-              action={unlockFamilyAccess}
-              className="mt-5 flex max-w-lg flex-col gap-3 sm:flex-row"
-            >
-              <div className="flex-1">
-                <label className="sr-only" htmlFor="family-password">
-                  Familienpasswort
-                </label>
-                <input
-                  id="family-password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  aria-describedby={
-                    search?.familienzugang === "fehler"
-                      ? "family-password-error"
-                      : undefined
-                  }
-                  className="h-11 w-full rounded-xl border border-ink/15 bg-white px-4 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  placeholder="Familienpasswort"
-                />
-              </div>
-              <button
-                type="submit"
-                className="h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white transition hover:bg-accent/90"
-              >
-                Freischalten
-              </button>
-            </form>
-            {search?.familienzugang === "fehler" ? (
-              <p
-                id="family-password-error"
-                role="alert"
-                className="mt-2 text-sm font-semibold text-red-700"
-              >
-                Das Familienpasswort ist nicht korrekt.
-              </p>
-            ) : search?.familienzugang === "blockiert" ? (
-              <p role="alert" className="mt-2 text-sm font-semibold text-red-700">
-                Zu viele Versuche — bitte in einer Stunde erneut versuchen.
-              </p>
-            ) : null}
-            <p className="mt-3 text-xs text-muted">
-              Dieser Zugang ist vom Admin-Login der Lagerleitung getrennt.
-            </p>
-          </section>
-        ) : null}
-
-        <section id="dokumente" className="scroll-mt-20">
-          <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
-            Dokumente
-          </h2>
-          {dokumente.length === 0 ? (
-            <p className="text-sm text-muted">Noch keine öffentlichen Dokumente vorhanden.</p>
-          ) : (
-            <ul className="overflow-hidden divide-y divide-ink/8 rounded-[1.75rem] border border-ink/10 bg-white">
-              {dokumente.map((document) => (
-                <DocumentRow key={document.id} doc={document} />
+                </li>
               ))}
             </ul>
-          )}
-        </section>
+          </section>
+        ) : null}
 
-        {validFotosUrl && documentResult.accessGranted ? (
-          <section>
-            <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
+        {(validFotosUrl && !locked) || (documentResult.hasProtectedPhoto && locked) ? (
+          <section id="fotos" aria-labelledby="fotos-titel" className="scroll-mt-20">
+            <h2 id="fotos-titel" className="camp-display mb-4 text-2xl text-ink sm:mb-5 sm:text-3xl">
               Fotos
             </h2>
-            <a
-              href={fotosUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-start gap-3 rounded-[1.75rem] border border-ink/10 bg-white p-6 transition hover:-translate-y-1 hover:border-ink/20 hover:shadow-[0_18px_45px_rgba(14,28,48,0.08)] sm:flex-row sm:items-center sm:justify-between"
+            <FamilyUnlock
+              action={unlockFamilyAccess}
+              href={validFotosUrl ? fotosUrl : null}
+              locked={locked}
+              autoOpen={vonFotos}
+              className={PHOTO_CARD}
             >
-              <span className="flex items-center gap-3">
-                <Images className="size-7 text-accent" />
-                <span className="font-display text-lg text-ink">
-                  Fotos ansehen oder hochladen
-                </span>
-              </span>
-              <span className="text-sm text-muted">
-                Immich-Album in einem neuen Tab öffnen
-              </span>
-            </a>
+              <PhotoCardContent />
+            </FamilyUnlock>
           </section>
         ) : null}
 
         {validVideoUrl ? (
-          <section>
-            <h2 className="camp-display mb-5 text-2xl text-ink sm:text-3xl">
+          <section aria-labelledby="video-titel">
+            <h2 id="video-titel" className="camp-display mb-4 text-2xl text-ink sm:mb-5 sm:text-3xl">
               Video
             </h2>
-            {ytId ? <YoutubeClickToPlay id={ytId} /> : null}
-            {!ytId ? (
+            {ytId ? (
+              <YoutubeClickToPlay id={ytId} />
+            ) : (
               <a
                 href={lager.youtube_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-bold text-accent hover:underline"
+                className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-accent hover:underline"
               >
-                Video öffnen <ExternalLink className="size-4" />
+                Video öffnen <ExternalLink className="size-4" aria-hidden />
               </a>
-            ) : null}
+            )}
           </section>
         ) : null}
 
-        {lager.quelle_url ? (
-          <section className="rounded-[1.75rem] border border-ink/10 bg-white p-6">
+        {lager.quelle_url && isValidHttpUrl(lager.quelle_url) ? (
+          <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-6">
             <p className="text-xs font-bold uppercase tracking-wider text-muted">
-              Historische Quelle
+              Alte Lagerseite
             </p>
             <a
               href={lager.quelle_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:underline"
+              className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-accent hover:underline"
             >
-              Ursprüngliche Lagerseite öffnen <ExternalLink className="size-3.5" />
+              Fotos und Berichte auf der früheren Website <ExternalLink className="size-3.5" aria-hidden />
             </a>
           </section>
         ) : null}
 
         {links.length > 0 ? (
-          <section className="rounded-[1.75rem] border border-ink/10 bg-white p-6">
-            <h2 className="camp-display mb-4 text-2xl text-ink">Nützliche Links</h2>
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <section aria-labelledby="links-titel" className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-6">
+            <h2 id="links-titel" className="camp-display mb-2 text-2xl text-ink">Nützliche Links</h2>
+            <ul className="flex flex-col sm:flex-row sm:flex-wrap sm:gap-x-6">
               {links.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline"
-                >
-                  {link.titel} <ExternalLink className="size-3.5" />
-                </a>
+                <li key={link.id}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent hover:underline"
+                  >
+                    {link.titel} <ExternalLink className="size-3.5" aria-hidden />
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         ) : null}
 
-        <div className="pt-4">
-          <Link
-            href="/lager"
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:underline"
-          >
-            ← Zurück zum Archiv
-          </Link>
-        </div>
+        <Link
+          href="/lager"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-accent hover:underline"
+        >
+          <ArrowLeft className="size-4" aria-hidden /> Alle Lager
+        </Link>
       </div>
     </article>
   );
 }
 
-function DocumentRow({ doc }: { doc: DokumentRecord }) {
-  const href = `/api/download/${doc.collection}/${doc.id}/${encodeURIComponent(doc.datei)}`;
-  const fileType = doc.datei.toLowerCase().endsWith(".docx") ? "DOCX" : "PDF";
+const ROW =
+  "flex min-h-16 w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-accent/[0.04] active:bg-accent/[0.06] sm:px-5";
+const PHOTO_CARD =
+  "flex w-full items-center gap-4 rounded-[1.5rem] border border-ink/10 bg-white p-5 text-left transition hover:border-ink/20 sm:p-6";
+
+function PhotoCardContent() {
+  return (
+    <>
+      <Images className="size-7 shrink-0 text-accent" aria-hidden />
+      <span className="min-w-0">
+        <span className="block font-display text-lg text-ink">Fotos ansehen oder hochladen</span>
+        <span className="block text-sm text-muted">Fotoalbum öffnet in einem neuen Tab</span>
+      </span>
+    </>
+  );
+}
+
+function DocumentRow({
+  doc,
+  unlock,
+  locked,
+  autoOpen,
+}: {
+  doc: DokumentRecord;
+  unlock: UnlockAction | null;
+  locked: boolean;
+  autoOpen: boolean;
+}) {
+  const fileType = doc.datei.toLowerCase().endsWith(".docx") ? "Word" : "PDF";
+  const content = (
+    <>
+      <span className="flex min-w-0 items-center gap-3">
+        {doc.sensibel ? (
+          <Lock className="size-5 shrink-0 text-muted" aria-label="Passwortgeschützt" />
+        ) : (
+          <FileText className="size-5 shrink-0 text-accent" aria-hidden />
+        )}
+        <span className="min-w-0 font-semibold leading-snug text-ink">{doc.name}</span>
+      </span>
+      <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-accent">
+        <Download className="size-4" aria-hidden />
+        {fileType}
+      </span>
+    </>
+  );
 
   return (
     <li>
-      <a
-        href={href}
-        className="flex items-center justify-between gap-4 p-4 transition hover:bg-accent/[0.04] sm:p-5"
-      >
-        <span className="flex min-w-0 items-center gap-3">
-          {doc.sensibel ? (
-            <Lock className="size-5 shrink-0 text-muted" />
-          ) : (
-            <FileText className="size-5 shrink-0 text-accent" />
-          )}
-          <span className="truncate font-semibold text-ink">{doc.name}</span>
-          {doc.sensibel ? (
-            <span className="hidden shrink-0 text-xs text-muted sm:inline">Geschützt</span>
-          ) : null}
-        </span>
-        <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-accent">
-          <Download className="size-4" /> {fileType}
-        </span>
-      </a>
+      {unlock ? (
+        // Geschützt: immer dieselbe Komponente, damit das Passwortfenster das Neuladen übersteht.
+        <FamilyUnlock action={unlock} href={documentHref(doc)} locked={locked} autoOpen={autoOpen} className={ROW}>
+          {content}
+        </FamilyUnlock>
+      ) : (
+        <a href={documentHref(doc)} target="_blank" rel="noopener noreferrer" className={ROW}>
+          {content}
+        </a>
+      )}
     </li>
   );
 }

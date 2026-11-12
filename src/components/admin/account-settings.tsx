@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pbBrowser } from "@/lib/pb";
+import type { FamilienzugangRecord } from "@/lib/pb-types";
 
 export function AccountSettings() {
   const { user, logout } = useAuth();
@@ -21,6 +22,15 @@ export function AccountSettings() {
   const [familyConfirmation, setFamilyConfirmation] = React.useState("");
   const [savingAdmin, setSavingAdmin] = React.useState(false);
   const [savingFamily, setSavingFamily] = React.useState(false);
+  const [familySet, setFamilySet] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    pbBrowser()
+      .collection("familienzugang")
+      .getList<FamilienzugangRecord>(1, 1)
+      .then((result) => setFamilySet(!!result.items[0]?.password_hash))
+      .catch(() => setFamilySet(null));
+  }, []);
 
   const saveAdminPassword = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -62,12 +72,13 @@ export function AccountSettings() {
     }
     setFamilyPassword("");
     setFamilyConfirmation("");
+    setFamilySet(true);
     toast.success(result.message);
   };
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      <section className="rounded-[1.75rem] border border-ink/10 bg-white p-6 sm:p-8">
+      <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-8">
         <LockKeyhole className="size-7 text-accent" />
         <h2 className="mt-4 font-display text-2xl text-ink">Admin-Passwort</h2>
         <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
@@ -81,16 +92,25 @@ export function AccountSettings() {
         </form>
       </section>
 
-      <section className="rounded-[1.75rem] border border-ink/10 bg-white p-6 sm:p-8">
+      <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-8">
         <KeyRound className="size-7 text-accent" />
         <h2 className="mt-4 font-display text-2xl text-ink">Familienpasswort</h2>
         <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
           Gemeinsames Passwort für geschützte Dokumente und Fotoalben. Eine Änderung meldet bestehende Familienzugänge automatisch ab.
         </p>
+        {familySet === false ? (
+          <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+            Noch kein Familienpasswort gesetzt – Familien können geschützte Dokumente erst öffnen, wenn hier eines gespeichert ist.
+          </p>
+        ) : familySet ? (
+          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+            Ein Familienpasswort ist gesetzt.
+          </p>
+        ) : null}
         <form onSubmit={saveFamilyPassword} className="mt-6 space-y-4">
           <Field label="Neues Familienpasswort" id="family-new" value={familyPassword} onChange={setFamilyPassword} autoComplete="new-password" />
           <Field label="Familienpasswort wiederholen" id="family-confirm" value={familyConfirmation} onChange={setFamilyConfirmation} autoComplete="new-password" />
-          <Button type="submit" disabled={savingFamily}>{savingFamily ? "Speichert…" : "Familienpasswort ändern"}</Button>
+          <Button type="submit" disabled={savingFamily}>{savingFamily ? "Speichert…" : familySet ? "Familienpasswort ändern" : "Familienpasswort setzen"}</Button>
         </form>
       </section>
     </div>

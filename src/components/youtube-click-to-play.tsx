@@ -2,16 +2,18 @@
 
 import * as React from "react";
 import { PlayCircle } from "lucide-react";
-import { youtubeThumb } from "@/lib/utils";
 
-/** YouTube-Embed über youtube-nocookie, erst nach Klick geladen. */
+/**
+ * YouTube-Embed über youtube-nocookie, erst nach Klick geladen. Vorher wird bewusst
+ * nichts von Google geladen (auch kein Vorschaubild), damit keine IP abfliesst.
+ */
 export function YoutubeClickToPlay({ id }: { id: string }) {
   const [play, setPlay] = React.useState(false);
-  const thumb = youtubeThumb(id);
   if (play) {
     return (
-      <div className="relative aspect-video overflow-hidden rounded-[1.75rem] border border-ink/10">
+      <div className="relative aspect-video overflow-hidden rounded-[1.5rem] border border-ink/10 bg-navy-950">
         <iframe
+          ref={(frame) => frame?.focus()}
           className="size-full"
           src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}
           title="Lagervideo"
@@ -22,23 +24,16 @@ export function YoutubeClickToPlay({ id }: { id: string }) {
     );
   }
   return (
-    <div className="relative aspect-video overflow-hidden rounded-[1.75rem] border border-ink/10">
+    <div className="relative aspect-video overflow-hidden rounded-[1.5rem] border border-ink/10">
       <button
         type="button"
         onClick={() => setPlay(true)}
-        className="group relative size-full"
-        aria-label="Video abspielen"
+        className="group relative flex size-full flex-col items-center justify-center gap-3 bg-navy-950 p-4 text-center"
       >
-        <img
-          src={thumb}
-          alt="Vorschaubild Video"
-          className="size-full object-cover"
-        />
-        <span className="absolute inset-0 flex items-center justify-center bg-navy-950/30 transition group-hover:bg-navy-950/20">
-          <span className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-lg">
-            <PlayCircle className="size-5" /> Video abspielen
-          </span>
+        <span className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-lg transition group-hover:bg-accent-light group-hover:text-ink">
+          <PlayCircle className="size-5" aria-hidden /> Video abspielen
         </span>
+        <span className="text-xs text-white/70">Wird von YouTube geladen</span>
       </button>
     </div>
   );

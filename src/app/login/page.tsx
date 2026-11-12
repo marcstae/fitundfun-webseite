@@ -8,9 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/** Nur Ziele auf dieser Website zulassen (auch «/\evil.example» oder Tabs sind externe URLs). */
 function localTarget(value: string | null): string {
-  if (!value) return "/admin";
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/admin";
+  try {
+    const target = new URL(value || "/admin", window.location.origin);
+    return target.origin === window.location.origin
+      ? target.pathname + target.search + target.hash
+      : "/admin";
+  } catch {
+    return "/admin";
+  }
 }
 
 function LoginForm() {

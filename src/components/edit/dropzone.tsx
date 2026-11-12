@@ -6,7 +6,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface DropzoneProps {
+  /** MIME-Typen, «image/*» oder Endungen wie «.docx», kommagetrennt. */
   accept?: string;
+  /** Lesbare Formatangabe für Fehlermeldungen, z. B. «PDF oder Word (.docx)». */
+  formats?: string;
   maxSizeMB?: number;
   multiple?: false;
   onFile: (file: File) => void;
@@ -17,6 +20,7 @@ interface DropzoneProps {
 
 export function Dropzone({
   accept = "application/pdf",
+  formats = "eine passende Datei",
   maxSizeMB = 20,
   onFile,
   currentName,
@@ -29,16 +33,24 @@ export function Dropzone({
   const handleFiles = (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
-    const acceptTypes = accept.split(",").map((s) => s.trim());
-    const ok = acceptTypes.some(
-      (t) => t === file.type || (t.endsWith("/*") && file.type.startsWith(t.slice(0, -1)))
-    );
-    if (accept && acceptTypes.length && !ok) {
-      toast.error(`Falsches Format — ${accept} wählen.`);
+    const name = file.name.toLowerCase();
+    // Manche Handys liefern bei Word-Dateien keinen MIME-Typ, deshalb auch die Endung prüfen.
+    const ok = accept
+      .split(",")
+      .map((type) => type.trim())
+      .some((type) =>
+        type.startsWith(".")
+          ? name.endsWith(type)
+          : type.endsWith("/*")
+            ? file.type.startsWith(type.slice(0, -1))
+            : type === file.type
+      );
+    if (!ok) {
+      toast.error(`Dieses Format geht hier nicht – bitte ${formats} wählen.`);
       return;
     }
     if (file.size > maxSizeMB * 1024 * 1024) {
-      toast.error(`Datei zu gross — max. ${maxSizeMB} MB.`);
+      toast.error(`Datei zu gross – höchstens ${maxSizeMB} MB.`);
       return;
     }
     onFile(file);
@@ -63,11 +75,11 @@ export function Dropzone({
     >
       {currentName ? (
         <div className="mb-2 flex items-center justify-center gap-2 text-sm text-ink">
-          <FileText className="size-4 text-accent" />
-          <span className="font-semibold">{currentName}</span>
+          <FileText className="size-4 shrink-0 text-accent" aria-hidden />
+          <span className="min-w-0 truncate font-semibold">{currentName}</span>
         </div>
       ) : null}
-      <p className="text-sm text-muted">
+      <p className="hidden text-sm text-muted sm:block">
         {hint || `Datei hierher ziehen oder`}
       </p>
       <button
@@ -75,13 +87,15 @@ export function Dropzone({
         onClick={() => inputRef.current?.click()}
         className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-white hover:bg-ink"
       >
-        <UploadCloud className="size-5" />
+        <UploadCloud className="size-5" aria-hidden />
         {label}
       </button>
       <input
         ref={inputRef}
         type="file"
         accept={accept}
+        tabIndex={-1}
+        aria-hidden
         className="sr-only"
         onChange={(e) => handleFiles(e.target.files)}
       />

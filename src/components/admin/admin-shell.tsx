@@ -40,24 +40,25 @@ export function AdminShell({
   };
 
   return (
-    <div className="min-h-dvh bg-[#f3efe5] lg:grid lg:grid-cols-[17rem_1fr]">
+    <div className="min-h-dvh bg-sand lg:grid lg:grid-cols-[17rem_1fr]">
       <aside className="border-b border-white/10 bg-navy-900 text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:block lg:px-6 lg:py-7">
-          <Link href="/admin" className="font-display text-xl uppercase tracking-tight">
+          <Link href="/admin" className="whitespace-nowrap font-display text-lg uppercase tracking-tight sm:text-xl">
             fit<span className="text-accent-light">&amp;</span>fun Admin
           </Link>
-          <div className="flex items-center gap-3 lg:mt-3">
+          <div className="flex items-center gap-1 lg:mt-3">
             <Link
               href="/"
               target="_blank"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-white/65 hover:text-white"
+              className="inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap px-2 text-xs font-bold text-white/65 hover:text-white"
             >
-              Website ansehen <ExternalLink className="size-3.5" />
+              Website <span className="hidden sm:inline">ansehen</span> <ExternalLink className="size-3.5" />
             </Link>
             <button
               type="button"
               onClick={signOut}
-              className="inline-flex size-9 items-center justify-center rounded-lg text-white/65 hover:bg-white/10 hover:text-white lg:hidden"
+              data-leave-guard
+              className="inline-flex size-11 items-center justify-center rounded-lg text-white/65 hover:bg-white/10 hover:text-white lg:hidden"
               aria-label="Abmelden"
             >
               <LogOut className="size-4" />
@@ -65,7 +66,7 @@ export function AdminShell({
           </div>
         </div>
 
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:overflow-visible lg:px-4 lg:py-2" aria-label="Admin-Navigation">
+        <nav className="flex flex-wrap gap-1 px-3 pb-3 lg:flex-col lg:flex-nowrap lg:px-4 lg:py-2" aria-label="Admin-Navigation">
           {nav.map((item) => {
             const active = item.exact
               ? pathname === item.href
@@ -93,6 +94,7 @@ export function AdminShell({
           <button
             type="button"
             onClick={signOut}
+            data-leave-guard
             className="mt-2 inline-flex h-10 w-full items-center gap-2 rounded-xl px-2 text-sm font-bold text-white/70 hover:bg-white/10 hover:text-white"
           >
             <LogOut className="size-4" /> Abmelden

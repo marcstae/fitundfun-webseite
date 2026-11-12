@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
-    <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-sand px-6 text-center">
+    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-sand px-6 text-center">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
         Hoppla
       </p>
@@ -29,6 +29,6 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
           Zur Startseite
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

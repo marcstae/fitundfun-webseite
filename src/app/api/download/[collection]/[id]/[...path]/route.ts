@@ -81,12 +81,8 @@ async function familyGate(id: string, pathname: string) {
 
 async function stream(pb: PocketBase, collection: string, record: DokumentRecord) {
   // Datei von PocketBase durchreichen, damit PB-URL und Token nicht beim Browser landen.
-  let token = "";
-  try {
-    token = await pb.files.getToken();
-  } catch {
-    token = "";
-  }
+  // Token nur mit Anmeldung (Editor oder Familienkonto); öffentliche Dateien brauchen keins.
+  const token = pb.authStore.isValid ? await pb.files.getToken().catch(() => "") : "";
   const url = `${PB_INTERNAL_URL}/api/files/${collection}/${record.id}/${encodeURIComponent(record.datei)}${token ? `?token=${token}` : ""}`;
   const upstream = await fetch(url);
   if (!upstream.ok || !upstream.body) {

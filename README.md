@@ -1,76 +1,74 @@
 # fit&fun Website
 
-Website des fit&fun Familienlagers in Brigels. Sie dient vor allem dazu, allen Familien schnell die Lagerdokumente zur Verfügung zu stellen. Die Lagerleitung pflegt alles im Cockpit unter `/admin`; eine Datenbank muss niemand bedienen.
+Website des fit&fun Familienlagers in Brigels (nur auf Einladung). Hauptzweck: Familien kommen schnell an die Lagerdokumente. Die Lagerleitung pflegt alles im Cockpit unter `/admin`.
 
-## Admin-Cockpit
+**Aufbau:** Next.js 16 (Container `web`, Port 3843) und PocketBase 0.40 (Container `pb`, Port 8090). Inhalte und Uploads liegen nur in `pb_data` (`PB_DATA_DIR`), nie im Repository.
 
-- **Übersicht:** nächstes Lager im Fokus, fehlende Angaben, Hinweis falls noch kein Lagerpasswort gesetzt ist
-- **Lager:** Entwürfe, Veröffentlichung, Archiv; pro Lager Dokumente, Beschreibung, Aktivitäten, Fotoalbum, Video
-- **Website:** Startseite und Lagerhaus
-- **Organisation:** Kontakte (mit E-Mail für die Kontaktseite) und nützliche Links
-- **Konto:** Admin-Passwort und Lagerpasswort
+## Cockpit
 
-Dokumente:
+| Bereich | Inhalt |
+|---|---|
+| Übersicht | Entwurf und aktives Lager im Fokus, fehlende Angaben |
+| Lager | Entwurf → veröffentlicht → archiviert; Dokumente, Texte, Album, Video. Nur ein Lager ist veröffentlicht, Veröffentlichen archiviert das bisherige. |
+| Website | Startseite, zwei Akzentfarben (Kontrast wird geprüft) |
+| Inhaltsseiten | Kontakt (Text, Personen, Gruppen), Nützliche Links, Lagerhaus |
+| Konto | Admin-Passwort, Lagerpasswort |
 
-- Neue Dokumente sind standardmässig **geschützt** (nur mit Lagerpasswort). Für Anmeldeformular, Programm usw. beim Hochladen «Für alle sichtbar» wählen.
-- **Link kopieren** liefert einen dauerhaften Link für Mails. Er bleibt gültig, wenn später eine neue Fassung (z. B. Teilnehmerliste R2) über «Bearbeiten» hochgeladen wird. Dokumente öffnen sich in einem neuen Tab; bei geschützten fragt die Seite beim ersten Mal nach dem Lagerpasswort und merkt es sich auf dem Gerät.
-- Hochladen, Ersetzen und Sortieren wird sofort gespeichert; Texte und Status mit «Speichern».
+## Was schützt das Lagerpasswort?
 
-Ein neues Lager beginnt als Entwurf. Beim Veröffentlichen wird das bisher aktuelle Lager automatisch archiviert. Entwürfe sind nur im Cockpit und in der Vorschau sichtbar.
+- Geschützt sind Dokumente, Fotoalbum sowie markierte E-Mail-Adressen und Telefonnummern. Neue Dokumente und Kontakte sind standardmässig geschützt.
+- Die Freischaltung gilt 400 Tage pro Gerät; jeder geschützte Download verlängert sie. Ein **neues** Lagerpasswort meldet alle Geräte ab, dasselbe erneut speichern nicht.
+- Geschütztes liest nur der Server über ein internes Konto (`FAMILY_ACCESS_SECRET`, bekommen Familien nie). Die PocketBase-API gibt es ohne Anmeldung nicht heraus.
+- «Link kopieren» (`/api/download/…`) bleibt bei neuen Fassungen gültig, nicht aber bei gewechselter Sichtbarkeit oder gelöschtem Dokument. Ohne Zugang führt er zur Passwortabfrage und danach direkt zur Datei.
+- Gegen Durchprobieren: höchstens 10 Fehlversuche pro IP und 50 insgesamt pro Stunde.
 
-## Erstinstallation
+## Installation
 
-1. `.env.example` nach `.env` kopieren und alle Platzhalter ersetzen. `FAMILY_ACCESS_SECRET` mit `openssl rand -base64 48` erzeugen. Dieses Geheimnis bekommen Familien **nie**.
-2. `docker compose up -d --build` ausführen. PocketBase wendet die Migrationen beim Start automatisch an. Beim ersten Start werden die Dokumente 2011–2026 von der alten Jimdo-Seite übernommen (ca. 60 MB, rund eine Minute) und das Lager 2027 als Entwurf angelegt.
-3. Mit `ADMIN_EMAIL` und `ADMIN_PASSWORD` unter `/admin` anmelden und das Startpasswort ändern.
-4. Unter **Konto** das Lagerpasswort setzen und den Familien mitteilen. Vorher bleiben geschützte Dokumente für Familien verschlossen.
+1. `.env.example` → `.env`; `FAMILY_ACCESS_SECRET` und `REVALIDATE_SECRET` mit `openssl rand -base64 48` erzeugen.
+2. `docker compose up -d --build`. Migrationen laufen bei jedem Start; der erste Start übernimmt die Jimdo-Dokumente 2011–2026 (≈ 60 MB).
+3. Mit `ADMIN_EMAIL`/`ADMIN_PASSWORD` anmelden; das Cockpit verlangt sofort ein eigenes Passwort.
+4. Unter Konto das Lagerpasswort setzen, vorher bleibt Geschütztes zu.
 
-Die Daten liegen im Ordner `pb_data` neben der Compose-Datei. Der PocketBase-Container setzt die Besitzrechte beim Start selbst.
+Hinter einem Proxy `NEXT_PUBLIC_PB_URL` (wird beim Build eingebacken), `SITE_URL` und `PB_ORIGINS` auf HTTPS setzen, Upload-Limit ≥ 60 MB, Client-IP als `X-Real-IP` weitergeben.
 
-## Update einer bestehenden Installation (November 2026)
-
-1. `pb_data` sichern (siehe unten).
-2. In der `.env` die Zeile `FAMILY_ACCESS_PASSWORD=…` durch `FAMILY_ACCESS_SECRET=<openssl rand -base64 48>` ersetzen.
-3. `git pull && docker compose up -d --build`
-4. Im Cockpit unter **Konto** ein **neues** Lagerpasswort setzen und den Familien mitteilen. Das alte Startpasswort und bestehende Freischaltungen auf den Geräten gelten danach nicht mehr.
-
-Lager, die bereits Dokumente haben, übergeht der Jimdo-Import. Es wird nichts überschrieben.
-
-Hinweis: Beim Docker-Build läuft PocketBase noch nicht. Startseite und Lagerliste können deshalb nach einem Neubau bis zu 5 Minuten lang leer erscheinen, bis sie automatisch neu erzeugt werden.
-
-## HTTPS / Reverse Proxy
-
-- `NEXT_PUBLIC_PB_URL`, `SITE_URL` und `PB_ORIGINS` auf die öffentlichen `https://`-Adressen setzen und neu bauen (`docker compose up -d --build`). `NEXT_PUBLIC_PB_URL` wird beim Build eingebacken.
-- Der Webserver spricht intern über `http://pb:8090` mit PocketBase (`PB_INTERNAL_URL` in `docker-compose.yml`).
-- Upload-Limit des Proxys auf mindestens 60 MB stellen (nginx: `client_max_body_size 60m;`).
-- Der Proxy soll die Client-IP setzen (nginx: `proxy_set_header X-Real-IP $remote_addr;`) und die Ports 3843/8090 nur lokal binden.
-
-## Datensicherung
-
-Alle Inhalte und Uploads liegen in `pb_data`. Ein Backup des Git-Repositories enthält keine Inhalte. Für eine konsistente Kopie PocketBase kurz anhalten:
+## Deploy
 
 ```sh
-docker compose stop pb && tar czf pb_data-$(date +%F).tgz pb_data && docker compose start pb
+set -a; . ./.env; set +a                     # PB_DATA_DIR, REVALIDATE_SECRET laden
+git pull && docker compose build --pull      # bauen, solange alles noch läuft
+docker compose stop pb && cp -a "${PB_DATA_DIR:-./pb_data}" \
+  "<backups>/pre-$(git rev-parse --short HEAD)-$(date -u +%Y%m%dT%H%M%SZ)"
+docker compose up -d
+curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
+  -d "{\"secret\":\"$REVALIDATE_SECRET\",\"path\":\"/\"}"
 ```
 
-Wiederherstellen: `docker compose stop pb`, `pb_data` durch den Inhalt des Archivs ersetzen, `docker compose start pb`. Wiederherstellungen zuerst auf einer separaten Instanz testen.
+Das Backup ist Pflicht: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Wiederherstellen: `pb` stoppen, Ordner zurückkopieren, starten. Ohne Revalidate zeigen Seiten bis zu 5 Minuten alte oder leere Daten (beim Build läuft PocketBase nicht).
 
-## Notfall: Admin-Passwort vergessen oder zweites Editor-Konto
+## Wenn etwas nicht stimmt
+
+| Symptom | Ursache und Lösung |
+|---|---|
+| Familien müssen das Passwort neu eingeben | Lagerpasswort wurde geändert. |
+| Link aus einer Mail: «Nicht gefunden» | Dokument gelöscht oder Sichtbarkeit gewechselt: Link neu kopieren. |
+| Speichern im Cockpit scheitert | Sitzung abgelaufen: neu anmelden. |
+| `/_/` will einen Superuser anlegen | Es gibt bewusst keinen; die Einrichtung braucht einen Token aus den Logs. Nur im Notfall anlegen. |
+
+**Admin-Passwort vergessen:** `docker compose exec pb /pb/pocketbase superuser upsert notfall@example.ch '<temporär>'`, in `http://<host>:8090/_/` unter *users* ein temporäres Passwort setzen und `muss_passwort_aendern` einschalten (Stellvertretung: neuer Datensatz, `rolle` = editor, `verified`). Danach `superuser delete notfall@example.ch`.
+
+## Entwicklung
 
 ```sh
-docker compose exec pb /pb/pocketbase superuser upsert notfall@example.ch '<temporäres-starkes-passwort>'
+FAMILY_ACCESS_SECRET=dev-… ADMIN_EMAIL=… ADMIN_PASSWORD=… pocketbase serve --migrationsDir=pb/pb_migrations
+NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDATE_SECRET=dev FAMILY_ACCESS_SECRET=dev-… npm run dev
 ```
 
-Danach `http://<host>:8090/_/` öffnen und anmelden. Unter *Collections → users* beim Konto der Lagerleitung ein temporäres Passwort setzen und `muss_passwort_aendern` einschalten. Für eine Stellvertretung kann dort ein zweiter Datensatz angelegt werden (`rolle` = editor, `verified` und `muss_passwort_aendern` eingeschaltet). Anschliessend den Notfallzugang wieder entfernen:
-
-```sh
-docker compose exec pb /pb/pocketbase superuser delete notfall@example.ch
-```
-
-Beim nächsten Login muss die Lagerleitung ein eigenes Passwort wählen.
+- Vor jedem Commit: `npm run typecheck`, `npm run lint`, `npm test`.
+- Schemaänderungen nur als **neue** Migration mit der nächsten Nummer; bestehende nie ändern (sie sind auf dem Server gelaufen), vorhandene Inhalte nie überschreiben.
+- Diese Next.js-Version weicht von älteren ab: vorher `node_modules/next/dist/docs/` lesen.
 
 ## Wartung
 
-- Vor jeder Lagersaison `npm audit --omit=dev` ausführen, Abhängigkeiten aktualisieren und neu bauen.
-- PocketBase aktualisieren: `pb_data` sichern, `PB_VERSION` in `pb/Dockerfile` anheben, `docker compose build --pull pb && docker compose up -d pb`. Laut Upstream ist 0.40.6 die letzte Version auf GitHub; für neuere Versionen muss die Download-URL angepasst werden.
-- Entwicklung: `npm run dev`, Prüfungen mit `npm test`, `npm run typecheck` und `npm run lint`.
+- Vor jeder Saison `npm outdated` und `npm update`, prüfen, mit `--pull` deployen. Zurückgestellt, bis Next.js sie unterstützt: TypeScript 7, ESLint 10.
+- `npm audit --omit=dev` muss 0 zeigen; Meldungen nur in Entwicklungswerkzeugen betreffen die Website nicht.
+- PocketBase: `PB_VERSION` in `pb/Dockerfile` anheben. Laut Upstream ist 0.40.6 die letzte Version auf GitHub; für neuere die Download-URL anpassen.

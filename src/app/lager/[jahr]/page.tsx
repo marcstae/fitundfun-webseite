@@ -3,20 +3,14 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowUpRight,
   CalendarDays,
   ChevronRight,
   Download,
-  ExternalLink,
-  FileText,
   Images,
-  Info,
-  Link2,
   Lock,
   Mail,
-  PlayCircle,
-  Snowflake,
   UsersRound,
-  type LucideIcon,
 } from "lucide-react";
 import {
   getDokumenteForLager,
@@ -105,7 +99,6 @@ export default async function LagerPage({
   ]);
   const dokumente = documentResult.items;
 
-  const titelZusatz = lager.titel && lager.titel !== `Lager ${jahr}` ? lager.titel : "";
   const zeitraum =
     lager.datum_von && lager.datum_bis
       ? formatDateRangeWithDays(lager.datum_von, lager.datum_bis)
@@ -151,186 +144,229 @@ export default async function LagerPage({
     return { ok: true };
   }
 
+  const offen = dokumente.filter((d) => !d.sensibel);
+  const geschuetzt = dokumente.filter((d) => d.sensibel);
+  const hinweis = countdown(lager);
+  const sprungziele = [
+    ["dokumente", "Dokumente"],
+    beschreibung || aktivitaeten.length ? ["infos", "Infos"] : null,
+    zeigeFotos || validVideoUrl ? ["fotos", "Fotos & Video"] : null,
+    links.length || altLink ? ["links", "Links"] : null,
+  ].filter((x): x is [string, string] => !!x);
+
   return (
-    <article className="bg-sand pb-12">
+    <article className="bg-sand pb-10">
       {lager.status === "entwurf" ? (
         <div className="bg-amber-300 px-4 py-2 text-center text-sm font-bold text-ink">
           Entwurfsvorschau – dieses Lager ist noch nicht öffentlich.
         </div>
       ) : null}
 
-      {/* Winterlicher Kopf: dasselbe Bild wie auf der Startseite, unten dunkel für lesbare Schrift. */}
-      <header className="relative isolate overflow-hidden bg-navy-900 text-white">
-        <img
-          src={kopfbild}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 -z-20 size-full object-cover object-[50%_45%]"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950 via-navy-950/70 to-navy-950/25"
-        />
-        <div className="mx-auto max-w-3xl px-4 pb-7 pt-14 sm:px-6 sm:pb-10 sm:pt-24">
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] backdrop-blur-sm">
-            <Snowflake className="size-3.5" aria-hidden />
-            {statusLabel(lager)}
-          </p>
-          {titelZusatz ? (
-            <p className="mt-4 text-sm font-semibold text-white/80">{titelZusatz}</p>
-          ) : null}
-          <h1 className={`camp-display text-5xl leading-none sm:text-7xl ${titelZusatz ? "mt-1" : "mt-4"}`}>
-            Lager {jahr}
-          </h1>
-          <ul className="mt-5 flex flex-wrap gap-2 text-sm font-semibold">
+      {/* Lager-Karte im Stil der Menü-Plakette: Dunkelblau mit Winterbild, Orange als Akzent. */}
+      <div className="mx-auto max-w-2xl px-3 pt-3 sm:px-6 sm:pt-6">
+        <header className="relative isolate overflow-hidden rounded-[1.75rem] bg-navy-900 text-white">
+          <img
+            src={kopfbild}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 -z-20 size-full object-cover object-[50%_40%]"
+          />
+          <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950 via-navy-950/75 to-navy-950/10" />
+          <div className="px-5 pb-5 pt-24 sm:px-8 sm:pb-8 sm:pt-36">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent-light">
+              {statusLabel(lager)}
+            </p>
+            <h1 className="camp-display mt-1.5 text-[2.75rem] leading-none sm:text-6xl">Lager {jahr}</h1>
             {zeitraum ? (
-              <li className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3.5 py-2 backdrop-blur-sm">
-                <CalendarDays className="size-4 text-accent-light" aria-hidden />
+              <p className="mt-3 flex items-center gap-2 text-[0.95rem] font-semibold text-white/90">
+                <CalendarDays className="size-4 shrink-0 text-accent-light" aria-hidden />
                 {zeitraum}
-              </li>
-            ) : null}
-            {countdown(lager) ? (
-              <li className="inline-flex items-center rounded-full bg-accent-light px-3.5 py-2 font-bold text-ink">
-                {countdown(lager)}
-              </li>
-            ) : null}
-            {lager.teilnehmer ? (
-              <li className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3.5 py-2 backdrop-blur-sm">
-                <UsersRound className="size-4 text-accent-light" aria-hidden />
-                {lager.teilnehmer} Teilnehmende
-              </li>
-            ) : null}
-          </ul>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-3xl space-y-9 px-4 pt-7 sm:space-y-12 sm:px-6 sm:pt-10">
-        <Section id="dokumente" icon={FileText} titel="Dokumente" meta={dokumente.length ? `${dokumente.length}` : ""}>
-          {dokumente.length === 0 ? (
-            <Card>
-              <p className="p-5 text-sm text-muted">
-                Noch keine Dokumente – sie erscheinen hier, sobald die Lagerleitung sie hochlädt.
               </p>
-            </Card>
-          ) : (
-            <Card>
-              <ul className="divide-y divide-ink/[0.07]">
-                {dokumente.map((document) => (
-                  <DocumentRow
-                    key={document.id}
-                    doc={document}
-                    unlock={document.sensibel ? unlockFamilyAccess : null}
-                    locked={locked}
-                    autoOpen={document.id === weiterId}
-                  />
-                ))}
-              </ul>
-            </Card>
-          )}
-        </Section>
+            ) : null}
+            {hinweis || lager.teilnehmer ? (
+              <p className="mt-4 flex flex-wrap gap-2 text-sm font-bold">
+                {hinweis ? (
+                  <span className="rounded-full bg-accent-light px-3.5 py-1.5 text-ink">{hinweis}</span>
+                ) : null}
+                {lager.teilnehmer ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 backdrop-blur-sm">
+                    <UsersRound className="size-4" aria-hidden />
+                    {lager.teilnehmer} Teilnehmende
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
+          </div>
+        </header>
+      </div>
 
-        {beschreibung ? (
-          <Section id="infos" icon={Info} titel="Infos">
-            <Card>
-              <div
-                className="wrap-break-word p-5 text-base leading-relaxed text-ink/85 sm:p-6 [&_a]:font-semibold [&_a]:text-accent [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-3 [&_strong]:text-ink [&_ul]:list-disc [&_ul]:pl-5"
-                dangerouslySetInnerHTML={{ __html: beschreibung }}
-              />
-            </Card>
-          </Section>
+      {/* Sprungleiste: bleibt beim Scrollen unter der Kopfzeile stehen. */}
+      {sprungziele.length > 1 ? (
+        <nav
+          aria-label="Abschnitte"
+          className="sticky top-16 z-30 bg-sand/90 backdrop-blur-md"
+        >
+          <ul className="mx-auto flex max-w-2xl gap-2 overflow-x-auto px-3 py-2.5 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden">
+            {sprungziele.map(([id, label]) => (
+              <li key={id} className="shrink-0">
+                <a
+                  href={`#${id}`}
+                  className="inline-flex h-10 items-center rounded-full border border-ink/10 bg-white px-4 text-sm font-bold text-ink transition hover:border-ink/25 active:bg-ink active:text-white"
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
+
+      <div className="mx-auto max-w-2xl space-y-8 px-3 pt-3 sm:space-y-10 sm:px-6">
+        <section id="dokumente" aria-labelledby="dokumente-titel" className={ANKER}>
+          <h2 id="dokumente-titel" className={H2}>Dokumente</h2>
+          {dokumente.length === 0 ? (
+            <p className="rounded-2xl bg-white p-5 text-sm text-muted">
+              Noch keine Dokumente – sie erscheinen hier, sobald die Lagerleitung sie hochlädt.
+            </p>
+          ) : (
+            <div className="space-y-5">
+              {offen.length ? (
+                <DocumentGroup titel={geschuetzt.length ? "Für alle" : ""}>
+                  {offen.map((d) => (
+                    <DocumentRow key={d.id} doc={d} unlock={null} locked={false} autoOpen={false} />
+                  ))}
+                </DocumentGroup>
+              ) : null}
+              {geschuetzt.length ? (
+                <DocumentGroup
+                  titel="Für Familien"
+                  hinweis={locked ? "Beim ersten Öffnen fragen wir einmal nach dem Familienpasswort." : ""}
+                >
+                  {geschuetzt.map((d) => (
+                    <DocumentRow
+                      key={d.id}
+                      doc={d}
+                      unlock={unlockFamilyAccess}
+                      locked={locked}
+                      autoOpen={d.id === weiterId}
+                    />
+                  ))}
+                </DocumentGroup>
+              ) : null}
+            </div>
+          )}
+        </section>
+
+        {beschreibung || aktivitaeten.length ? (
+          <section id="infos" aria-labelledby="infos-titel" className={ANKER}>
+            <h2 id="infos-titel" className={H2}>Infos</h2>
+            <div className="rounded-2xl bg-white p-5 sm:p-6">
+              {beschreibung ? (
+                <div
+                  className="wrap-break-word text-base leading-relaxed text-ink/85 [&_a]:font-semibold [&_a]:text-accent [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-3 [&_strong]:text-ink [&_ul]:list-disc [&_ul]:pl-5"
+                  dangerouslySetInnerHTML={{ __html: beschreibung }}
+                />
+              ) : null}
+              {aktivitaeten.length ? (
+                <ul
+                  aria-label="Aktivitäten"
+                  className={`flex flex-wrap gap-1.5 ${beschreibung ? "mt-5 border-t border-ink/[0.07] pt-5" : ""}`}
+                >
+                  {aktivitaeten.map((aktivitaet) => (
+                    <li key={aktivitaet} className="rounded-full bg-sand px-3 py-1.5 text-sm font-semibold text-ink">
+                      {aktivitaet}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </section>
         ) : null}
 
-        {aktivitaeten.length > 0 ? (
-          <Section id="aktivitaeten" icon={Snowflake} titel="Aktivitäten">
-            <ul className="flex flex-wrap gap-2">
-              {aktivitaeten.map((aktivitaet) => (
-                <li
-                  key={aktivitaet}
-                  className="rounded-full border border-ink/10 bg-white px-3.5 py-2 text-sm font-semibold text-ink"
+        {zeigeFotos || validVideoUrl ? (
+          <section id="fotos" aria-labelledby="fotos-titel" className={ANKER}>
+            <h2 id="fotos-titel" className={H2}>Fotos &amp; Video</h2>
+            <div className="space-y-3">
+              {zeigeFotos ? (
+                <FamilyUnlock
+                  action={unlockFamilyAccess}
+                  href={validFotosUrl ? fotosUrl : null}
+                  locked={locked}
+                  autoOpen={vonFotos}
+                  className="flex min-h-20 w-full items-center gap-4 rounded-2xl bg-ink px-5 py-4 text-left text-white transition active:bg-navy-950"
                 >
-                  {aktivitaet}
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent-light text-ink">
+                    {locked ? <Lock className="size-5" aria-hidden /> : <Images className="size-5" aria-hidden />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-bold">Fotoalbum</span>
+                    <span className="block text-sm text-white/70">
+                      {locked ? "Mit Familienpasswort" : "Ansehen und eigene Fotos hochladen"}
+                    </span>
+                  </span>
+                  <ArrowUpRight className="size-5 shrink-0 text-white/60" aria-hidden />
+                </FamilyUnlock>
+              ) : null}
+              {validVideoUrl ? (
+                ytId ? (
+                  <YoutubeClickToPlay id={ytId} />
+                ) : (
+                  <a href={lager.youtube_url} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
+                    <span className="min-w-0 flex-1 font-bold">Lagervideo ansehen</span>
+                    <ArrowUpRight className="size-5 shrink-0 text-muted" aria-hidden />
+                  </a>
+                )
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {links.length || altLink ? (
+          <section id="links" aria-labelledby="links-titel" className={ANKER}>
+            <h2 id="links-titel" className={H2}>Nützliche Links</h2>
+            <ul className="grid grid-cols-2 gap-2.5">
+              {altLink ? (
+                <li className="col-span-2">
+                  <a href={altLink} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-bold">Fotos und Berichte</span>
+                      <span className="block text-xs text-muted">Alte Lagerseite</span>
+                    </span>
+                    <ArrowUpRight className="size-5 shrink-0 text-muted" aria-hidden />
+                  </a>
+                </li>
+              ) : null}
+              {links.map((link) => (
+                <li key={link.id}>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className={`${LINK_KARTE} h-full`}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-bold leading-snug">{link.titel}</span>
+                      <span className="block truncate text-xs text-muted">{hostname(link.url)}</span>
+                    </span>
+                    <ArrowUpRight className="size-4 shrink-0 self-start text-muted" aria-hidden />
+                  </a>
                 </li>
               ))}
             </ul>
-          </Section>
+          </section>
         ) : null}
 
-        {zeigeFotos ? (
-          <Section id="fotos" icon={Images} titel="Fotos">
-            <Card>
-              <FamilyUnlock
-                action={unlockFamilyAccess}
-                href={validFotosUrl ? fotosUrl : null}
-                locked={locked}
-                autoOpen={vonFotos}
-                className={ROW}
-              >
-                <RowContent
-                  icon={locked ? Lock : Images}
-                  titel="Fotoalbum"
-                  hinweis="Fotos ansehen und eigene hochladen"
-                  aktion={ExternalLink}
-                />
-              </FamilyUnlock>
-            </Card>
-          </Section>
-        ) : null}
-
-        {validVideoUrl ? (
-          <Section id="video" icon={PlayCircle} titel="Video">
-            {ytId ? (
-              <YoutubeClickToPlay id={ytId} />
-            ) : (
-              <Card>
-                <a href={lager.youtube_url} target="_blank" rel="noopener noreferrer" className={ROW}>
-                  <RowContent icon={PlayCircle} titel="Lagervideo" hinweis="Öffnet in einem neuen Tab" aktion={ExternalLink} />
-                </a>
-              </Card>
-            )}
-          </Section>
-        ) : null}
-
-        {links.length > 0 || altLink ? (
-          <Section id="links" icon={Link2} titel="Nützliche Links">
-            <Card>
-              <ul className="divide-y divide-ink/[0.07]">
-                {altLink ? (
-                  <li>
-                    <a href={altLink} target="_blank" rel="noopener noreferrer" className={ROW}>
-                      <RowContent icon={Images} titel="Fotos und Berichte" hinweis="Alte Lagerseite" aktion={ExternalLink} />
-                    </a>
-                  </li>
-                ) : null}
-                {links.map((link) => (
-                  <li key={link.id}>
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" className={ROW}>
-                      <RowContent icon={Link2} titel={link.titel} hinweis={hostname(link.url)} aktion={ExternalLink} />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </Section>
-        ) : null}
-
-        <nav aria-label="Weiter" className="grid gap-3 sm:grid-cols-2">
-          <Link
-            href="/kontakt"
-            className="flex min-h-14 items-center gap-3 rounded-2xl bg-ink px-5 text-white transition hover:bg-navy-900 active:bg-navy-900"
-          >
-            <Mail className="size-5 shrink-0 text-accent-light" aria-hidden />
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold">Fragen zum Lager?</span>
-              <span className="block text-xs text-white/70">Schreib der Lagerleitung</span>
+        <nav aria-label="Weiter" className="space-y-2.5">
+          <Link href="/kontakt" className={LINK_KARTE}>
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sand text-accent">
+              <Mail className="size-5" aria-hidden />
             </span>
-            <ChevronRight className="size-5 shrink-0 text-white/50" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block font-bold">Fragen zum Lager?</span>
+              <span className="block text-sm text-muted">Schreib der Lagerleitung</span>
+            </span>
+            <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
           </Link>
           <Link
             href="/lager"
-            className="flex min-h-14 items-center gap-3 rounded-2xl border border-ink/10 bg-white px-5 text-ink transition hover:border-ink/20 active:bg-sand"
+            className="inline-flex min-h-12 items-center gap-2 px-2 text-sm font-bold text-muted hover:text-ink"
           >
-            <ArrowLeft className="size-5 shrink-0 text-accent" aria-hidden />
-            <span className="text-sm font-bold">Alle Lager</span>
+            <ArrowLeft className="size-4" aria-hidden /> Alle Lager
           </Link>
         </nav>
       </div>
@@ -362,66 +398,34 @@ function hostname(url: string) {
   }
 }
 
+// Sprungziele landen unter Kopfzeile (4rem) und Sprungleiste (3.75rem).
+const ANKER = "scroll-mt-32";
+const H2 = "camp-display mb-3 px-1 text-2xl text-ink";
+const LINK_KARTE =
+  "flex min-h-16 w-full items-center gap-3 rounded-2xl bg-white px-4 py-3 text-ink transition hover:bg-white/70 active:bg-ink/5";
 const ROW =
-  "group flex min-h-[4.25rem] w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-sand/70 active:bg-sand sm:px-5";
+  "flex min-h-[4.5rem] w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-sand/60 active:bg-sand";
 
-function Section({
-  id,
-  icon: Icon,
+function DocumentGroup({
   titel,
-  meta,
+  hinweis,
   children,
 }: {
-  id: string;
-  icon: LucideIcon;
   titel: string;
-  meta?: string;
+  hinweis?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-titel`} className="scroll-mt-20">
-      <h2 id={`${id}-titel`} className="mb-3 flex items-center gap-2 text-lg font-bold text-ink">
-        <Icon className="size-5 text-accent" aria-hidden />
-        {titel}
-        {meta ? (
-          <span className="ml-1 rounded-full bg-ink/[0.06] px-2 py-0.5 text-xs font-bold text-muted">{meta}</span>
-        ) : null}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-hidden rounded-[1.25rem] border border-ink/[0.08] bg-white shadow-[0_1px_2px_rgba(15,30,51,0.04)]">
-      {children}
+    <div>
+      {titel ? (
+        <h3 className="mb-2 flex items-center gap-1.5 px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">
+          {titel === "Für Familien" ? <Lock className="size-3.5" aria-hidden /> : null}
+          {titel}
+        </h3>
+      ) : null}
+      <ul className="divide-y divide-ink/[0.07] overflow-hidden rounded-2xl bg-white">{children}</ul>
+      {hinweis ? <p className="mt-2 px-1 text-xs text-muted">{hinweis}</p> : null}
     </div>
-  );
-}
-
-function RowContent({
-  icon: Icon,
-  titel,
-  hinweis,
-  aktion: Aktion,
-}: {
-  icon: LucideIcon;
-  titel: string;
-  hinweis?: string;
-  aktion: LucideIcon;
-}) {
-  return (
-    <>
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sand text-accent">
-        <Icon className="size-5" aria-hidden />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold leading-snug text-ink">{titel}</span>
-        {hinweis ? <span className="block truncate text-xs text-muted">{hinweis}</span> : null}
-      </span>
-      <Aktion className="size-5 shrink-0 text-muted transition group-hover:text-accent" aria-hidden />
-    </>
   );
 }
 
@@ -436,14 +440,21 @@ function DocumentRow({
   locked: boolean;
   autoOpen: boolean;
 }) {
-  const fileType = doc.datei.toLowerCase().endsWith(".docx") ? "Word" : "PDF";
+  const fileType = doc.datei.toLowerCase().endsWith(".docx") ? "DOC" : "PDF";
   const content = (
-    <RowContent
-      icon={doc.sensibel ? Lock : FileText}
-      titel={doc.name}
-      hinweis={doc.sensibel ? `${fileType} · mit Familienpasswort` : fileType}
-      aktion={Download}
-    />
+    <>
+      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent/10 text-[0.7rem] font-bold tracking-wide text-accent">
+        {fileType}
+      </span>
+      <span className="min-w-0 flex-1 text-[1.02rem] font-semibold leading-snug text-ink">{doc.name}</span>
+      <span
+        className={`grid size-10 shrink-0 place-items-center rounded-full ${
+          unlock && locked ? "bg-ink text-white" : "bg-accent text-white"
+        }`}
+      >
+        {unlock && locked ? <Lock className="size-[1.1rem]" aria-hidden /> : <Download className="size-[1.1rem]" aria-hidden />}
+      </span>
+    </>
   );
 
   return (

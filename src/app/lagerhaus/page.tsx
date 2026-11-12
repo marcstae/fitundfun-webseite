@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   ArrowUpRight,
   BedDouble,
@@ -17,6 +16,7 @@ import {
 import { getEinstellungen, getSeite } from "@/lib/data";
 import { publicFileUrl } from "@/lib/pb";
 import { sanitizeRichText } from "@/lib/sanitize";
+import { LAGERHAUS_ADRESSE as ADRESSE, LAGERHAUS_MAPS_URL as MAPS_URL } from "@/lib/site";
 
 export const revalidate = 300;
 export const metadata = {
@@ -24,10 +24,6 @@ export const metadata = {
   description: "Ferienheim Albin in Brigels: Lage, Räume und Winterangebote rund ums Lagerhaus.",
 };
 
-const ADRESSE = "Via Cadruvi Sut 20, 7165 Breil/Brigels";
-const MAPS_URL =
-  "https://www.google.com/maps/search/?api=1&query=" +
-  encodeURIComponent(`Ferienheim Albin, ${ADRESSE}`);
 const HAUS_URL = "https://www.ferienheim-albin.ch/";
 
 // Standardtext, solange die Lagerleitung im Cockpit keinen eigenen Text hinterlegt hat.
@@ -177,16 +173,6 @@ export default async function LagerhausPage() {
           Angaben laut Website des Ferienheims. Weitere Informationen zum Haus gibt es dort.
         </p>
 
-        <Link
-          href="/kontakt"
-          className="flex min-h-16 w-full items-center gap-3 rounded-2xl bg-white px-4 py-3 text-ink transition hover:bg-white/70 active:bg-ink/5"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="block font-bold">Fragen zum Lager?</span>
-            <span className="block text-sm text-muted">Schreib der Lagerleitung</span>
-          </span>
-          <ArrowUpRight className="size-5 shrink-0 text-muted" aria-hidden />
-        </Link>
       </div>
     </div>
   );

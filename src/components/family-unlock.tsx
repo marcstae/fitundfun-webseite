@@ -15,10 +15,10 @@ export type UnlockAction = (state: UnlockState, formData: FormData) => Promise<U
 
 /**
  * Geschützter Inhalt (Dokument oder Fotoalbum), öffnet im neuen Tab.
- * Gesperrt: Antippen fragt nach dem Lagerpasswort. Danach setzt der Server das Cookie
- * und Next lädt die Seite neu; diese Komponente bleibt dabei bestehen (gleiche Position),
- * damit das Fenster einen echten Link «Dokument öffnen» anbieten kann. Ein Tab aus einem
- * Skript nach der Passwortprüfung würde von Handy-Browsern blockiert.
+ * Gesperrt: Antippen fragt nach dem Lagerpasswort; ist es richtig, öffnet sich das Ziel
+ * sofort. Der neue Tab wird schon beim Absenden geöffnet (sonst blockieren Handy-Browser
+ * ihn nach der Prüfung) und erst danach zum Ziel geleitet; bei falschem Passwort schliesst
+ * er sich wieder. Diese Komponente bleibt beim Neuladen nach dem Freischalten bestehen.
  */
 export function FamilyUnlock({
   action,
@@ -40,6 +40,29 @@ export function FamilyUnlock({
   const [state, formAction, pending] = React.useActionState(action, {});
   const router = useRouter();
   const inputId = React.useId();
+  const tabRef = React.useRef<Window | null>(null);
+  const geoeffnet = React.useRef(false);
+
+  const tabVorbereiten = () => {
+    const tab = window.open("", "_blank");
+    if (tab) tab.opener = null;
+    tabRef.current = tab;
+  };
+
+  React.useEffect(() => {
+    if (state.fehler) {
+      tabRef.current?.close();
+      tabRef.current = null;
+      return;
+    }
+    // Beim Fotoalbum kommt href erst mit dem Neuladen nach dem Freischalten.
+    if (!state.ok || !href || geoeffnet.current) return;
+    geoeffnet.current = true;
+    if (tabRef.current) tabRef.current.location.href = href;
+    else window.location.href = href; // Tab blockiert: im gleichen Fenster öffnen
+    tabRef.current = null;
+    setOpen(false);
+  }, [state, href]);
 
   React.useEffect(() => {
     // Zurück aus dem Dokument (Back-Forward-Cache) zeigt sonst noch den gesperrten Stand.
@@ -68,7 +91,7 @@ export function FamilyUnlock({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{state.ok ? "Freigeschaltet" : "Lagerpasswort"}</DialogTitle>
+            <DialogTitle>Lagerpasswort</DialogTitle>
             <DialogDescription className="mt-1">
               {state.ok
                 ? "Der Zugang ist auf diesem Gerät gespeichert. Geschützte Inhalte öffnen sich ab jetzt direkt."
@@ -76,21 +99,9 @@ export function FamilyUnlock({
             </DialogDescription>
           </DialogHeader>
           {state.ok ? (
-            href ? (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setOpen(false)}
-                className="flex h-12 w-full items-center justify-center rounded-xl bg-accent px-6 text-base font-bold text-white transition hover:bg-ink"
-              >
-                Öffnen
-              </a>
-            ) : (
-              <p className="text-sm text-muted">Wird geladen…</p>
-            )
+            <p className="text-sm text-muted">Wird geöffnet…</p>
           ) : (
-            <form action={formAction} className="space-y-3">
+            <form action={formAction} onSubmit={tabVorbereiten} className="space-y-3">
               <label htmlFor={inputId} className="sr-only">
                 Lagerpasswort
               </label>

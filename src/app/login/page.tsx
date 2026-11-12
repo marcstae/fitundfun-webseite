@@ -21,19 +21,19 @@ function localTarget(value: string | null): string {
 }
 
 function LoginForm() {
-  const { login, logout, isAuthenticated, loading } = useAuth();
+  const { login, logout, isAuthenticated, loading, user } = useAuth();
   const router = useRouter();
   const search = useSearchParams();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [busy, setBusy] = React.useState(false);
 
+  // Bereits angemeldet: direkt ins Cockpit (bzw. zur Pflicht-Passwortänderung), Standardziel /admin.
   React.useEffect(() => {
-    if (!loading && isAuthenticated) {
-      const redirect = localTarget(search.get("redirect"));
-      router.replace(redirect);
+    if (!loading && isAuthenticated && user?.rolle === "editor") {
+      router.replace(user.mussPasswortAendern ? "/admin-einrichtung" : localTarget(search.get("redirect")));
     }
-  }, [isAuthenticated, loading, router, search]);
+  }, [isAuthenticated, loading, router, search, user]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

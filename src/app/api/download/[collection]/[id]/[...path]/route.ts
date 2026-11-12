@@ -2,6 +2,7 @@ import type PocketBase from "pocketbase";
 import { NextRequest, NextResponse } from "next/server";
 import {
   FAMILY_ACCESS_COOKIE,
+  FAMILY_ACCESS_MAX_AGE,
   familyPocketBase,
   hasFamilyAccess,
 } from "@/lib/family-access";
@@ -27,12 +28,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   const session = pbRequest(req.headers.get("cookie") || "");
   const readers: (() => Promise<PocketBase>)[] = [];
   if (session.authStore.isValid || collection === "dokumente") readers.push(async () => session);
-  if (
-    collection === "dokumente_intern" &&
-    (await hasFamilyAccess(req.cookies.get(FAMILY_ACCESS_COOKIE)?.value))
-  ) {
-    readers.push(familyPocketBase);
-  }
+  const zugang = req.cookies.get(FAMILY_ACCESS_COOKIE)?.value;
+  const familieOk = collection === "dokumente_intern" && (await hasFamilyAccess(zugang));
+  if (familieOk) readers.push(familyPocketBase);
 
   for (const reader of readers) {
     let pb: PocketBase;
@@ -43,7 +41,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     } catch {
       continue;
     }
-    return stream(pb, collection, record);
+    const response = await stream(pb, collection, record);
+    // Zugang bei jeder Nutzung um die maximale Dauer verlängern: Wer regelmässig Dokumente
+    // öffnet, muss das Lagerpasswort erst nach einem Passwortwechsel wieder eingeben.
+    if (familieOk && zugang && response.ok) {
+      response.cookies.set(FAMILY_ACCESS_COOKIE, zugang, {
+        httpOnly: true,
+        maxAge: FAMILY_ACCESS_MAX_AGE,
+        path: "/",
+        sameSite: "lax",
+        secure: req.headers.get("x-forwarded-proto") === "https",
+      });
+    }
+    return response;
   }
 
   return collection === "dokumente_intern" ? familyGate(id, req.nextUrl.pathname) : notFound();

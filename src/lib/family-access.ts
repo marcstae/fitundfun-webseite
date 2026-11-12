@@ -5,7 +5,8 @@ import { pbRequest } from "./pb.ts";
 import type { FamilienzugangRecord } from "./pb-types.ts";
 
 export const FAMILY_ACCESS_COOKIE = "fitundfun_family_access";
-// ponytail: 400 Tage = Chromium/Safari Cookie-Obergrenze; für 18 Monate wäre ein Refresh nötig.
+// 400 Tage = Browser-Obergrenze für Cookies; jeder geschützte Download verlängert sie wieder.
+// Ungültig wird der Zugang nur, wenn die Lagerleitung ein neues Lagerpasswort setzt.
 export const FAMILY_ACCESS_MAX_AGE = 400 * 24 * 60 * 60;
 
 const familyEmail = process.env.FAMILY_ACCESS_EMAIL || "familie@fitundfun.local";

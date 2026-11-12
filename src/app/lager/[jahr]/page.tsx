@@ -5,12 +5,11 @@ import {
   ArrowLeft,
   ArrowUpRight,
   CalendarDays,
-  ChevronRight,
   Download,
   Images,
   Lock,
   LockOpen,
-  Mail,
+  MapPin,
   UsersRound,
 } from "lucide-react";
 import {
@@ -30,6 +29,7 @@ import {
   unlockAttemptAllowed,
 } from "@/lib/family-access";
 import { publicFileUrl } from "@/lib/pb";
+import { LAGERHAUS_MAPS_URL } from "@/lib/site";
 import {
   documentHref,
   formatDateRangeWithDays,
@@ -290,7 +290,7 @@ export default async function LagerPage({
         {links.length || altLink ? (
           <section id="links" aria-labelledby="links-titel" className={ANKER}>
             <h2 id="links-titel" className={H2}>Nützliche Links</h2>
-            <ul className="grid grid-cols-2 gap-2.5">
+            <ul className="grid gap-2.5 sm:grid-cols-2">
               {altLink ? (
                 <li className="col-span-2">
                   <a href={altLink} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
@@ -318,16 +318,16 @@ export default async function LagerPage({
         ) : null}
 
         <nav aria-label="Weiter" className="space-y-2.5">
-          <Link href="/kontakt" className={LINK_KARTE}>
+          <a href={LAGERHAUS_MAPS_URL} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sand text-accent">
-              <Mail className="size-5" aria-hidden />
+              <MapPin className="size-5" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-bold">Fragen zum Lager?</span>
-              <span className="block text-sm text-muted">Schreib der Lagerleitung</span>
+              <span className="block font-bold">Weg zum Lagerhaus</span>
+              <span className="block text-sm text-muted">Ferienheim Albin in Google Maps</span>
             </span>
-            <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
-          </Link>
+            <ArrowUpRight className="size-5 shrink-0 text-muted" aria-hidden />
+          </a>
           <Link
             href="/lager"
             className="inline-flex min-h-12 items-center gap-2 px-2 text-sm font-bold text-muted hover:text-ink"

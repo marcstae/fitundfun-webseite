@@ -19,12 +19,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers";
 
-// Reihenfolge nach Häufigkeit: Fotos und Kontakt vor Lagerhaus und Archiv.
+// Reihenfolge: Fotos, Lagerhaus, frühere Lager, Kontakt.
 const NAV = [
   { href: "/fotos", label: "Fotos & Videos", hint: "Fotoalbum · mit Lagerpasswort", Icon: Images },
-  { href: "/kontakt", label: "Kontakt", hint: "Fragen an die Lagerleitung", Icon: Mail },
   { href: "/lagerhaus", label: "Lagerhaus", hint: "Unterkunft & Lage in Brigels", Icon: House },
   { href: "/lager", label: "Frühere Lager", hint: "Alle Lager seit 2007", Icon: History },
+  { href: "/kontakt", label: "Kontakt", hint: "Fragen an die Lagerleitung", Icon: Mail },
 ];
 
 const ROW =
@@ -53,7 +53,7 @@ export function SiteHeader({
   const meta: [string, string][] = [
     isEditor
       ? ["/admin", "Admin-Cockpit"]
-      : [`/login?redirect=${encodeURIComponent(pathname)}`, "Admin-Login"],
+      : ["/login", "Admin-Login"], // nach dem Login immer ins Cockpit
   ];
 
   // Zurück/Vor-Geste bei offenem Menü. Scroll-Lock macht Radix (RemoveScroll im Overlay).
@@ -119,7 +119,7 @@ export function SiteHeader({
       </header>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-navy-950/60 transition-opacity duration-200 starting:opacity-0" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-navy-950/85 transition-opacity duration-200 starting:opacity-0" />
         <Dialog.Content
           aria-describedby={undefined}
           // Ein Handler für alle Links: schliesst auch bei Hash-Links und der aktuellen Seite.

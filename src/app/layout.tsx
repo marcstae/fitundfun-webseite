@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Archivo_Black, Fredoka } from "next/font/google";
+import { Archivo, Fredoka } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteChrome } from "@/components/site-chrome";
@@ -14,12 +14,6 @@ const archivo = Archivo({
   display: "swap",
 });
 
-const archivoBlack = Archivo_Black({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-archivo-black",
-  display: "swap",
-});
 const fredoka = Fredoka({
   subsets: ["latin"],
   weight: ["600", "700"],
@@ -50,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="de-CH"
-      className={`${archivo.variable} ${archivoBlack.variable} ${fredoka.variable}`}
+      className={`${archivo.variable} ${fredoka.variable}`}
     >
       <body className="min-h-dvh flex flex-col">
         <Providers>

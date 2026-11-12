@@ -28,7 +28,7 @@ const NAV = [
 ];
 
 const ROW =
-  "-mx-3 flex min-h-[3.75rem] items-center gap-3.5 rounded-r-xl px-3 py-2 text-ink hover:bg-sand active:bg-sand aria-[current=page]:bg-sand aria-[current=page]:shadow-[inset_3px_0_0_var(--color-ink)]";
+  "flex min-h-[3.75rem] items-center gap-3.5 rounded-r-xl px-5 py-2 text-ink hover:bg-sand active:bg-sand aria-[current=page]:bg-sand aria-[current=page]:shadow-[inset_3px_0_0_var(--color-ink)]";
 const META =
   "flex min-h-12 items-center rounded-xl px-2 text-sm font-semibold text-muted hover:bg-sand hover:text-ink active:bg-sand aria-[current=page]:text-ink aria-[current=page]:underline aria-[current=page]:underline-offset-4";
 const ON_NAVY_FOCUS =
@@ -201,8 +201,14 @@ export function SiteHeader({
                 return (
                   <li key={href}>
                     {href === "/fotos" ? (
-                      // /fotos leitet serverseitig aufs externe Album um: normaler Seitenwechsel, gleicher Tab.
-                      <a href={href} className={ROW}>
+                      // /fotos leitet serverseitig aufs externe Album (oder zur Passwortabfrage) um: neuer Tab.
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setOpen(false)}
+                        className={ROW}
+                      >
                         {inner}
                       </a>
                     ) : (

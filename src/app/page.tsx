@@ -41,8 +41,8 @@ export default async function HomePage() {
           <div className="relative z-10 mx-auto flex h-full w-full max-w-[96rem] flex-col px-7 pb-7 pt-24 sm:px-10 sm:pb-10 sm:pt-32 lg:px-12 lg:pb-12 xl:pt-9">
 
             <div className="mt-auto w-full max-xl:contents xl:grid xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] xl:items-end xl:gap-x-8">
-              {/* Datum: auf Handy/Tablet mittig über den mittigen Knöpfen, ab xl links über dem Titel. */}
-              <div className="camp-hero-kicker order-2 mb-4 flex justify-center max-xl:mt-auto sm:mb-6 xl:col-span-2 xl:row-start-1 xl:justify-start">
+              {/* Datum: auf dem Handy ausgeblendet (wenig Platz); ab md mittig über den Knöpfen, ab xl links über dem Titel. */}
+              <div className="camp-hero-kicker order-2 mb-6 hidden justify-center max-xl:mt-auto md:flex xl:col-span-2 xl:row-start-1 xl:justify-start">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/12 px-4 py-2 text-sm font-bold text-white backdrop-blur-md">
                   <CalendarDays className="size-4 text-accent-light" />
                   {lager
@@ -60,7 +60,7 @@ export default async function HomePage() {
                 </h1>
               </div>
 
-              <div className="camp-hero-bottom order-3 flex justify-center xl:col-start-2 xl:min-w-0 xl:row-start-2 xl:justify-end">
+              <div className="camp-hero-bottom order-3 flex justify-center max-md:mt-auto xl:col-start-2 xl:min-w-0 xl:row-start-2 xl:justify-end">
                 <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                   <Button
                     asChild

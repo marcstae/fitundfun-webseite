@@ -108,8 +108,8 @@ export function AccountSettings() {
           </p>
         ) : null}
         <form onSubmit={saveFamilyPassword} className="mt-6 space-y-4">
-          <Field label="Neues Familienpasswort" id="family-new" value={familyPassword} onChange={setFamilyPassword} autoComplete="new-password" />
-          <Field label="Familienpasswort wiederholen" id="family-confirm" value={familyConfirmation} onChange={setFamilyConfirmation} autoComplete="new-password" />
+          <Field label="Neues Familienpasswort" id="family-new" value={familyPassword} onChange={setFamilyPassword} autoComplete="new-password" minLength={1} />
+          <Field label="Familienpasswort wiederholen" id="family-confirm" value={familyConfirmation} onChange={setFamilyConfirmation} autoComplete="new-password" minLength={1} />
           <Button type="submit" disabled={savingFamily}>{savingFamily ? "Speichert…" : familySet ? "Familienpasswort ändern" : "Familienpasswort setzen"}</Button>
         </form>
       </section>
@@ -123,17 +123,19 @@ function Field({
   value,
   onChange,
   autoComplete,
+  minLength = 8,
 }: {
   label: string;
   id: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: string;
+  minLength?: number;
 }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type="password" minLength={8} required value={value} onChange={(event) => onChange(event.target.value)} autoComplete={autoComplete} />
+      <Input id={id} type="password" minLength={minLength} required value={value} onChange={(event) => onChange(event.target.value)} autoComplete={autoComplete} />
     </div>
   );
 }

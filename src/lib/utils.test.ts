@@ -5,9 +5,11 @@ import {
   documentHref,
   formatDateRange,
   formatDateRangeLong,
+  formatDateRangeWithDays,
   isoToDateInput,
   isValidHttpUrl,
   pickNeustesFotoalbum,
+  tageBis,
   youtubeId,
 } from "./utils.ts";
 import type { FotoalbumRecord, LagerRecord } from "./pb-types.ts";
@@ -90,4 +92,20 @@ test("pickNeustesFotoalbum: neuestes Lager mit vorhandenem Link", () => {
     pickNeustesFotoalbum([album2024, album2025], lager),
     { fotoalbum: album2025, jahr: 2025 }
   );
+});
+
+test("formatDateRangeWithDays: Wochentage für Samstag-Lager", () => {
+  assert.equal(
+    formatDateRangeWithDays("2027-02-06 00:00:00.000Z", "2027-02-13 00:00:00.000Z"),
+    "Sa 6. Februar – Sa 13. Februar 2027"
+  );
+});
+
+test("tageBis: Zürcher Kalendertag, auch kurz vor Mitternacht", () => {
+  const datum = "2027-02-06 00:00:00.000Z";
+  // 5. Feb 2027, 23:30 in Zürich (22:30 UTC) ist noch «1 Tag vorher».
+  assert.equal(tageBis(datum, new Date("2027-02-05T22:30:00Z")), 1);
+  assert.equal(tageBis(datum, new Date("2027-02-06T08:00:00Z")), 0);
+  assert.equal(tageBis(datum, new Date("2026-11-12T12:00:00Z")), 86);
+  assert.equal(tageBis(datum, new Date("2027-02-14T12:00:00Z")), -8);
 });

@@ -68,6 +68,26 @@ export function formatDateRangeLong(von: string | Date, bis: string | Date): str
   return `${a.getUTCDate()}. ${NB_LONG[a.getUTCMonth()]} – ${b.getUTCDate()}. ${NB_LONG[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
 }
 
+const WOCHENTAG = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+
+/** "Sa 31. Januar – Sa 7. Februar 2026" (Lager beginnen und enden meist an einem Samstag). */
+export function formatDateRangeWithDays(von: string | Date, bis: string | Date): string {
+  const a = asDate(von);
+  const b = asDate(bis);
+  return `${WOCHENTAG[a.getUTCDay()]} ${a.getUTCDate()}. ${NB_LONG[a.getUTCMonth()]} – ${WOCHENTAG[b.getUTCDay()]} ${b.getUTCDate()}. ${NB_LONG[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
+}
+
+/** Ganze Tage vom heutigen Zürcher Kalendertag bis zum Datum (negativ = vorbei). */
+export function tageBis(datum: string | Date, jetzt: Date = new Date()): number {
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zurich" })
+    .format(jetzt)
+    .split("-")
+    .map(Number);
+  const ziel = asDate(datum);
+  const zielTag = Date.UTC(ziel.getUTCFullYear(), ziel.getUTCMonth(), ziel.getUTCDate());
+  return Math.round((zielTag - Date.UTC(y, m - 1, d)) / 86_400_000);
+}
+
 export function isoToDateInput(d: string | Date): string {
   return asDate(d).toISOString().slice(0, 10);
 }

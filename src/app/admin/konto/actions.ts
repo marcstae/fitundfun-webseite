@@ -9,8 +9,10 @@ export async function changeFamilyPassword(
   password: string,
   confirmation: string
 ): Promise<{ ok: boolean; message: string }> {
-  if (password.length < 8) {
-    return { ok: false, message: "Das Familienpasswort braucht mindestens 8 Zeichen." };
+  // Bewusst keine Längen- oder Zeichenvorgaben: Die Lagerleitung wählt ein Passwort, das
+  // sich Familien merken können. Schutz gegen Durchprobieren bietet das Versuchslimit.
+  if (!password) {
+    return { ok: false, message: "Bitte ein Familienpasswort eingeben." };
   }
   if (password !== confirmation) {
     return { ok: false, message: "Die Passwörter stimmen nicht überein." };

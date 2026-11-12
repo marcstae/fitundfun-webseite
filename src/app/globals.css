@@ -126,7 +126,7 @@
 
 .camp-hero-amp {
   color: var(--color-accent-light);
-  text-shadow: 0 0 35px rgba(255, 116, 68, 0.34);
+  text-shadow: 0 0 35px color-mix(in oklab, var(--color-accent-light) 34%, transparent);
 }
 
 .camp-hero-meta {

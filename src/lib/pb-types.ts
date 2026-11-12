@@ -70,9 +70,18 @@ export interface LinkRecord {
   updated: string;
 }
 
+export interface KontaktgruppeRecord {
+  id: string;
+  name: string;
+  sort: number;
+}
+
 export interface KontaktRecord {
   id: string;
-  rolle: "Lagerleiter" | "Skilehrer" | "Snowboardlehrer" | "Kueche" | "Website";
+  /** Relation auf kontaktgruppen (Migration 28). */
+  gruppe: string;
+  /** Altwert der früheren festen Gruppen; nicht mehr verwendet. */
+  rolle?: string;
   name: string;
   email: string;
   telefon?: string;
@@ -92,6 +101,8 @@ export interface EinstellungenRecord {
   hero_willkommen: string;
   /** #rrggbb; leer = Standard-Eisblau. */
   akzentfarbe?: string;
+  /** #rrggbb für dunklen Grund; leer = Standard-Signalorange. */
+  akzentfarbe_dunkel?: string;
   created: string;
   updated: string;
 }

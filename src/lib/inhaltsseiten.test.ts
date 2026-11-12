@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { kontaktInhalt, LAGERHAUS_STANDARD, lagerhausInhalt, mapsUrl, sichtbarerKontakt } from "./inhaltsseiten.ts";
+import { LAGERHAUS_STANDARD, lagerhausInhalt, mapsUrl, sichtbarerKontakt } from "./inhaltsseiten.ts";
 import type { KontaktRecord } from "./pb-types.ts";
-import { akzentfarbe, kontrastZuWeiss } from "./utils.ts";
+import { AKZENT_DUNKEL_STANDARD, akzentfarbe, DUNKLER_GRUND, kontrast } from "./utils.ts";
 
 test("lagerhausInhalt: ohne Daten die bisherigen Texte, gespeicherte Werte geprüft", () => {
   assert.deepEqual(lagerhausInhalt(null), LAGERHAUS_STANDARD);
@@ -19,14 +19,11 @@ test("lagerhausInhalt: ohne Daten die bisherigen Texte, gespeicherte Werte gepr�
   assert.deepEqual(inhalt.infos, []); // bewusst geleert → Abschnitt verschwindet
   assert.equal(inhalt.hinweis, "");
   assert.match(mapsUrl(inhalt), /query=Ferienheim%20Albin%2C%20Via%20Cadruvi/);
-  const gruppen = kontaktInhalt({ gruppen: { Website: "Technik", Kueche: "" } }).gruppen;
-  assert.equal(gruppen.Website, "Technik");
-  assert.equal(gruppen.Kueche, "Küche"); // leer → Standard
 });
 
 test("sichtbarerKontakt: geschützte Angaben nur mit Lagerpasswort", () => {
   const kontakt = {
-    id: "k1", rolle: "Skilehrer", name: "Muster", sort: 1, created: "", updated: "",
+    id: "k1", gruppe: "g1", name: "Muster", sort: 1, created: "", updated: "",
     email: "a@b.ch", email_geschuetzt: false, telefon: "079 000 00 00", telefon_geschuetzt: true,
   } as KontaktRecord;
   const ohne = sichtbarerKontakt(kontakt, false);
@@ -40,10 +37,15 @@ test("sichtbarerKontakt: geschützte Angaben nur mit Lagerpasswort", () => {
   assert.equal(sichtbarerKontakt({ ...kontakt, telefon: "" }, false).telefonGesperrt, false);
 });
 
-test("akzentfarbe: nur gültige Farben mit lesbarer weisser Schrift", () => {
-  assert.ok(Math.abs(kontrastZuWeiss("#2563eb") - 5.17) < 0.01);
+test("akzentfarbe: nur gültige Farben, die auf ihrem Grund lesbar sind", () => {
+  assert.ok(Math.abs(kontrast("#2563eb", "#ffffff") - 5.17) < 0.01);
+  assert.equal(kontrast("#ffffff", "#2563eb"), kontrast("#2563eb", "#ffffff")); // Reihenfolge egal
   assert.equal(akzentfarbe("#2563EB"), "#2563eb");
   assert.equal(akzentfarbe("#ffeb3b"), null); // Gelb: weisse Schrift unlesbar
   assert.equal(akzentfarbe("red; background: url(x)"), null);
   assert.equal(akzentfarbe(undefined), null);
+  // Orange auf Nachtblau: Standard und Gelb lesbar, Dunkelrot nicht.
+  assert.equal(akzentfarbe(AKZENT_DUNKEL_STANDARD, DUNKLER_GRUND), AKZENT_DUNKEL_STANDARD);
+  assert.equal(akzentfarbe("#ffeb3b", DUNKLER_GRUND), "#ffeb3b");
+  assert.equal(akzentfarbe("#8b0000", DUNKLER_GRUND), null);
 });

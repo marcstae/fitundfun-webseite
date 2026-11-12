@@ -33,21 +33,32 @@ export function fokusLager(lager: LagerRecord[], jahrHeute: number) {
   };
 }
 
-/** WCAG-Kontrast von Weiss auf der Farbe (#rrggbb): 1 bis 21. */
-export function kontrastZuWeiss(hex: string): number {
+function luminanz(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => {
     const c = parseInt(hex.slice(i, i + 2), 16) / 255;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   });
-  return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** Standard-Akzentfarbe (Eisblau), gleich wie --color-accent in globals.css. */
-export const AKZENT_STANDARD = "#2563eb";
+/** WCAG-Kontrast zweier Farben (#rrggbb): 1 bis 21. */
+export function kontrast(a: string, b: string): number {
+  const [hell, dunkel] = [luminanz(a), luminanz(b)].sort((x, y) => y - x);
+  return (hell + 0.05) / (dunkel + 0.05);
+}
 
-/** Akzentfarbe aus dem Cockpit, nur wenn gültig und mit lesbarer weisser Schrift (≥ 4.5:1). */
-export function akzentfarbe(wert: unknown): string | null {
-  return typeof wert === "string" && /^#[0-9a-f]{6}$/i.test(wert) && kontrastZuWeiss(wert) >= 4.5
+/** Standardfarben wie in globals.css: Eisblau auf hellem, Signalorange auf dunklem Grund. */
+export const AKZENT_STANDARD = "#2563eb";
+export const AKZENT_DUNKEL_STANDARD = "#ff5a36";
+/** Nachtblau (--color-ink): dunkler Grund und Schrift auf dem Orange. */
+export const DUNKLER_GRUND = "#0f1e33";
+
+/**
+ * Akzentfarbe aus dem Cockpit, nur wenn gültig und lesbar (≥ 4.5:1) gegenüber `gegen`:
+ * Blau trägt weisse Schrift, Orange steht auf Nachtblau und trägt nachtblaue Schrift.
+ */
+export function akzentfarbe(wert: unknown, gegen = "#ffffff"): string | null {
+  return typeof wert === "string" && /^#[0-9a-f]{6}$/i.test(wert) && kontrast(wert, gegen) >= 4.5
     ? wert.toLowerCase()
     : null;
 }

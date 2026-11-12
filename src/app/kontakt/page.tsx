@@ -1,31 +1,32 @@
 import { cookies } from "next/headers";
 import { Lock, Mail, Phone } from "lucide-react";
 import { FamilyUnlock } from "@/components/family-unlock";
-import { getKontakte, getSeite } from "@/lib/data";
+import { getKontaktgruppen, getKontakte, getSeite } from "@/lib/data";
 import { FAMILY_ACCESS_COOKIE, hasFamilyAccess } from "@/lib/family-access";
 import { unlockFamilyAccess } from "@/lib/familien-freischalten";
-import { KONTAKT_EINLEITUNG, KONTAKT_ROLLEN, KONTAKT_TITEL, kontaktInhalt, sichtbarerKontakt } from "@/lib/inhaltsseiten";
+import { KONTAKT_EINLEITUNG, KONTAKT_TITEL, sichtbarerKontakt } from "@/lib/inhaltsseiten";
 import { sanitizeRichText } from "@/lib/sanitize";
-import type { KontaktRecord } from "@/lib/pb-types";
 
 export const metadata = { title: "Kontakt" };
 
 type Sichtbar = ReturnType<typeof sichtbarerKontakt>;
 
 export default async function KontaktPage() {
-  const [kontakte, seite, cookieStore] = await Promise.all([
+  const [kontakte, gruppen, seite, cookieStore] = await Promise.all([
     getKontakte(),
+    getKontaktgruppen(),
     getSeite("kontakt").catch(() => null),
     cookies(),
   ]);
   const zugang = await hasFamilyAccess(cookieStore.get(FAMILY_ACCESS_COOKIE)?.value);
   // Titel, Einleitung, Gruppen und Personen sind im Cockpit unter «Inhaltsseiten» bearbeitbar.
-  const { gruppen } = kontaktInhalt(seite?.daten);
   const sichtbar = kontakte.map((k) => sichtbarerKontakt(k, zugang));
   const gesperrt = sichtbar.some((k) => k.emailGesperrt || k.telefonGesperrt);
-  const bloecke = (Object.keys(KONTAKT_ROLLEN) as KontaktRecord["rolle"][])
-    .map((rolle) => ({ rolle, titel: gruppen[rolle], items: sichtbar.filter((k) => k.rolle === rolle) }))
-    .filter((block) => block.items.length > 0);
+  const ohneGruppe = sichtbar.filter((k) => !gruppen.some((g) => g.id === k.gruppe));
+  const bloecke = [
+    ...gruppen.map((g) => ({ id: g.id, titel: g.name, items: sichtbar.filter((k) => k.gruppe === g.id) })),
+    { id: "weitere", titel: "Weitere Kontakte", items: ohneGruppe },
+  ].filter((block) => block.items.length > 0);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
@@ -60,7 +61,7 @@ export default async function KontaktPage() {
       {bloecke.length > 0 ? (
         <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2">
           {bloecke.map((block) => (
-            <KontaktBlock key={block.rolle} titel={block.titel} items={block.items} />
+            <KontaktBlock key={block.id} titel={block.titel} items={block.items} />
           ))}
         </div>
       ) : (

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MediaField } from "@/components/admin/hero-settings";
+import { Dropzone } from "@/components/edit/dropzone";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
 import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
 import { INHALT_ICONS } from "@/components/inhalt-icons";
@@ -14,18 +16,16 @@ import {
   ICONS,
   type IconKey,
   KONTAKT_EINLEITUNG,
-  KONTAKT_ROLLEN,
   KONTAKT_TITEL,
-  kontaktInhalt,
   LAGERHAUS_EINLEITUNG,
   LAGERHAUS_TITEL,
   type LagerhausInhalt,
   lagerhausInhalt,
 } from "@/lib/inhaltsseiten";
-import { pbBrowser } from "@/lib/pb";
+import { pbBrowser, publicFileUrl } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { isValidHttpUrl } from "@/lib/utils";
-import type { KontaktRecord, SeiteRecord } from "@/lib/pb-types";
+import type { SeiteRecord } from "@/lib/pb-types";
 
 const ICON_BUTTON =
   "inline-flex size-10 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink disabled:opacity-25 sm:size-8";
@@ -33,7 +33,12 @@ const FELD =
   "w-full rounded-xl border border-ink/15 bg-white px-4 text-base text-ink placeholder:text-muted/70 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30";
 
 /** Seite speichern (beim ersten Mal anlegen) und die Website neu aufbauen. */
-async function seiteSpeichern(id: string | undefined, slug: string, data: Pick<SeiteRecord, "titel" | "inhalt" | "daten">) {
+async function seiteSpeichern(
+  id: string | undefined,
+  slug: string,
+  // bilder: [Datei] ersetzt die Bilder der Seite, [] entfernt sie (SDK schickt Dateien als FormData).
+  data: Pick<SeiteRecord, "titel" | "inhalt"> & { daten?: unknown; bilder?: File[] }
+) {
   const pb = pbBrowser();
   const saved = id
     ? await pb.collection("seiten").update<SeiteRecord>(id, data)
@@ -43,10 +48,10 @@ async function seiteSpeichern(id: string | undefined, slug: string, data: Pick<S
 }
 
 /** Zustand eines Formulars mit «ungespeichert»-Erkennung über einen Schnappschuss. */
-function useFormular<T>(start: T) {
+function useFormular<T>(start: T, sonstGeaendert = false) {
   const [wert, setWert] = React.useState(start);
   const [gespeichert, setGespeichert] = React.useState(() => JSON.stringify(start));
-  const dirty = JSON.stringify(wert) !== gespeichert;
+  const dirty = JSON.stringify(wert) !== gespeichert || sonstGeaendert;
   useLeaveGuard(dirty);
   return { wert, setWert, dirty, alsGespeichert: (neu: T) => setGespeichert(JSON.stringify(neu)) };
 }
@@ -56,11 +61,21 @@ const ohneLeere = (eintraege: Eintrag[]) =>
 
 export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
   const [id, setId] = React.useState(seite?.id);
-  const { wert, setWert, dirty, alsGespeichert } = useFormular({
-    titel: seite?.titel || LAGERHAUS_TITEL,
-    einleitung: seite?.inhalt || LAGERHAUS_EINLEITUNG,
-    haus: lagerhausInhalt(seite?.daten),
-  });
+  // Kopfbild = erstes Bild der Seite (seiten.bilder); ohne eigenes Bild das Vorschaubild der Startseite.
+  const [bildName, setBildName] = React.useState(seite?.bilder?.[0] || "");
+  const [bild, setBild] = React.useState<File | null>(null);
+  const [bildEntfernen, setBildEntfernen] = React.useState(false);
+  const { wert, setWert, dirty, alsGespeichert } = useFormular(
+    {
+      titel: seite?.titel || LAGERHAUS_TITEL,
+      einleitung: seite?.inhalt || LAGERHAUS_EINLEITUNG,
+      haus: lagerhausInhalt(seite?.daten),
+    },
+    !!bild || bildEntfernen
+  );
+  const neuesBildUrl = React.useMemo(() => (bild ? URL.createObjectURL(bild) : ""), [bild]);
+  React.useEffect(() => () => URL.revokeObjectURL(neuesBildUrl), [neuesBildUrl]);
+  const bildUrl = neuesBildUrl || (!bildEntfernen && bildName && id ? publicFileUrl("seiten", id, bildName) : "");
   const { saving, run } = useSaveAction();
   const haus = wert.haus;
   const setHaus = <K extends keyof LagerhausInhalt>(key: K, value: LagerhausInhalt[K]) =>
@@ -90,8 +105,16 @@ export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
       },
     };
     await run(async () => {
-      const saved = await seiteSpeichern(id, "lagerhaus", { titel: neu.titel, inhalt: neu.einleitung, daten: neu.haus });
+      const saved = await seiteSpeichern(id, "lagerhaus", {
+        titel: neu.titel,
+        inhalt: neu.einleitung,
+        daten: neu.haus,
+        ...(bild ? { bilder: [bild] } : bildEntfernen ? { bilder: [] } : {}),
+      });
       setId(saved.id);
+      setBildName(saved.bilder?.[0] || "");
+      setBild(null);
+      setBildEntfernen(false);
       setWert(neu);
       alsGespeichert(neu);
     });
@@ -99,7 +122,36 @@ export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
 
   return (
     <div className="space-y-5">
-      <Block titel="Kopfbereich" text="Oben auf der Seite über dem Bild.">
+      <Block titel="Kopfbereich" text="Bild und Texte oben auf der Seite.">
+        {bildUrl ? (
+          <img src={bildUrl} alt="Vorschau des Kopfbilds" className="aspect-[16/9] w-full rounded-xl bg-sand object-cover object-[50%_40%]" />
+        ) : (
+          <p className="rounded-xl bg-sand p-4 text-sm font-semibold text-muted">
+            Zurzeit erscheint das Vorschaubild der Startseite. Lade ein eigenes Bild hoch, um es zu ersetzen.
+          </p>
+        )}
+        <MediaField
+          label="Eigenes Kopfbild"
+          current={bildEntfernen ? "" : bild?.name || bildName}
+          removeLabel="Eigenes Bild entfernen"
+          onRemove={() => {
+            setBild(null);
+            setBildEntfernen(true);
+          }}
+        >
+          <Dropzone
+            accept="image/*"
+            formats="ein Bild (JPG, PNG oder WebP)"
+            maxSizeMB={5}
+            currentName={bildEntfernen ? null : bild?.name || bildName}
+            label="Bild wählen"
+            hint="JPG, PNG oder WebP bis 5 MB hierher ziehen oder"
+            onFile={(file) => {
+              setBild(file);
+              setBildEntfernen(false);
+            }}
+          />
+        </MediaField>
         <Feld id="lh-titel" label="Kleine Überschrift" value={wert.titel} onChange={(titel) => setWert((w) => ({ ...w, titel }))} />
         <Feld id="lh-name" label="Name des Hauses" value={haus.name} onChange={(v) => setHaus("name", v)} />
         <Feld
@@ -146,17 +198,13 @@ export function KontaktEditor({ seite }: { seite: SeiteRecord | null }) {
   const { wert, setWert, dirty, alsGespeichert } = useFormular({
     titel: seite?.titel || KONTAKT_TITEL,
     einleitung: seite?.inhalt || KONTAKT_EINLEITUNG,
-    gruppen: kontaktInhalt(seite?.daten).gruppen,
   });
   const { saving, run } = useSaveAction();
-  const rollen = Object.keys(KONTAKT_ROLLEN) as KontaktRecord["rolle"][];
 
   const save = async () => {
-    const gruppen = { ...wert.gruppen };
-    for (const rolle of rollen) gruppen[rolle] = gruppen[rolle].trim() || KONTAKT_ROLLEN[rolle];
-    const neu = { ...wert, titel: wert.titel.trim() || KONTAKT_TITEL, gruppen };
+    const neu = { ...wert, titel: wert.titel.trim() || KONTAKT_TITEL };
     await run(async () => {
-      const saved = await seiteSpeichern(id, "kontakt", { titel: neu.titel, inhalt: neu.einleitung, daten: { gruppen } });
+      const saved = await seiteSpeichern(id, "kontakt", { titel: neu.titel, inhalt: neu.einleitung });
       setId(saved.id);
       setWert(neu);
       alsGespeichert(neu);
@@ -172,19 +220,6 @@ export function KontaktEditor({ seite }: { seite: SeiteRecord | null }) {
           <MinimalEditor label="Einleitung" value={wert.einleitung} onChange={(einleitung) => setWert((w) => ({ ...w, einleitung }))} />
         </div>
       </Block>
-      <Block titel="Gruppen" text="Überschriften über den Kontaktpersonen. Eine Gruppe erscheint nur, wenn ihr jemand zugeordnet ist.">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {rollen.map((rolle) => (
-            <Feld
-              key={rolle}
-              id={`ko-gruppe-${rolle}`}
-              label={`Gruppe ${KONTAKT_ROLLEN[rolle]}`}
-              value={wert.gruppen[rolle]}
-              onChange={(v) => setWert((w) => ({ ...w, gruppen: { ...w.gruppen, [rolle]: v } }))}
-            />
-          ))}
-        </div>
-      </Block>
       <DirtySaveBar dirty={dirty} saving={saving} onSave={save} />
     </div>
   );
@@ -193,7 +228,7 @@ export function KontaktEditor({ seite }: { seite: SeiteRecord | null }) {
 function Block({ titel, text, children }: { titel: string; text: string; children: React.ReactNode }) {
   return (
     <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-6">
-      <h3 className="font-display text-xl text-ink">{titel}</h3>
+      <h2 className="font-display text-xl text-ink">{titel}</h2>
       <p className="mt-1 text-sm font-semibold leading-relaxed text-muted">{text}</p>
       <div className="mt-5 space-y-4">{children}</div>
     </section>

@@ -16,12 +16,15 @@ export default async function LagerhausPage() {
     getSeite("lagerhaus"),
     getEinstellungen().catch(() => null),
   ]);
-  // Alles ausser dem Kopfbild ist im Cockpit unter «Inhaltsseiten» bearbeitbar.
+  // Alles ist im Cockpit unter «Inhaltsseiten» bearbeitbar.
   const haus = lagerhausInhalt(seite?.daten);
   const einleitung = sanitizeRichText(seite?.inhalt || LAGERHAUS_EINLEITUNG);
-  const kopfbild = einstellungen?.hero_poster
-    ? publicFileUrl("einstellungen", einstellungen.id, einstellungen.hero_poster)
-    : "/hero-poster.jpg";
+  // Eigenes Kopfbild (erstes Bild der Seite), sonst das Vorschaubild der Startseite.
+  const kopfbild = seite?.bilder?.[0]
+    ? publicFileUrl("seiten", seite.id, seite.bilder[0])
+    : einstellungen?.hero_poster
+      ? publicFileUrl("einstellungen", einstellungen.id, einstellungen.hero_poster)
+      : "/hero-poster.jpg";
 
   return (
     <div className="bg-sand pb-10">

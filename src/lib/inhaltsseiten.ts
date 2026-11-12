@@ -82,15 +82,6 @@ export const LAGERHAUS_TITEL = "Unser Lagerhaus";
 export const LAGERHAUS_EINLEITUNG =
   "<p>Das Ferienheim Albin in Brigels ist unser Zuhause während der Lagerwoche. Hier essen wir gemeinsam und verbringen die Abende mit Spielen und Lagerprogramm.</p>";
 
-/** Gruppen der Kontaktseite in Anzeigereihenfolge, mit Standard-Überschrift. */
-export const KONTAKT_ROLLEN: Record<KontaktRecord["rolle"], string> = {
-  Lagerleiter: "Lagerleitung",
-  Skilehrer: "Skilehrer",
-  Snowboardlehrer: "Snowboardlehrer",
-  Kueche: "Küche",
-  Website: "Website",
-};
-export type KontaktInhalt = { gruppen: Record<KontaktRecord["rolle"], string> };
 export const KONTAKT_TITEL = "Kontakt";
 export const KONTAKT_EINLEITUNG = "<p>Fragen zum Lager oder zur Website beantworten wir gerne per E-Mail.</p>";
 
@@ -132,15 +123,6 @@ export function lagerhausInhalt(daten: unknown): LagerhausInhalt {
   };
 }
 
-export function kontaktInhalt(daten: unknown): KontaktInhalt {
-  const gespeichert = objekt(objekt(daten).gruppen);
-  const gruppen = { ...KONTAKT_ROLLEN };
-  for (const rolle of Object.keys(gruppen) as KontaktRecord["rolle"][]) {
-    gruppen[rolle] = text(gespeichert[rolle], "") || KONTAKT_ROLLEN[rolle];
-  }
-  return { gruppen };
-}
-
 /**
  * Was Besucherinnen und Besucher von einem Kontakt sehen dürfen. Geschützte E-Mail und
  * Telefonnummer werden ohne Lagerpasswort entfernt, nicht nur versteckt.
@@ -152,7 +134,7 @@ export function sichtbarerKontakt(kontakt: KontaktRecord, zugang: boolean) {
   const telefonFrei = !kontakt.telefon_geschuetzt || zugang;
   return {
     id: kontakt.id,
-    rolle: kontakt.rolle,
+    gruppe: kontakt.gruppe,
     name: kontakt.name,
     email: emailFrei ? email : "",
     telefon: telefonFrei ? telefon : "",
@@ -160,6 +142,13 @@ export function sichtbarerKontakt(kontakt: KontaktRecord, zugang: boolean) {
     telefonGesperrt: !!telefon && !telefonFrei,
   };
 }
+
+/** Bereiche im Cockpit-Tab «Inhaltsseiten» (Reihenfolge = Navigation; der erste öffnet zuerst). */
+export const INHALTSSEITEN_BEREICHE = [
+  { key: "kontakt", label: "Kontakt", text: "Text der Kontaktseite, Kontaktpersonen und Gruppen.", seite: "/kontakt" },
+  { key: "links", label: "Nützliche Links", text: "Erscheinen auf jeder Lagerseite unter «Nützliche Links».", seite: null },
+  { key: "lagerhaus", label: "Lagerhaus", text: "Kopfbild, Haus, Adresse, Kurzfakten und Infos fürs Lager.", seite: "/lagerhaus" },
+] as const;
 
 /** Google-Maps-Suche nach Haus und Adresse (für Lagerhaus- und Lagerseiten). */
 export function mapsUrl({ name, adresse }: Pick<LagerhausInhalt, "name" | "adresse">): string {

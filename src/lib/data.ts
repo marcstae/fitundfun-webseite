@@ -7,6 +7,7 @@ import type {
   DokumentRecord,
   FotoalbumRecord,
   EinstellungenRecord,
+  KontaktgruppeRecord,
   KontaktRecord,
   LagerRecord,
   LinkRecord,
@@ -98,6 +99,13 @@ export async function getNeustesFotoalbum(
 export const getLinks = unstable_cache(
   async () => listAll<LinkRecord>("links", "sort"),
   ["links"],
+  { revalidate: REVALIDATE }
+);
+
+export const getKontaktgruppen = unstable_cache(
+  async () =>
+    (await familyPocketBase()).collection("kontaktgruppen").getFullList<KontaktgruppeRecord>({ sort: "sort,name" }),
+  ["kontaktgruppen"],
   { revalidate: REVALIDATE }
 );
 

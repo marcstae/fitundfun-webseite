@@ -102,7 +102,7 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
   );
 }
 
-function MediaField({
+export function MediaField({
   label,
   current,
   removeLabel,

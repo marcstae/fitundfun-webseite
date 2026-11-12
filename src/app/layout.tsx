@@ -5,7 +5,7 @@ import { Providers } from "@/components/providers";
 import { SiteChrome } from "@/components/site-chrome";
 import { getAktuellesLager, getEinstellungen } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
-import { akzentfarbe, formatDateRange } from "@/lib/utils";
+import { akzentfarbe, DUNKLER_GRUND, formatDateRange } from "@/lib/utils";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -48,13 +48,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     getAktuellesLager().catch(() => null),
     getEinstellungen().catch(() => null),
   ]);
-  // Akzentfarbe aus dem Cockpit überschreibt --color-accent aus globals.css (nur geprüfte Werte).
+  // Akzentfarben aus dem Cockpit überschreiben die Variablen aus globals.css (nur geprüfte Werte).
   const akzent = akzentfarbe(einstellungen?.akzentfarbe);
+  const akzentDunkel = akzentfarbe(einstellungen?.akzentfarbe_dunkel, DUNKLER_GRUND);
+  const farben = {
+    ...(akzent ? { "--color-accent": akzent } : {}),
+    ...(akzentDunkel ? { "--color-accent-light": akzentDunkel } : {}),
+  } as React.CSSProperties;
   return (
     <html
       lang="de-CH"
       className={`${archivo.variable} ${fredoka.variable}`}
-      style={akzent ? ({ "--color-accent": akzent } as React.CSSProperties) : undefined}
+      style={akzent || akzentDunkel ? farben : undefined}
     >
       <body className="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <Providers>

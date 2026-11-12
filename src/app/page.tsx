@@ -70,7 +70,7 @@ export default async function HomePage() {
                   <Button
                     asChild
                     size="lg"
-                    className="w-full rounded-full bg-accent-light px-7 text-ink shadow-[0_12px_35px_rgba(255,90,54,0.35)] hover:bg-white sm:w-auto"
+                    className="w-full rounded-full bg-accent-light px-7 text-ink shadow-[0_12px_35px_color-mix(in_oklab,var(--color-accent-light)_35%,transparent)] hover:bg-white sm:w-auto"
                   >
                     <Link href={lagerHref}>
                       {lager ? `Lager ${lager.jahr}` : "Alle Lager"}

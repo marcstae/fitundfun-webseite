@@ -1,7 +1,8 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   ExternalLink,
@@ -12,13 +13,15 @@ import {
   Settings,
 } from "lucide-react";
 import { useAuth } from "@/components/providers";
+import { INHALTSSEITEN_BEREICHE } from "@/lib/inhaltsseiten";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true },
   { href: "/admin/lager", label: "Lager", icon: CalendarDays },
-  { href: "/admin/inhaltsseiten", label: "Inhaltsseiten", icon: Files },
   { href: "/admin/website", label: "Website", icon: Globe },
+  // Unterpunkte klappen auf, sobald «Inhaltsseiten» offen ist; ohne Auswahl gilt der erste.
+  { href: "/admin/inhaltsseiten", label: "Inhaltsseiten", icon: Files, unterpunkte: INHALTSSEITEN_BEREICHE },
   { href: "/admin/konto", label: "Konto", icon: Settings },
 ];
 
@@ -30,6 +33,7 @@ export function AdminShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const bereich = useSearchParams().get("bereich");
   const router = useRouter();
   const { logout } = useAuth();
 
@@ -71,20 +75,42 @@ export function AdminShell({
             const active = item.exact
               ? pathname === item.href
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const unterpunkte = active ? item.unterpunkte : undefined;
+            const aktiverUnterpunkt = unterpunkte?.find((u) => u.key === bereich) ?? unterpunkte?.[0];
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold transition lg:w-full",
-                  active
-                    ? "bg-white text-ink"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                )}
-              >
-                <item.icon className="size-4" /> {item.label}
-              </Link>
+              <Fragment key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? (unterpunkte ? "true" : "page") : undefined}
+                  className={cn(
+                    "inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold transition lg:w-full",
+                    active
+                      ? "bg-white text-ink"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  )}
+                >
+                  <item.icon className="size-4" /> {item.label}
+                </Link>
+                {unterpunkte ? (
+                  // Handy: eigene Zeile unter der Navigation; Desktop: eingerückt unter dem Punkt.
+                  <ul aria-label={`${item.label}: Bereiche`} className="flex basis-full flex-wrap gap-1 border-l border-white/15 pl-2 lg:ml-5 lg:flex-col lg:pl-2">
+                    {unterpunkte.map((u) => (
+                      <li key={u.key}>
+                        <Link
+                          href={`${item.href}?bereich=${u.key}`}
+                          aria-current={u === aktiverUnterpunkt ? "page" : undefined}
+                          className={cn(
+                            "inline-flex h-10 items-center rounded-lg px-3 text-sm font-bold transition lg:w-full",
+                            u === aktiverUnterpunkt ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
+                          )}
+                        >
+                          {u.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </Fragment>
             );
           })}
         </nav>

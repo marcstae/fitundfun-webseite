@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SaveDialog, useSaveAction } from "./save-dialog";
+import { telefonAnzeige } from "@/lib/utils";
 import type { KontaktgruppeRecord, KontaktRecord } from "@/lib/pb-types";
 
 export function KontakteManager({ existing, gruppen }: { existing: KontaktRecord[]; gruppen: KontaktgruppeRecord[] }) {
@@ -64,7 +65,7 @@ export function KontakteManager({ existing, gruppen }: { existing: KontaktRecord
               <span className="block text-xs font-semibold text-muted">{gruppen.find((g) => g.id === it.gruppe)?.name ?? "Ohne Gruppe"}</span>
               {[
                 [it.email, it.email_geschuetzt],
-                [it.telefon, it.telefon_geschuetzt],
+                [telefonAnzeige(it.telefon || ""), it.telefon_geschuetzt],
               ].map(([wert, geschuetzt], i) =>
                 wert ? (
                   <span key={i} className="flex items-center gap-1 text-xs text-muted">

@@ -5,6 +5,7 @@ import { getKontaktgruppen, getKontakte, getSeite } from "@/lib/data";
 import { FAMILY_ACCESS_COOKIE, hasFamilyAccess } from "@/lib/family-access";
 import { unlockFamilyAccess } from "@/lib/familien-freischalten";
 import { KONTAKT_TITEL, notfallKontakt, sichtbarerKontakt } from "@/lib/inhaltsseiten";
+import { telefonAnzeige, telefonLink } from "@/lib/utils";
 
 export const metadata = { title: "Kontakt" };
 
@@ -93,9 +94,9 @@ function KontaktBlock({ titel, items }: { titel: string; items: Sichtbar[] }) {
               <div className="mt-2 flex flex-wrap gap-2">
                 {/* Telefon zuerst und kräftig; E-Mail nur kräftig, wenn es keine Nummer gibt. */}
                 {k.telefon ? (
-                  <a href={`tel:${k.telefon.replace(/[^\d+]/g, "")}`} className={k.id === NOTFALL_ID ? KNOPF_NOTFALL : KNOPF_STARK}>
+                  <a href={`tel:${telefonLink(k.telefon)}`} className={k.id === NOTFALL_ID ? KNOPF_NOTFALL : KNOPF_STARK}>
                     <Phone className="size-5 shrink-0" aria-hidden />
-                    <span className="min-w-0 wrap-anywhere">{k.telefon}</span>
+                    <span className="min-w-0 wrap-anywhere">{telefonAnzeige(k.telefon)}</span>
                   </a>
                 ) : null}
                 {k.email ? (

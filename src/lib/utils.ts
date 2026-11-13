@@ -200,3 +200,36 @@ export function aktuelleSchneehoehe(
   if (!letzte || jetzt.getTime() - Date.parse(letzte.measure_date) > 2 * 86_400_000) return null;
   return Math.max(0, Math.round(letzte.HS!));
 }
+
+// Telefonnummern: einheitliche Anzeige (+41 79 123 45 67) und Anruf-Link im Format E.164 (+41791234567),
+// das jedes Handy wählen kann, auch mit ausländischer SIM.
+// ponytail: Nur Schweizer Nummern werden gruppiert; ausländische bleiben wie eingegeben. Für deren
+// Gruppierung bräuchte es libphonenumber. Nummern ohne Landesvorwahl gelten als schweizerisch.
+function schweizE164(roh: string): string | null {
+  const s = roh.trim().replace(/\(0\)/g, "");
+  const ziffern = s.replace(/\D/g, "");
+  const national = s.startsWith("+")
+    ? ziffern.startsWith("41") ? ziffern.slice(2) : ""
+    : ziffern.startsWith("0041") ? ziffern.slice(4)
+    : ziffern.startsWith("0") && !ziffern.startsWith("00") ? ziffern.slice(1) : "";
+  return national.length === 9 ? `+41${national}` : null;
+}
+
+/** Anzeige: Schweizer Nummern als «+41 79 123 45 67», Gratis- und Mehrwertnummern als «+41 800 123 456». */
+export function telefonAnzeige(roh: string): string {
+  const e164 = schweizE164(roh);
+  if (!e164) return roh.trim().replace(/\s+/g, " ");
+  const n = e164.slice(3);
+  return /^(800|84[0248]|90[016])/.test(n)
+    ? `+41 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`
+    : `+41 ${n.slice(0, 2)} ${n.slice(2, 5)} ${n.slice(5, 7)} ${n.slice(7)}`;
+}
+
+/** Ziel für tel:-Links: E.164 ohne Leerzeichen; Kurznummern wie 144 bleiben. */
+export function telefonLink(roh: string): string {
+  const e164 = schweizE164(roh);
+  if (e164) return e164;
+  const ziffern = roh.replace(/\D/g, "");
+  if (roh.trim().startsWith("+")) return `+${ziffern}`;
+  return ziffern.startsWith("00") ? `+${ziffern.slice(2)}` : ziffern;
+}

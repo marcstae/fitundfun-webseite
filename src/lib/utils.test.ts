@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   aktuelleSchneehoehe,
+  telefonAnzeige,
+  telefonLink,
   contentDisposition,
   documentHref,
   formatDateRange,
@@ -136,4 +138,20 @@ test("aktuelleSchneehoehe: letzter Wert mit HS, gerundet; veraltete Station zäh
   assert.equal(aktuelleSchneehoehe([{ measure_date: "2027-02-01T09:00:00Z", HS: -0.4 }], jetzt), 0);
   assert.equal(aktuelleSchneehoehe(m, new Date("2027-02-04T10:00:00Z")), null);
   assert.equal(aktuelleSchneehoehe([], jetzt), null);
+});
+
+test("telefonAnzeige/telefonLink: einheitlich anzeigen, Anruf-Link in E.164", () => {
+  for (const roh of ["0791234567", "079 123 45 67", "079 12 34 567", "+41791234567", "0041 79 123 45 67", "+41 (0)79 123 45 67", "079/123.45.67"]) {
+    assert.equal(telefonAnzeige(roh), "+41 79 123 45 67", roh);
+    assert.equal(telefonLink(roh), "+41791234567", roh);
+  }
+  assert.equal(telefonAnzeige("+41 81 920 14 34"), "+41 81 920 14 34"); // Vorwahl 081 ist keine 0800-Nummer
+  assert.equal(telefonAnzeige("0800 123 456"), "+41 800 123 456");
+  assert.equal(telefonAnzeige("0848123456"), "+41 848 123 456");
+  assert.equal(telefonAnzeige("144"), "144");
+  assert.equal(telefonLink("1414"), "1414");
+  assert.equal(telefonAnzeige(" +49  30   1234567 "), "+49 30 1234567"); // Ausland: nur Leerzeichen bereinigt
+  assert.equal(telefonLink("+49 30 1234567"), "+49301234567");
+  assert.equal(telefonLink("0049 30 1234567"), "+49301234567");
+  assert.equal(telefonAnzeige("079 123 45"), "079 123 45"); // unvollständig: unverändert
 });

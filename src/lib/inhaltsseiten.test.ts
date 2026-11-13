@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LAGERHAUS_STANDARD, lagerhausInhalt, mapsUrl, sichtbarerKontakt } from "./inhaltsseiten.ts";
+import { LAGERHAUS_STANDARD, lagerhausInhalt, mapsUrl, NOTFALL_STANDARD, notfallKontakt, sichtbarerKontakt } from "./inhaltsseiten.ts";
 import type { KontaktRecord } from "./pb-types.ts";
 import { AKZENT_DUNKEL_STANDARD, akzentfarbe, DUNKLER_GRUND, kontrast } from "./utils.ts";
 
@@ -48,4 +48,14 @@ test("akzentfarbe: nur gültige Farben, die auf ihrem Grund lesbar sind", () => 
   assert.equal(akzentfarbe(AKZENT_DUNKEL_STANDARD, DUNKLER_GRUND), AKZENT_DUNKEL_STANDARD);
   assert.equal(akzentfarbe("#ffeb3b", DUNKLER_GRUND), "#ffeb3b");
   assert.equal(akzentfarbe("#8b0000", DUNKLER_GRUND), null);
+});
+
+test("notfallKontakt: ohne Daten die bisherige Pistenrettung, gespeicherte Nummer geprüft", () => {
+  assert.deepEqual(notfallKontakt(null), NOTFALL_STANDARD);
+  assert.deepEqual(notfallKontakt({ andere: 1 }), NOTFALL_STANDARD);
+  assert.deepEqual(notfallKontakt({ notfall: { name: " Rettung ", telefon: " 081 123 45 67 " } }), { name: "Rettung", telefon: "081 123 45 67" });
+  assert.equal(notfallKontakt({ notfall: { name: "", telefon: "+41 81 920 14 34" } }).name, NOTFALL_STANDARD.name); // leer → Standard
+  assert.equal(notfallKontakt({ notfall: { telefon: "" } }).telefon, ""); // bewusst geleert → keine Karte
+  assert.equal(notfallKontakt({ notfall: { telefon: "javascript:alert(1)" } }).telefon, ""); // ungültig → keine Karte
+  assert.equal(notfallKontakt({ notfall: { telefon: "12" } }).telefon, "");
 });

@@ -20,6 +20,9 @@ import {
   LAGERHAUS_TITEL,
   type LagerhausInhalt,
   lagerhausInhalt,
+  notfallKontakt,
+  objekt,
+  telefonGueltig,
 } from "@/lib/inhaltsseiten";
 import { pbBrowser, publicFileUrl } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
@@ -183,13 +186,24 @@ export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
 
 export function KontaktEditor({ seite }: { seite: SeiteRecord | null }) {
   const [id, setId] = React.useState(seite?.id);
-  const { wert, setWert, dirty, alsGespeichert } = useFormular({ titel: seite?.titel || KONTAKT_TITEL });
+  const { wert, setWert, dirty, alsGespeichert } = useFormular({
+    titel: seite?.titel || KONTAKT_TITEL,
+    notfall: notfallKontakt(seite?.daten),
+  });
   const { saving, run } = useSaveAction();
+  const setNotfall = (key: "name" | "telefon", value: string) =>
+    setWert((w) => ({ ...w, notfall: { ...w.notfall, [key]: value } }));
 
   const save = async () => {
-    const neu = { titel: wert.titel.trim() || KONTAKT_TITEL };
+    const notfall = { name: wert.notfall.name.trim(), telefon: wert.notfall.telefon.trim() };
+    if (notfall.telefon && !telefonGueltig(notfall.telefon)) {
+      toast.error("Die Notfallnummer darf nur Ziffern, Leerzeichen und + ( ) / - enthalten.");
+      return;
+    }
+    const neu = { titel: wert.titel.trim() || KONTAKT_TITEL, notfall: notfallKontakt({ notfall }) };
     await run(async () => {
-      const saved = await seiteSpeichern(id, "kontakt", neu);
+      // Andere Angaben in seiten.daten bleiben erhalten.
+      const saved = await seiteSpeichern(id, "kontakt", { titel: neu.titel, daten: { ...objekt(seite?.daten), notfall } });
       setId(saved.id);
       setWert(neu);
       alsGespeichert(neu);
@@ -199,7 +213,21 @@ export function KontaktEditor({ seite }: { seite: SeiteRecord | null }) {
   return (
     <div className="space-y-5">
       <Block titel="Seitentext" text="Überschrift oben auf der Kontaktseite.">
-        <Feld id="ko-titel" label="Überschrift" value={wert.titel} onChange={(titel) => setWert({ titel })} />
+        <Feld id="ko-titel" label="Überschrift" value={wert.titel} onChange={(titel) => setWert((w) => ({ ...w, titel }))} />
+      </Block>
+      <Block
+        titel="Notfall auf der Piste"
+        text="Erscheint zuoberst auf der Kontaktseite mit rotem Anruf-Knopf, ohne Lagerpasswort. Telefonnummer leer lassen, um die Karte auszublenden."
+      >
+        <Feld id="ko-notfall-name" label="Bezeichnung" value={wert.notfall.name} onChange={(v) => setNotfall("name", v)} />
+        <Feld
+          id="ko-notfall-telefon"
+          label="Telefonnummer"
+          type="tel"
+          hinweis="Am besten mit +41, damit der Anruf auch mit ausländischer SIM klappt."
+          value={wert.notfall.telefon}
+          onChange={(v) => setNotfall("telefon", v)}
+        />
       </Block>
       <DirtySaveBar dirty={dirty} saving={saving} onSave={save} />
     </div>

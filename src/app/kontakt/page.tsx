@@ -4,7 +4,7 @@ import { FamilyUnlock } from "@/components/family-unlock";
 import { getKontaktgruppen, getKontakte, getSeite } from "@/lib/data";
 import { FAMILY_ACCESS_COOKIE, hasFamilyAccess } from "@/lib/family-access";
 import { unlockFamilyAccess } from "@/lib/familien-freischalten";
-import { KONTAKT_TITEL, sichtbarerKontakt } from "@/lib/inhaltsseiten";
+import { KONTAKT_TITEL, notfallKontakt, sichtbarerKontakt } from "@/lib/inhaltsseiten";
 
 export const metadata = { title: "Kontakt" };
 
@@ -24,9 +24,10 @@ export default async function KontaktPage() {
   const sichtbar = kontakte.map((k) => sichtbarerKontakt(k, zugang));
   const gesperrt = sichtbar.some((k) => k.emailGesperrt || k.telefonGesperrt);
   const ohneGruppe = sichtbar.filter((k) => !gruppen.some((g) => g.id === k.gruppe));
+  // Notfall: im Cockpit änderbar, nie hinter dem Lagerpasswort; ohne Daten die bisherige Pistenrettung.
+  const notfall = notfallKontakt(seite?.daten);
   const bloecke = [
-    // Notfall fest im Code: immer sichtbar, auch ohne PocketBase oder Lagerpasswort.
-    { id: "notfall", titel: "Notfall auf der Piste", items: [PISTENRETTUNG] },
+    { id: "notfall", titel: "Notfall auf der Piste", items: notfall.telefon ? [notfallEintrag(notfall.name, notfall.telefon)] : [] },
     ...gruppen.map((g) => ({ id: g.id, titel: g.name, items: sichtbar.filter((k) => k.gruppe === g.id) })),
     { id: "weitere", titel: "Weitere Kontakte", items: ohneGruppe },
   ].filter((block) => block.items.length > 0);
@@ -64,17 +65,16 @@ export default async function KontaktPage() {
   );
 }
 
-// Quelle: Fusszeile von www.brigels.ch (Bergbahnen Brigels Waltensburg Andiast), geprüft 13.11.2026.
-// +41-Format, damit der Anruf auch mit ausländischer SIM klappt.
-const PISTENRETTUNG: Sichtbar = {
-  id: "pistenrettung",
+const NOTFALL_ID = "notfall";
+const notfallEintrag = (name: string, telefon: string): Sichtbar => ({
+  id: NOTFALL_ID,
   gruppe: "",
-  name: "Pistenrettung Brigels",
+  name,
   email: "",
-  telefon: "+41 81 920 14 34",
+  telefon,
   emailGesperrt: false,
   telefonGesperrt: false,
-};
+});
 
 const KNOPF = "inline-flex min-h-12 max-w-full items-center gap-2 rounded-xl px-4 py-2 text-base font-bold transition";
 const KNOPF_STARK = `${KNOPF} bg-accent text-white hover:bg-ink`;
@@ -93,7 +93,7 @@ function KontaktBlock({ titel, items }: { titel: string; items: Sichtbar[] }) {
               <div className="mt-2 flex flex-wrap gap-2">
                 {/* Telefon zuerst und kräftig; E-Mail nur kräftig, wenn es keine Nummer gibt. */}
                 {k.telefon ? (
-                  <a href={`tel:${k.telefon.replace(/[^\d+]/g, "")}`} className={k.id === PISTENRETTUNG.id ? KNOPF_NOTFALL : KNOPF_STARK}>
+                  <a href={`tel:${k.telefon.replace(/[^\d+]/g, "")}`} className={k.id === NOTFALL_ID ? KNOPF_NOTFALL : KNOPF_STARK}>
                     <Phone className="size-5 shrink-0" aria-hidden />
                     <span className="min-w-0 wrap-anywhere">{k.telefon}</span>
                   </a>

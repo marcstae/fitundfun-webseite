@@ -84,7 +84,7 @@ export const LAGERHAUS_EINLEITUNG =
 
 export const KONTAKT_TITEL = "Kontakt";
 
-function objekt(daten: unknown): Record<string, unknown> {
+export function objekt(daten: unknown): Record<string, unknown> {
   return daten && typeof daten === "object" && !Array.isArray(daten) ? (daten as Record<string, unknown>) : {};
 }
 
@@ -120,6 +120,26 @@ export function lagerhausInhalt(daten: unknown): LagerhausInhalt {
     infos: eintraege(d.infos, S.infos),
     hinweis: text(d.hinweis, S.hinweis),
   };
+}
+
+/** Notfallkontakt zuoberst auf der Kontaktseite, im Cockpit änderbar (Daten der Kontaktseite). */
+export const NOTFALL_STANDARD = {
+  // Quelle: Fusszeile von www.brigels.ch (Bergbahnen Brigels Waltensburg Andiast), geprüft 13.11.2026.
+  name: "Pistenrettung Brigels",
+  telefon: "+41 81 920 14 34",
+};
+export type NotfallKontakt = typeof NOTFALL_STANDARD;
+
+/** Nur Ziffern, Leerzeichen und + ( ) / - mit mindestens drei Ziffern, damit der Anruf-Link funktioniert. */
+export function telefonGueltig(telefon: string) {
+  return /^[+\d\s()/-]+$/.test(telefon) && (telefon.match(/\d/g) || []).length >= 3;
+}
+
+/** Nie gespeichert: bisherige Pistenrettung. Leere oder ungültige Nummer: keine Notfall-Karte. */
+export function notfallKontakt(daten: unknown): NotfallKontakt {
+  const n = objekt(objekt(daten).notfall);
+  const telefon = text(n.telefon, NOTFALL_STANDARD.telefon);
+  return { name: text(n.name, "") || NOTFALL_STANDARD.name, telefon: telefonGueltig(telefon) ? telefon : "" };
 }
 
 /**

@@ -1,7 +1,7 @@
 import type PocketBase from "pocketbase";
 import { unstable_cache } from "next/cache";
 import { familyPocketBase } from "./family-access";
-import { aktuelleSchneehoehe, pickNeustesFotoalbum } from "./utils";
+import { letzteSchneemessung, pickNeustesFotoalbum } from "./utils";
 import { pbRequest, pbServer } from "./pb";
 import type {
   DokumentRecord,
@@ -247,12 +247,12 @@ async function getDokumenteForRelation(
       protectedLoaded = true;
       revealProtected = familyAccess;
     } catch (e) {
-      console.error("fitundfun: Familienzugang-Auth fehlgeschlagen — FAMILY_ACCESS_SECRET prüfen", e);
+      console.error("fitundfun: Anmeldung des internen Familienkontos fehlgeschlagen — FAMILY_ACCESS_SECRET prüfen", e);
     }
   }
 
   // Namen geschützter Dokumente sind sichtbar (mit Schloss); die Datei selbst gibt es
-  // nur mit Familienzugang, sonst führt der Link zur Passwortabfrage.
+  // nur mit Lagerpasswort, sonst führt der Link zur Passwortabfrage.
   out.push(
     ...protectedContent.documents.map((document) => ({
       ...document,
@@ -292,8 +292,9 @@ export const getSchneehoehe = unstable_cache(
       signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) throw new Error(`SLF-Abfrage fehlgeschlagen: ${res.status}`);
-    return aktuelleSchneehoehe(await res.json());
+    return letzteSchneemessung(await res.json());
   },
-  ["schneehoehe-tum2"],
+  // v2: zwischengespeichert wird der Messwert samt Messzeit, das Alter prüft die Lagerseite.
+  ["schneehoehe-tum2-v2"],
   { revalidate: 1800 }
 );

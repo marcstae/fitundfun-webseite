@@ -33,6 +33,7 @@ import {
   isValidHttpUrl,
   tageBis,
   youtubeId,
+  frischeSchneehoehe,
 } from "@/lib/utils";
 import { richTextToPlainText, sanitizeRichText } from "@/lib/sanitize";
 import type { DokumentRecord, LagerRecord } from "@/lib/pb-types";
@@ -90,7 +91,7 @@ export default async function LagerPage({
   const familyAccess = await hasFamilyAccess(
     cookieStore.get(FAMILY_ACCESS_COOKIE)?.value
   );
-  const [documentResult, links, einstellungen, lagerhaus, schnee] = await Promise.all([
+  const [documentResult, links, einstellungen, lagerhaus, schneeMessung] = await Promise.all([
     getDokumenteForLager(lager.id, authCookie, familyAccess),
     getLinks(),
     getEinstellungen().catch(() => null),
@@ -99,6 +100,7 @@ export default async function LagerPage({
     lager.status === "archiviert" ? null : getSchneehoehe().catch(() => null),
   ]);
   const dokumente = documentResult.items;
+  const schnee = frischeSchneehoehe(schneeMessung);
 
   const zeitraum =
     lager.datum_von && lager.datum_bis

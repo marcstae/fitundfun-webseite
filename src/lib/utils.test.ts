@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  aktuelleSchneehoehe,
+  frischeSchneehoehe,
+  letzteSchneemessung,
   telefonAnzeige,
   telefonLink,
   contentDisposition,
@@ -128,16 +129,19 @@ test("tageBis: Zürcher Kalendertag, auch kurz vor Mitternacht", () => {
   assert.equal(tageBis(datum, new Date("2027-02-14T12:00:00Z")), -8);
 });
 
-test("aktuelleSchneehoehe: letzter Wert mit HS, gerundet; veraltete Station zählt nicht", () => {
+test("Schneehöhe: letzte gültige Messung, beim Anzeigen höchstens 2 Tage alt", () => {
   const jetzt = new Date("2027-02-01T10:00:00Z");
-  const m = [
+  const messung = letzteSchneemessung([
     { measure_date: "2027-02-01T09:00:00Z", HS: 42.6 },
-    { measure_date: "2027-02-01T09:30:00Z", HS: null },
-  ];
-  assert.equal(aktuelleSchneehoehe(m, jetzt), 43);
-  assert.equal(aktuelleSchneehoehe([{ measure_date: "2027-02-01T09:00:00Z", HS: -0.4 }], jetzt), 0);
-  assert.equal(aktuelleSchneehoehe(m, new Date("2027-02-04T10:00:00Z")), null);
-  assert.equal(aktuelleSchneehoehe([], jetzt), null);
+    { measure_date: "2027-02-01T09:30:00Z", HS: null }, // Ausfall des Sensors: zählt nicht
+  ]);
+  assert.deepEqual(messung, { cm: 43, gemessen: "2027-02-01T09:00:00Z" }); // Zeit der gültigen Messung
+  assert.equal(frischeSchneehoehe(messung, jetzt), 43);
+  assert.deepEqual(letzteSchneemessung([{ measure_date: "2027-02-01T09:00:00Z", HS: -0.4 }])?.cm, 0);
+  assert.equal(letzteSchneemessung([]), null);
+  // SLF tagelang nicht erreichbar: zwischengespeicherter Wert wird zu alt und verschwindet.
+  assert.equal(frischeSchneehoehe(messung, new Date("2027-02-04T10:00:00Z")), null);
+  assert.equal(frischeSchneehoehe(null, jetzt), null);
 });
 
 test("telefonAnzeige/telefonLink: einheitlich anzeigen, Anruf-Link in E.164", () => {

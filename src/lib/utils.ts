@@ -192,13 +192,21 @@ export function youtubeId(url: string): string | null {
 }
 
 /** Letzte gültige Schneehöhe (cm) aus SLF-Messwerten; null, wenn die Station seit über 2 Tagen nichts liefert. */
-export function aktuelleSchneehoehe(
-  messungen: { measure_date: string; HS: number | null }[],
-  jetzt: Date = new Date()
-): number | null {
+export type Schneemessung = { cm: number; gemessen: string };
+
+/** Letzte Messung mit gültiger Schneehöhe (cm, gerundet) samt Messzeit; null ohne gültigen Wert. */
+export function letzteSchneemessung(messungen: { measure_date: string; HS: number | null }[]): Schneemessung | null {
   const letzte = messungen.findLast((m) => typeof m.HS === "number");
-  if (!letzte || jetzt.getTime() - Date.parse(letzte.measure_date) > 2 * 86_400_000) return null;
-  return Math.max(0, Math.round(letzte.HS!));
+  return letzte ? { cm: Math.max(0, Math.round(letzte.HS!)), gemessen: letzte.measure_date } : null;
+}
+
+/**
+ * Schneehöhe nur anzeigen, wenn die Messung höchstens 2 Tage alt ist. Geprüft beim Anzeigen, nicht
+ * beim Abruf: Ist das SLF länger nicht erreichbar, bleibt der zwischengespeicherte Wert sonst stehen.
+ */
+export function frischeSchneehoehe(messung: Schneemessung | null | undefined, jetzt: Date = new Date()): number | null {
+  if (!messung || jetzt.getTime() - Date.parse(messung.gemessen) > 2 * 86_400_000) return null;
+  return messung.cm;
 }
 
 // Telefonnummern: einheitliche Anzeige (+41 79 123 45 67) und Anruf-Link im Format E.164 (+41791234567),

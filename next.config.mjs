@@ -17,6 +17,8 @@ const csp = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Testseiten (*.e2e.tsx) nur im Browser-Test von CI, nie im normalen Build.
+  ...(process.env.E2E === "1" ? { pageExtensions: ["e2e.tsx", "tsx", "ts", "jsx", "js"] } : {}),
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   async headers() {
     return [

@@ -87,6 +87,7 @@ NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDA
 
 - Vor jedem Commit: `npm run typecheck`, `npm run lint`, `npm test`.
 - GitHub Actions (`.github/workflows/ci.yml`) prüft jeden Push auf `main`, jeden Pull Request und montags den Stand: Typecheck, Lint, Tests, `npm audit --omit=dev`, `next build`. Erst deployen, wenn CI grün ist.
+- Dazu ein Browser-Test des Speicherschutzes gegen das echte Next.js (`scripts/e2e-schutz.mjs`, Testseiten `*.e2e.tsx` nur mit `E2E=1`). Lokal: `E2E=1 npm run build && E2E=1 npx next start -p 3100 &` und dann `node scripts/e2e-schutz.mjs http://localhost:3100`.
 - Schemaänderungen nur als **neue** Migration mit der nächsten Nummer; bestehende nie ändern (sie sind auf dem Server gelaufen), vorhandene Inhalte nie überschreiben.
 - Diese Next.js-Version weicht von älteren ab: vorher `node_modules/next/dist/docs/` lesen.
 

@@ -39,3 +39,15 @@ jobs:
         run: npm audit --omit=dev
       # Ohne PocketBase und Secrets, wie beim Docker-Build auf dem Server.
       - run: npm run build
+      # Schutz vor ungespeicherten Änderungen im echten Browser gegen das echte Next.js: Der
+      # Zurück-Knopf-Schutz hängt am Verlaufs-Verhalten von Next.js, ein Update könnte ihn still brechen.
+      # E2E=1 nimmt die Testseiten (*.e2e.tsx) in den Build auf; im normalen Build fehlen sie.
+      - name: Browser-Test Speicherschutz
+        env:
+          E2E: "1"
+        run: |
+          google-chrome --version
+          npm run build
+          npx next start -p 3100 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3100/e2e/ziel && break; sleep 1; done
+          node scripts/e2e-schutz.mjs http://localhost:3100

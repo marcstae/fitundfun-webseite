@@ -1,0 +1,26 @@
+# Öffnet Pull Requests für Updates; CI prüft sie, gemergt und deployt wird von Hand.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # Frisch veröffentlichte Versionen eine Woche liegen lassen (Schutz vor kompromittierten Releases).
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Zurückgestellt, bis Next.js sie unterstützt (README «Wartung»).
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7

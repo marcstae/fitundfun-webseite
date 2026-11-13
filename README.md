@@ -86,11 +86,12 @@ NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDA
 ```
 
 - Vor jedem Commit: `npm run typecheck`, `npm run lint`, `npm test`.
+- GitHub Actions (`.github/workflows/ci.yml`) prüft jeden Push auf `main`, jeden Pull Request und montags den Stand: Typecheck, Lint, Tests, `npm audit --omit=dev`, `next build`. Erst deployen, wenn CI grün ist.
 - Schemaänderungen nur als **neue** Migration mit der nächsten Nummer; bestehende nie ändern (sie sind auf dem Server gelaufen), vorhandene Inhalte nie überschreiben.
 - Diese Next.js-Version weicht von älteren ab: vorher `node_modules/next/dist/docs/` lesen.
 
 ## Wartung
 
-- Vor jeder Saison `npm outdated` und `npm update`, prüfen, mit `--pull` deployen. Zurückgestellt, bis Next.js sie unterstützt: TypeScript 7, ESLint 10.
+- Dependabot (`.github/dependabot.yml`) öffnet wöchentlich Pull Requests für npm-Pakete und monatlich für die Actions; neue Versionen erst nach 7 Tagen. Mergen, wenn CI grün ist, dann mit `--pull` deployen. Zurückgestellt, bis Next.js sie unterstützt: TypeScript 7, ESLint 10 (in Dependabot ausgeschlossen).
 - `npm audit --omit=dev` muss 0 zeigen; Meldungen nur in Entwicklungswerkzeugen betreffen die Website nicht.
 - PocketBase: `PB_VERSION` in `pb/Dockerfile` anheben. Laut Upstream ist 0.40.6 die letzte Version auf GitHub; für neuere die Download-URL anpassen.

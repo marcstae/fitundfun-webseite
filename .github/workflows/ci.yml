@@ -1,0 +1,41 @@
+# Prüft jeden Push auf main und jeden Pull Request, bevor auf dem Server deployt wird.
+# Montags zusätzlich, damit neue Sicherheitsmeldungen auch ohne Commit auffallen.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruefen:
+    name: Prüfen und bauen
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Actions auf Commit-SHA gepinnt; Dependabot hält sie aktuell.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26 # wie node:26-alpine im Dockerfile
+          cache: npm
+      - run: npm ci --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Sicherheitslücken in Laufzeitpaketen
+        run: npm audit --omit=dev
+      # Ohne PocketBase und Secrets, wie beim Docker-Build auf dem Server.
+      - run: npm run build

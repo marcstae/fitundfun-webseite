@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditableDokumentList } from "@/components/edit/editable-dokument-list";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
-import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
+import { DirtySaveBar, Hinweis, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { isValidHttpUrl, isoToDateInput } from "@/lib/utils";
@@ -121,6 +121,23 @@ export function LagerEditor({ id }: { id: string }) {
     let previousPublished: LagerRecord[] = [];
     const ok = await run(async () => {
       const pb = pbBrowser();
+      // Fotoalbum zuerst (eigene Sammlung): Scheitert es, ist noch nichts verändert. Scheitert danach
+      // das Lager, ist nur der Link gespeichert. Leeren löscht den Eintrag, sonst anlegen oder ändern.
+      if (albumUrl !== (album?.url || "")) {
+        const albums = pb.collection("fotoalben");
+        try {
+          const fotoalbum = !albumUrl
+            ? (await albums.delete(album!.id), null)
+            : album
+              ? await albums.update<FotoalbumRecord>(album.id, { url: albumUrl })
+              : await albums.create<FotoalbumRecord>({ lager: id, url: albumUrl });
+          // Sofort nachführen: Ein zweiter Versuch darf keinen zweiten Album-Eintrag anlegen.
+          setLoaded((current) => current ? { ...current, fotoalbum } : current);
+        } catch (error) {
+          throw new Hinweis("Der Fotoalbum-Link konnte nicht gespeichert werden. Am Lager wurde nichts geändert.", { cause: error });
+        }
+      }
+
       if (status === "veroeffentlicht") {
         previousPublished = await pb.collection("lager").getFullList<LagerRecord>({
           filter: `status = "veroeffentlicht" && id != "${id}"`,
@@ -154,18 +171,6 @@ export function LagerEditor({ id }: { id: string }) {
         );
         throw error;
       }
-      // Fotoalbum liegt in einer eigenen Sammlung: leeren löscht den Eintrag, sonst anlegen oder ändern.
-      const albums = pb.collection("fotoalben");
-      let fotoalbum = album;
-      if (album && !albumUrl) {
-        await albums.delete(album.id);
-        fotoalbum = null;
-      } else if (album && albumUrl !== album.url) {
-        fotoalbum = await albums.update<FotoalbumRecord>(album.id, { url: albumUrl });
-      } else if (!album && albumUrl) {
-        fotoalbum = await albums.create<FotoalbumRecord>({ lager: id, url: albumUrl });
-      }
-      setLoaded((current) => current ? { ...current, fotoalbum } : current);
       await revalidatePath("/");
       await revalidatePath("/lager");
       await revalidatePath(`/lager/${previousYear}`);

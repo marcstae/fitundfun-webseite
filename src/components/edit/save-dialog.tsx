@@ -27,6 +27,9 @@ function fieldProblem(error: unknown): string | null {
   return null;
 }
 
+/** Fehler mit einer Meldung für die Lagerleitung; hat Vorrang vor der allgemeinen Fehlermeldung. */
+export class Hinweis extends Error {}
+
 /** Gemeinsames Speichern-Gerüst: saving-State + Fehler-Toast. */
 export function useSaveAction() {
   const [saving, setSaving] = React.useState(false);
@@ -39,7 +42,8 @@ export function useSaveAction() {
         toast.success("Gespeichert ✓");
         return true;
       } catch (e) {
-        toast.error(fieldProblem(e) || errorMessage);
+        // Konkreter Grund (z. B. Anmeldung abgelaufen) zuerst, auch wenn er in einem Hinweis steckt.
+        toast.error(fieldProblem(e instanceof Hinweis ? e.cause : e) || (e instanceof Hinweis ? e.message : errorMessage));
         console.error(e);
         return false;
       } finally {

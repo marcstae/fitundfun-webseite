@@ -66,7 +66,11 @@ export function useFormular<T>(start: T, sonstGeaendert = false) {
   return { wert, setWert, dirty, alsGespeichert: (neu: T) => setGespeichert(JSON.stringify(neu)) };
 }
 
-/** Klebende Leiste unten, sobald es ungespeicherte Änderungen gibt. */
+/**
+ * Leiste, sobald es ungespeicherte Änderungen gibt: auf dem Handy am unteren Rand,
+ * am Desktop schwebend mit Abstand. Nachtblau mit Knopf in der Akzentfarbe für dunkle Flächen,
+ * damit sie sich von den weissen Karten abhebt.
+ */
 export function DirtySaveBar({
   dirty,
   saving,
@@ -80,15 +84,23 @@ export function DirtySaveBar({
 }) {
   if (!dirty) return null;
   return (
-    <div role="status" className="sticky bottom-0 z-20 -mx-4 mt-6 border-t border-ink/10 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
-      <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <span aria-hidden className="size-2 shrink-0 rounded-full bg-accent" />
+    <div
+      role="status"
+      className="sticky bottom-0 z-20 -mx-4 mt-6 bg-navy-900 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white shadow-[0_-8px_24px_rgba(14,28,48,0.18)] sm:bottom-6 sm:mx-auto sm:w-fit sm:min-w-[26rem] sm:rounded-full sm:py-2 sm:pl-6 sm:pr-2 sm:shadow-[0_18px_45px_rgba(14,28,48,0.35)]"
+    >
+      <div className="flex items-center justify-between gap-3 sm:gap-6">
+        <p className="flex items-center gap-2.5 text-sm font-semibold">
+          <span aria-hidden className="size-2 shrink-0 rounded-full bg-accent-light shadow-[0_0_0_4px_rgb(255_255_255/0.12)]" />
           {label}
         </p>
-        <Button onClick={onSave} disabled={saving} className="h-11 shrink-0">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-accent-light px-4 text-sm sm:px-5 font-bold text-ink transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy-900 disabled:opacity-60"
+        >
           <Save className="size-4" /> {saving ? "Speichert…" : "Speichern"}
-        </Button>
+        </button>
       </div>
     </div>
   );

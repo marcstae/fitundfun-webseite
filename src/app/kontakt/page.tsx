@@ -4,8 +4,7 @@ import { FamilyUnlock } from "@/components/family-unlock";
 import { getKontaktgruppen, getKontakte, getSeite } from "@/lib/data";
 import { FAMILY_ACCESS_COOKIE, hasFamilyAccess } from "@/lib/family-access";
 import { unlockFamilyAccess } from "@/lib/familien-freischalten";
-import { KONTAKT_EINLEITUNG, KONTAKT_TITEL, sichtbarerKontakt } from "@/lib/inhaltsseiten";
-import { sanitizeRichText } from "@/lib/sanitize";
+import { KONTAKT_TITEL, sichtbarerKontakt } from "@/lib/inhaltsseiten";
 
 export const metadata = { title: "Kontakt" };
 
@@ -21,7 +20,7 @@ export default async function KontaktPage() {
     getSeite("kontakt").catch(() => null),
   ]);
   const zugang = await hasFamilyAccess(cookieStore.get(FAMILY_ACCESS_COOKIE)?.value);
-  // Titel, Einleitung, Gruppen und Personen sind im Cockpit unter «Inhaltsseiten» bearbeitbar.
+  // Titel, Gruppen und Personen sind im Cockpit unter «Inhaltsseiten» bearbeitbar.
   const sichtbar = kontakte.map((k) => sichtbarerKontakt(k, zugang));
   const gesperrt = sichtbar.some((k) => k.emailGesperrt || k.telefonGesperrt);
   const ohneGruppe = sichtbar.filter((k) => !gruppen.some((g) => g.id === k.gruppe));
@@ -34,15 +33,9 @@ export default async function KontaktPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
-      <header className="max-w-3xl">
-        <h1 className="camp-display text-4xl leading-none text-ink sm:text-6xl">
-          {seite?.titel || KONTAKT_TITEL}
-        </h1>
-        <div
-          className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-muted [&_a]:text-accent [&_a]:underline [&_p+p]:mt-3"
-          dangerouslySetInnerHTML={{ __html: sanitizeRichText(seite?.inhalt || KONTAKT_EINLEITUNG) }}
-        />
-      </header>
+      <h1 className="camp-display text-4xl leading-none text-ink sm:text-6xl">
+        {seite?.titel || KONTAKT_TITEL}
+      </h1>
 
       {gesperrt ? (
         <div className="mt-8 flex flex-col gap-3 rounded-[1.5rem] bg-ink p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">

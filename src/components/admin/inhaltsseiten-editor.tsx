@@ -15,7 +15,6 @@ import {
   type Eintrag,
   ICONS,
   type IconKey,
-  KONTAKT_EINLEITUNG,
   KONTAKT_TITEL,
   LAGERHAUS_EINLEITUNG,
   LAGERHAUS_TITEL,
@@ -37,7 +36,7 @@ async function seiteSpeichern(
   id: string | undefined,
   slug: string,
   // bilder: [Datei] ersetzt die Bilder der Seite, [] entfernt sie (SDK schickt Dateien als FormData).
-  data: Pick<SeiteRecord, "titel" | "inhalt"> & { daten?: unknown; bilder?: File[] }
+  data: Pick<SeiteRecord, "titel"> & Partial<Pick<SeiteRecord, "inhalt">> & { daten?: unknown; bilder?: File[] }
 ) {
   const pb = pbBrowser();
   const saved = id
@@ -195,16 +194,13 @@ export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
 
 export function KontaktEditor({ seite }: { seite: SeiteRecord | null }) {
   const [id, setId] = React.useState(seite?.id);
-  const { wert, setWert, dirty, alsGespeichert } = useFormular({
-    titel: seite?.titel || KONTAKT_TITEL,
-    einleitung: seite?.inhalt || KONTAKT_EINLEITUNG,
-  });
+  const { wert, setWert, dirty, alsGespeichert } = useFormular({ titel: seite?.titel || KONTAKT_TITEL });
   const { saving, run } = useSaveAction();
 
   const save = async () => {
-    const neu = { ...wert, titel: wert.titel.trim() || KONTAKT_TITEL };
+    const neu = { titel: wert.titel.trim() || KONTAKT_TITEL };
     await run(async () => {
-      const saved = await seiteSpeichern(id, "kontakt", { titel: neu.titel, inhalt: neu.einleitung });
+      const saved = await seiteSpeichern(id, "kontakt", neu);
       setId(saved.id);
       setWert(neu);
       alsGespeichert(neu);
@@ -213,12 +209,8 @@ export function KontaktEditor({ seite }: { seite: SeiteRecord | null }) {
 
   return (
     <div className="space-y-5">
-      <Block titel="Seitentext" text="Überschrift und Einleitung oben auf der Kontaktseite.">
-        <Feld id="ko-titel" label="Überschrift" value={wert.titel} onChange={(titel) => setWert((w) => ({ ...w, titel }))} />
-        <div className="space-y-2">
-          <Label>Einleitung</Label>
-          <MinimalEditor label="Einleitung" value={wert.einleitung} onChange={(einleitung) => setWert((w) => ({ ...w, einleitung }))} />
-        </div>
+      <Block titel="Seitentext" text="Überschrift oben auf der Kontaktseite.">
+        <Feld id="ko-titel" label="Überschrift" value={wert.titel} onChange={(titel) => setWert({ titel })} />
       </Block>
       <DirtySaveBar dirty={dirty} saving={saving} onSave={save} />
     </div>

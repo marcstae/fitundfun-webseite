@@ -83,7 +83,6 @@ export const LAGERHAUS_EINLEITUNG =
   "<p>Das Ferienheim Albin in Brigels ist unser Zuhause während der Lagerwoche. Hier essen wir gemeinsam und verbringen die Abende mit Spielen und Lagerprogramm.</p>";
 
 export const KONTAKT_TITEL = "Kontakt";
-export const KONTAKT_EINLEITUNG = "<p>Fragen zum Lager oder zur Website beantworten wir gerne per E-Mail.</p>";
 
 function objekt(daten: unknown): Record<string, unknown> {
   return daten && typeof daten === "object" && !Array.isArray(daten) ? (daten as Record<string, unknown>) : {};
@@ -145,7 +144,7 @@ export function sichtbarerKontakt(kontakt: KontaktRecord, zugang: boolean) {
 
 /** Bereiche im Cockpit-Tab «Inhaltsseiten» (Reihenfolge = Navigation; der erste öffnet zuerst). */
 export const INHALTSSEITEN_BEREICHE = [
-  { key: "kontakt", label: "Kontakt", text: "Text der Kontaktseite, Kontaktpersonen und Gruppen.", seite: "/kontakt" },
+  { key: "kontakt", label: "Kontakt", text: "Überschrift, Kontaktpersonen und Gruppen.", seite: "/kontakt" },
   { key: "links", label: "Nützliche Links", text: "Erscheinen auf jeder Lagerseite unter «Nützliche Links».", seite: null },
   { key: "lagerhaus", label: "Lagerhaus", text: "Kopfbild, Haus, Adresse, Kurzfakten und Infos fürs Lager.", seite: "/lagerhaus" },
 ] as const;

@@ -1,7 +1,7 @@
 import type PocketBase from "pocketbase";
 import { unstable_cache } from "next/cache";
 import { familyPocketBase } from "./family-access";
-import { pickNeustesFotoalbum } from "./utils";
+import { aktuelleSchneehoehe, pickNeustesFotoalbum } from "./utils";
 import { pbRequest, pbServer } from "./pb";
 import type {
   DokumentRecord,
@@ -282,3 +282,18 @@ export async function getSeite(slug: string): Promise<SeiteRecord | null> {
   const all = await getSeiten();
   return all.find((s) => s.slug === slug) ?? null;
 }
+
+// SLF-Station Val Miez (TUM2, 2191 m) im Skigebiet Brigels, misst alle 30 Minuten. Ein gemeinsamer
+// Cache für alle Besuchenden: höchstens eine SLF-Abfrage pro 30 Minuten, und nur wenn jemand die Seite
+// öffnet. Schlägt sie fehl, wird geworfen, damit der letzte gute Wert stehen bleibt.
+export const getSchneehoehe = unstable_cache(
+  async () => {
+    const res = await fetch("https://measurement-api.slf.ch/public/api/imis/station/TUM2/measurements", {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) throw new Error(`SLF-Abfrage fehlgeschlagen: ${res.status}`);
+    return aktuelleSchneehoehe(await res.json());
+  },
+  ["schneehoehe-tum2"],
+  { revalidate: 1800 }
+);

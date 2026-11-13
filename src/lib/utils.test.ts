@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  aktuelleSchneehoehe,
   contentDisposition,
   documentHref,
   formatDateRange,
@@ -123,4 +124,16 @@ test("tageBis: Zürcher Kalendertag, auch kurz vor Mitternacht", () => {
   assert.equal(tageBis(datum, new Date("2027-02-06T08:00:00Z")), 0);
   assert.equal(tageBis(datum, new Date("2026-11-12T12:00:00Z")), 86);
   assert.equal(tageBis(datum, new Date("2027-02-14T12:00:00Z")), -8);
+});
+
+test("aktuelleSchneehoehe: letzter Wert mit HS, gerundet; veraltete Station zählt nicht", () => {
+  const jetzt = new Date("2027-02-01T10:00:00Z");
+  const m = [
+    { measure_date: "2027-02-01T09:00:00Z", HS: 42.6 },
+    { measure_date: "2027-02-01T09:30:00Z", HS: null },
+  ];
+  assert.equal(aktuelleSchneehoehe(m, jetzt), 43);
+  assert.equal(aktuelleSchneehoehe([{ measure_date: "2027-02-01T09:00:00Z", HS: -0.4 }], jetzt), 0);
+  assert.equal(aktuelleSchneehoehe(m, new Date("2027-02-04T10:00:00Z")), null);
+  assert.equal(aktuelleSchneehoehe([], jetzt), null);
 });

@@ -190,3 +190,13 @@ export function youtubeId(url: string): string | null {
   }
   return null;
 }
+
+/** Letzte gültige Schneehöhe (cm) aus SLF-Messwerten; null, wenn die Station seit über 2 Tagen nichts liefert. */
+export function aktuelleSchneehoehe(
+  messungen: { measure_date: string; HS: number | null }[],
+  jetzt: Date = new Date()
+): number | null {
+  const letzte = messungen.findLast((m) => typeof m.HS === "number");
+  if (!letzte || jetzt.getTime() - Date.parse(letzte.measure_date) > 2 * 86_400_000) return null;
+  return Math.max(0, Math.round(letzte.HS!));
+}

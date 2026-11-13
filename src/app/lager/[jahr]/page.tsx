@@ -10,6 +10,7 @@ import {
   Lock,
   LockOpen,
   MapPin,
+  Snowflake,
   UsersRound,
 } from "lucide-react";
 import {
@@ -17,6 +18,7 @@ import {
   getEinstellungen,
   getLagerByJahr,
   getLinks,
+  getSchneehoehe,
   getSeite,
 } from "@/lib/data";
 import { FAMILY_ACCESS_COOKIE, hasFamilyAccess } from "@/lib/family-access";
@@ -88,11 +90,13 @@ export default async function LagerPage({
   const familyAccess = await hasFamilyAccess(
     cookieStore.get(FAMILY_ACCESS_COOKIE)?.value
   );
-  const [documentResult, links, einstellungen, lagerhaus] = await Promise.all([
+  const [documentResult, links, einstellungen, lagerhaus, schnee] = await Promise.all([
     getDokumenteForLager(lager.id, authCookie, familyAccess),
     getLinks(),
     getEinstellungen().catch(() => null),
     getSeite("lagerhaus").catch(() => null),
+    // Schnee nur beim aktuellen Lager, nicht im Archiv.
+    lager.status === "archiviert" ? null : getSchneehoehe().catch(() => null),
   ]);
   const dokumente = documentResult.items;
 
@@ -148,7 +152,7 @@ export default async function LagerPage({
                 {zeitraum}
               </p>
             ) : null}
-            {hinweis || lager.teilnehmer ? (
+            {hinweis || lager.teilnehmer || schnee !== null ? (
               <p className="mt-4 flex flex-wrap gap-2 text-sm font-bold">
                 {hinweis ? (
                   <span className="rounded-full bg-accent-light px-3.5 py-1.5 text-ink">{hinweis}</span>
@@ -158,6 +162,21 @@ export default async function LagerPage({
                     <UsersRound className="size-4" aria-hidden />
                     {lager.teilnehmer} Teilnehmende
                   </span>
+                ) : null}
+                {schnee !== null ? (
+                  // CC BY 4.0: Quelle SLF muss sichtbar und verlinkt sein.
+                  <a
+                    href="https://www.slf.ch"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Schneehöhe an der SLF-Messstation Val Miez (2191 m) im Skigebiet Brigels"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 backdrop-blur-sm"
+                  >
+                    <Snowflake className="size-4" aria-hidden />
+                    {/* «Schnee» nur für Screenreader: so passt der Badge ab 375 px neben «Teilnehmende». */}
+                    {schnee} cm<span className="sr-only"> Schnee</span>
+                    <span className="font-semibold text-white/60">· SLF</span>
+                  </a>
                 ) : null}
               </p>
             ) : null}

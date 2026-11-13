@@ -21,7 +21,7 @@ import { useAuth } from "@/components/providers";
 const NAV = [
   { href: "/lager", label: "Alle Lagerjahre", hint: "Alle Lager seit 2007", Icon: History },
   { href: "/lagerhaus", label: "Lagerhaus", hint: "Unterkunft & Lage in Brigels", Icon: House },
-  { href: "/kontakt", label: "Kontakt", hint: "Fragen an die Lagerleitung", Icon: Mail },
+  { href: "/kontakt", label: "Kontakt", hint: "Alle Ansprechpersonen", Icon: Mail },
 ];
 
 const ROW =

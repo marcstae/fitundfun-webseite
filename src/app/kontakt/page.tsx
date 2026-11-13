@@ -26,6 +26,8 @@ export default async function KontaktPage() {
   const gesperrt = sichtbar.some((k) => k.emailGesperrt || k.telefonGesperrt);
   const ohneGruppe = sichtbar.filter((k) => !gruppen.some((g) => g.id === k.gruppe));
   const bloecke = [
+    // Notfall fest im Code: immer sichtbar, auch ohne PocketBase oder Lagerpasswort.
+    { id: "notfall", titel: "Notfall auf der Piste", items: [PISTENRETTUNG] },
     ...gruppen.map((g) => ({ id: g.id, titel: g.name, items: sichtbar.filter((k) => k.gruppe === g.id) })),
     { id: "weitere", titel: "Weitere Kontakte", items: ohneGruppe },
   ].filter((block) => block.items.length > 0);
@@ -60,22 +62,35 @@ export default async function KontaktPage() {
         </div>
       ) : null}
 
-      {bloecke.length > 0 ? (
-        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2">
-          {bloecke.map((block) => (
-            <KontaktBlock key={block.id} titel={block.titel} items={block.items} />
-          ))}
-        </div>
-      ) : (
-        <p className="mt-8 text-sm font-semibold text-muted">Noch keine Kontaktpersonen eingetragen.</p>
-      )}
+      <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2">
+        {bloecke.map((block) => (
+          <KontaktBlock key={block.id} titel={block.titel} items={block.items} />
+        ))}
+      </div>
     </div>
   );
 }
 
+// Quelle: Fusszeile von www.brigels.ch (Bergbahnen Brigels Waltensburg Andiast), geprüft 13.11.2026.
+// +41-Format, damit der Anruf auch mit ausländischer SIM klappt.
+const PISTENRETTUNG: Sichtbar = {
+  id: "pistenrettung",
+  gruppe: "",
+  name: "Pistenrettung Brigels",
+  email: "",
+  telefon: "+41 81 920 14 34",
+  emailGesperrt: false,
+  telefonGesperrt: false,
+};
+
+const KNOPF = "inline-flex min-h-12 max-w-full items-center gap-2 rounded-xl px-4 py-2 text-base font-bold transition";
+const KNOPF_STARK = `${KNOPF} bg-accent text-white hover:bg-ink`;
+const KNOPF_LEICHT = `${KNOPF} border border-ink/15 text-ink hover:bg-sand`;
+const KNOPF_NOTFALL = `${KNOPF} bg-red-600 text-white hover:bg-red-700`;
+
 function KontaktBlock({ titel, items }: { titel: string; items: Sichtbar[] }) {
   return (
-    <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-7">
+    <section className="min-w-0 rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-7">
       <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted">{titel}</h2>
       <ul className="mt-4 space-y-6">
         {items.map((k) => (
@@ -83,22 +98,17 @@ function KontaktBlock({ titel, items }: { titel: string; items: Sichtbar[] }) {
             <p className="camp-display text-2xl text-ink">{k.name}</p>
             {k.email || k.telefon ? (
               <div className="mt-2 flex flex-wrap gap-2">
-                {k.email ? (
-                  <a
-                    href={`mailto:${k.email}`}
-                    className="inline-flex min-h-12 max-w-full items-center gap-2 rounded-xl bg-accent px-4 text-base font-bold text-white transition hover:bg-ink"
-                  >
-                    <Mail className="size-5 shrink-0" aria-hidden />
-                    <span className="truncate">{k.email}</span>
+                {/* Telefon zuerst und kräftig; E-Mail nur kräftig, wenn es keine Nummer gibt. */}
+                {k.telefon ? (
+                  <a href={`tel:${k.telefon.replace(/[^\d+]/g, "")}`} className={k.id === PISTENRETTUNG.id ? KNOPF_NOTFALL : KNOPF_STARK}>
+                    <Phone className="size-5 shrink-0" aria-hidden />
+                    <span className="min-w-0 wrap-anywhere">{k.telefon}</span>
                   </a>
                 ) : null}
-                {k.telefon ? (
-                  <a
-                    href={`tel:${k.telefon.replace(/[^\d+]/g, "")}`}
-                    className="inline-flex min-h-12 max-w-full items-center gap-2 rounded-xl border border-ink/15 px-4 text-base font-bold text-ink transition hover:bg-sand"
-                  >
-                    <Phone className="size-5 shrink-0 text-accent" aria-hidden />
-                    <span className="truncate">{k.telefon}</span>
+                {k.email ? (
+                  <a href={`mailto:${k.email}`} className={k.telefon ? KNOPF_LEICHT : KNOPF_STARK}>
+                    <Mail className={k.telefon ? "size-5 shrink-0 text-accent" : "size-5 shrink-0"} aria-hidden />
+                    <span className="min-w-0 wrap-anywhere">{k.email}</span>
                   </a>
                 ) : null}
               </div>
@@ -106,7 +116,7 @@ function KontaktBlock({ titel, items }: { titel: string; items: Sichtbar[] }) {
             {k.emailGesperrt || k.telefonGesperrt ? (
               <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-muted">
                 <Lock className="size-4 shrink-0" aria-hidden />
-                {k.emailGesperrt && k.telefonGesperrt ? "E-Mail und Telefon" : k.emailGesperrt ? "E-Mail" : "Telefon"} nur mit
+                {k.emailGesperrt && k.telefonGesperrt ? "Telefon und E-Mail" : k.emailGesperrt ? "E-Mail" : "Telefon"} nur mit
                 Lagerpasswort
               </p>
             ) : null}

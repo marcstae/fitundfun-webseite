@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Fredoka } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteChrome } from "@/components/site-chrome";
@@ -74,6 +75,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
           </SiteChrome>
         </Providers>
+        {/* Besucherstatistik (Umami, ohne Cookies) nur auf der echten Domain, nicht lokal oder im CI.
+            Cockpit und Admin-Login zählen nicht, Query-Strings werden weggelassen. */}
+        {new URL(siteUrl()).hostname === "fitundfun.marcstaeuble.ch" && (
+          <>
+            <Script id="umami-config">
+              {`window.umamiConfig={beforeSend:(t,p)=>/^\\/(admin|login)(\\/|$)/.test(new URL(p&&p.url,location.href).pathname)?null:p}`}
+            </Script>
+            <Script
+              src="https://umami.marcstaeuble.ch/script.js"
+              data-website-id="0ccce61b-7ba7-452e-9362-fba13a70a209"
+              data-exclude-search="true"
+            />
+          </>
+        )}
       </body>
     </html>
   );

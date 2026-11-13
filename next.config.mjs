@@ -1,4 +1,6 @@
 const pbUrl = process.env.NEXT_PUBLIC_PB_URL || "http://localhost:8090";
+// Besucherstatistik, siehe src/app/layout.tsx.
+const umamiUrl = "https://umami.marcstaeuble.ch";
 
 const csp = [
   "default-src 'self'",
@@ -6,9 +8,9 @@ const csp = [
   `media-src 'self' blob: ${pbUrl}`,
   "font-src 'self' https://fonts.gstatic.com data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${umamiUrl}`,
   "frame-src https://www.youtube-nocookie.com",
-  `connect-src 'self' ${pbUrl}`,
+  `connect-src 'self' ${pbUrl} ${umamiUrl}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

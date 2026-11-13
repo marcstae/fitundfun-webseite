@@ -110,7 +110,7 @@ function renderHeroTitel(titel: string) {
     return (
       <>
         <span className="block">{renderHeroLine(titel.slice(0, lagerIndex))}</span>
-        <span className="mt-[0.12em] block text-[0.61em] tracking-[-0.055em]">
+        <span className="mt-[calc(0.12em_+_2px)] block text-[0.61em] tracking-[-0.055em]">
           {renderHeroLine(titel.slice(lagerIndex + 1))}
         </span>
       </>

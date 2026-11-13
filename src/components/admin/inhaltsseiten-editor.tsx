@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MediaField } from "@/components/admin/hero-settings";
-import { Dropzone } from "@/components/edit/dropzone";
+import { Dropzone, useDateiUrl } from "@/components/edit/dropzone";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
 import { DirtySaveBar, useFormular, useSaveAction } from "@/components/edit/save-dialog";
 import { INHALT_ICONS } from "@/components/inhalt-icons";
@@ -63,8 +63,7 @@ export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
     },
     !!bild || bildEntfernen
   );
-  const neuesBildUrl = React.useMemo(() => (bild ? URL.createObjectURL(bild) : ""), [bild]);
-  React.useEffect(() => () => URL.revokeObjectURL(neuesBildUrl), [neuesBildUrl]);
+  const neuesBildUrl = useDateiUrl(bild);
   const bildUrl = neuesBildUrl || (!bildEntfernen && bildName && id ? publicFileUrl("seiten", id, bildName) : "");
   const { saving, run } = useSaveAction();
   const haus = wert.haus;
@@ -113,9 +112,7 @@ export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
   return (
     <div className="space-y-5">
       <Block titel="Kopfbereich" text="Bild und Texte oben auf der Seite.">
-        {bildUrl ? (
-          <img src={bildUrl} alt="Vorschau des Kopfbilds" className="aspect-[16/9] w-full rounded-xl bg-sand object-cover object-[50%_40%]" />
-        ) : (
+        {bildUrl ? null : (
           <p className="rounded-xl bg-sand p-4 text-sm font-semibold text-muted">
             Zurzeit erscheint das Vorschaubild der Startseite. Lade ein eigenes Bild hoch, um es zu ersetzen.
           </p>
@@ -134,6 +131,7 @@ export function LagerhausEditor({ seite }: { seite: SeiteRecord | null }) {
             formats="ein Bild (JPG, PNG oder WebP)"
             maxSizeMB={5}
             currentName={bildEntfernen ? null : bild?.name || bildName}
+            preview={bildUrl}
             label="Bild wählen"
             hint="JPG, PNG oder WebP bis 5 MB hierher ziehen oder"
             onFile={(file) => {

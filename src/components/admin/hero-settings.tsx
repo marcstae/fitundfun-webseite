@@ -5,9 +5,9 @@ import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dropzone } from "@/components/edit/dropzone";
+import { Dropzone, useDateiUrl } from "@/components/edit/dropzone";
 import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
-import { pbBrowser } from "@/lib/pb";
+import { pbBrowser, publicFileUrl } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import type { EinstellungenRecord } from "@/lib/pb-types";
 
@@ -23,6 +23,13 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
   const { saving, run } = useSaveAction();
   const dirty = title !== (record?.hero_titel || HERO_TITEL) || !!video || !!poster || removeVideo || removePoster;
   useLeaveGuard(dirty);
+  // Vorschau: neu gewählte Datei, sonst die gespeicherte, sonst die mitgelieferten Standardmedien.
+  const neuesVideo = useDateiUrl(video);
+  const neuesPoster = useDateiUrl(poster);
+  const eigen = (feld: "hero_video" | "hero_poster", entfernen: boolean) =>
+    record?.[feld] && !entfernen ? publicFileUrl("einstellungen", record.id, record[feld]) : "";
+  const videoVorschau = neuesVideo || eigen("hero_video", removeVideo) || "/hero.mp4";
+  const posterVorschau = neuesPoster || eigen("hero_poster", removePoster) || "/hero-poster.jpg";
 
   const save = async () => {
     if (!title.trim()) {
@@ -72,7 +79,9 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
               accept="video/mp4,video/webm"
               formats="ein MP4- oder WebM-Video"
               maxSizeMB={60}
-              currentName={removeVideo ? null : video?.name || record?.hero_video}
+              currentName={(removeVideo ? null : video?.name || record?.hero_video) || "Standardvideo"}
+              preview={videoVorschau}
+              video
               label="Video wählen"
               hint="MP4 oder WebM bis 60 MB hierher ziehen oder"
               onFile={(file) => { setVideo(file); setRemoveVideo(false); }}
@@ -88,7 +97,8 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
               accept="image/*"
               formats="ein Bild (JPG, PNG oder WebP)"
               maxSizeMB={5}
-              currentName={removePoster ? null : poster?.name || record?.hero_poster}
+              currentName={(removePoster ? null : poster?.name || record?.hero_poster) || "Standardbild"}
+              preview={posterVorschau}
               label="Bild wählen"
               hint="JPG, PNG oder WebP hierher ziehen oder"
               onFile={(file) => { setPoster(file); setRemovePoster(false); }}

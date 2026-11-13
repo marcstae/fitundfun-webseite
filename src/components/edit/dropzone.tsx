@@ -16,6 +16,16 @@ interface DropzoneProps {
   currentName?: string | null;
   label?: string;
   hint?: string;
+  /** Kleine Vorschau des aktuellen Bilds oder Videos (gleich für alle Medienfelder im Cockpit). */
+  preview?: string;
+  video?: boolean;
+}
+
+/** Vorschau-URL für eine gewählte, noch nicht gespeicherte Datei; wird beim Wechsel freigegeben. */
+export function useDateiUrl(file: File | null) {
+  const url = React.useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
+  React.useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  return url;
 }
 
 export function Dropzone({
@@ -26,6 +36,8 @@ export function Dropzone({
   currentName,
   label = "Datei auswählen",
   hint,
+  preview,
+  video,
 }: DropzoneProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = React.useState(false);
@@ -56,6 +68,17 @@ export function Dropzone({
     onFile(file);
   };
 
+  const waehlen = (
+    <button
+      type="button"
+      onClick={() => inputRef.current?.click()}
+      className="mt-3 inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-accent px-4 text-sm font-bold text-white hover:bg-ink sm:px-5"
+    >
+      <UploadCloud className="size-5" aria-hidden />
+      {label}
+    </button>
+  );
+
   return (
     <div
       onDragOver={(e) => {
@@ -73,23 +96,34 @@ export function Dropzone({
         dragOver ? "border-accent bg-accent/5" : "hover:border-ink/40"
       )}
     >
-      {currentName ? (
-        <div className="mb-2 flex items-center justify-center gap-2 text-sm text-ink">
-          <FileText className="size-4 shrink-0 text-accent" aria-hidden />
-          <span className="min-w-0 truncate font-semibold">{currentName}</span>
+      {preview ? (
+        <div className="flex items-center gap-4 text-left">
+          {video ? (
+            // #t=0.1: Safari zeigt sonst kein erstes Bild.
+            <video src={`${preview}#t=0.1`} muted playsInline preload="metadata" aria-hidden className={VORSCHAU} />
+          ) : (
+            <img src={preview} alt="" className={VORSCHAU} />
+          )}
+          <div className="min-w-0 flex-1">
+            {currentName ? <p className="truncate text-sm font-semibold text-ink">{currentName}</p> : null}
+            <p className="mt-0.5 hidden text-xs text-muted sm:block">{hint || "Datei hierher ziehen oder"}</p>
+            {waehlen}
+          </div>
         </div>
-      ) : null}
-      <p className="hidden text-sm text-muted sm:block">
-        {hint || `Datei hierher ziehen oder`}
-      </p>
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-white hover:bg-ink"
-      >
-        <UploadCloud className="size-5" aria-hidden />
-        {label}
-      </button>
+      ) : (
+        <>
+          {currentName ? (
+            <div className="mb-2 flex items-center justify-center gap-2 text-sm text-ink">
+              <FileText className="size-4 shrink-0 text-accent" aria-hidden />
+              <span className="min-w-0 truncate font-semibold">{currentName}</span>
+            </div>
+          ) : null}
+          <p className="hidden text-sm text-muted sm:block">
+            {hint || `Datei hierher ziehen oder`}
+          </p>
+          {waehlen}
+        </>
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -102,3 +136,5 @@ export function Dropzone({
     </div>
   );
 }
+
+const VORSCHAU = "aspect-video w-24 shrink-0 rounded-lg bg-sand object-cover sm:w-40";

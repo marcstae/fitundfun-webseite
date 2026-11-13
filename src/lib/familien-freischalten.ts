@@ -7,7 +7,7 @@ import {
   FAMILY_ACCESS_MAX_AGE,
   clientIp,
   familyAccessCookieValue,
-  isFamilyPassword,
+  istLagerpasswort,
   recordUnlockFailure,
   unlockAttemptAllowed,
 } from "@/lib/family-access";
@@ -22,7 +22,7 @@ export async function unlockFamilyAccess(_state: UnlockState, formData: FormData
   if (!unlockAttemptAllowed(ip)) return { fehler: "blockiert" };
 
   const password = formData.get("password");
-  if (typeof password !== "string" || !(await isFamilyPassword(password))) {
+  if (typeof password !== "string" || !(await istLagerpasswort(password))) {
     recordUnlockFailure(ip);
     return { fehler: "falsch" };
   }

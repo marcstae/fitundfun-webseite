@@ -1,11 +1,11 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { hashFamilyPassword, verifyFamilyPasswordHash } from "@/lib/family-access";
+import { hashLagerpasswort, pruefeLagerpasswortHash } from "@/lib/family-access";
 import { pbRequest } from "@/lib/pb";
-import type { FamilienzugangRecord } from "@/lib/pb-types";
+import type { LagerpasswortRecord } from "@/lib/pb-types";
 
-export async function changeFamilyPassword(
+export async function lagerpasswortAendern(
   password: string,
   confirmation: string
 ): Promise<{ ok: boolean; message: string }> {
@@ -30,22 +30,22 @@ export async function changeFamilyPassword(
     }
 
     const result = await pb
-      .collection("familienzugang")
-      .getList<FamilienzugangRecord>(1, 1);
+      .collection("lagerpasswort")
+      .getList<LagerpasswortRecord>(1, 1);
     const current = result.items[0];
     // Gleiches Passwort nochmals gespeichert (z. B. damit es im Konto lesbar wird):
     // bestehende Zugänge der Familien nicht abmelden.
     const unveraendert =
-      !!current?.password_hash && (await verifyFamilyPasswordHash(password, current.password_hash));
+      !!current?.password_hash && (await pruefeLagerpasswortHash(password, current.password_hash));
     const data = {
-      password_hash: await hashFamilyPassword(password),
+      password_hash: await hashLagerpasswort(password),
       passwort: password,
       cookie_version: (current?.cookie_version || 0) + (unveraendert ? 0 : 1),
     };
     if (current) {
-      await pb.collection("familienzugang").update(current.id, data);
+      await pb.collection("lagerpasswort").update(current.id, data);
     } else {
-      await pb.collection("familienzugang").create(data);
+      await pb.collection("lagerpasswort").create(data);
     }
     return {
       ok: true,

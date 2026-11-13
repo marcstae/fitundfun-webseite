@@ -107,7 +107,7 @@ export interface EinstellungenRecord {
   updated: string;
 }
 
-export interface FamilienzugangRecord {
+export interface LagerpasswortRecord {
   id: string;
   password_hash: string;
   /** Lesbar für eingeloggte Admins; leer, wenn vor Migration 24 gesetzt. */
@@ -126,6 +126,6 @@ export interface CollectionSchema {
   links: LinkRecord;
   kontakte: KontaktRecord;
   einstellungen: EinstellungenRecord;
-  familienzugang: FamilienzugangRecord;
+  lagerpasswort: LagerpasswortRecord;
   users: UserRecord;
 }

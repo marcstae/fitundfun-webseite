@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   const { collection, id } = await params;
   if (!ALLOWED.has(collection)) return notFound();
 
-  // Editor-Sitzung zuerst (auch für Entwürfe), danach der Familienzugang.
+  // Editor-Sitzung zuerst (auch für Entwürfe), danach die Freischaltung mit Lagerpasswort.
   const session = pbRequest(req.headers.get("cookie") || "");
   const readers: (() => Promise<PocketBase>)[] = [];
   if (session.authStore.isValid || collection === "dokumente") readers.push(async () => session);
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   return collection === "dokumente_intern" ? familyGate(id, req.nextUrl.pathname) : notFound();
 }
 
-/** Ohne Familienzugang zur Passwortabfrage des Lagers; danach geht es direkt zur Datei weiter. */
+/** Ohne Freischaltung zur Abfrage des Lagerpassworts; danach geht es direkt zur Datei weiter. */
 async function familyGate(id: string, pathname: string) {
   try {
     const pb = await familyPocketBase();

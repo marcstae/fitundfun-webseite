@@ -13,14 +13,14 @@ import {
   Video,
 } from "lucide-react";
 import { pbBrowser } from "@/lib/pb";
-import type { DokumentRecord, FamilienzugangRecord, FotoalbumRecord, LagerRecord } from "@/lib/pb-types";
+import type { DokumentRecord, LagerpasswortRecord, FotoalbumRecord, LagerRecord } from "@/lib/pb-types";
 import { fokusLager, formatDateRange } from "@/lib/utils";
 
 type Daten = {
   lager: LagerRecord[];
   dokumente: DokumentRecord[];
   fotoalben: FotoalbumRecord[];
-  familienpasswort: boolean;
+  lagerpasswortGesetzt: boolean;
 };
 
 export default function AdminDashboard() {
@@ -36,10 +36,10 @@ export default function AdminDashboard() {
         pb.collection("dokumente_intern").getFullList<DokumentRecord>(),
       ]).then(([publicDocs, privateDocs]) => [...publicDocs, ...privateDocs]),
       pb.collection("fotoalben").getFullList<FotoalbumRecord>(),
-      pb.collection("familienzugang").getList<FamilienzugangRecord>(1, 1),
+      pb.collection("lagerpasswort").getList<LagerpasswortRecord>(1, 1),
     ])
-      .then(([lager, dokumente, fotoalben, familienzugang]) =>
-        setData({ lager, dokumente, fotoalben, familienpasswort: !!familienzugang.items[0]?.password_hash })
+      .then(([lager, dokumente, fotoalben, lagerpasswort]) =>
+        setData({ lager, dokumente, fotoalben, lagerpasswortGesetzt: !!lagerpasswort.items[0]?.password_hash })
       )
       .catch(() => setError(true));
   }, []);
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
         <div className="mt-8 h-64 animate-pulse rounded-[1.75rem] bg-white/70" />
       ) : (
         <>
-          {!data.familienpasswort ? (
+          {!data.lagerpasswortGesetzt ? (
             <Link
               href="/admin/konto"
               className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900"

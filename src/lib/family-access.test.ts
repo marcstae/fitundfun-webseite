@@ -6,14 +6,14 @@ process.env.FAMILY_ACCESS_SECRET = "test-geheimnis-nur-fuer-den-server";
 
 const familyAccess = await import("./family-access.ts");
 test("Passwort-Hash: richtig/falsch", async () => {
-  const hash = await familyAccess.hashFamilyPassword("TestPasswort123");
-  assert.equal(await familyAccess.verifyFamilyPasswordHash("TestPasswort123", hash), true);
-  assert.equal(await familyAccess.verifyFamilyPasswordHash("falsch", hash), false);
-  assert.equal(await familyAccess.verifyFamilyPasswordHash("", hash), false);
+  const hash = await familyAccess.hashLagerpasswort("TestPasswort123");
+  assert.equal(await familyAccess.pruefeLagerpasswortHash("TestPasswort123", hash), true);
+  assert.equal(await familyAccess.pruefeLagerpasswortHash("falsch", hash), false);
+  assert.equal(await familyAccess.pruefeLagerpasswortHash("", hash), false);
 });
 
 test("Passwort-Hash: manipulierte Werte werden abgelehnt", async () => {
-  assert.equal(await familyAccess.verifyFamilyPasswordHash("x", "kaputt"), false);
+  assert.equal(await familyAccess.pruefeLagerpasswortHash("x", "kaputt"), false);
 });
 
 test("clientIp: X-Real-IP hat Vorrang vor X-Forwarded-For", () => {

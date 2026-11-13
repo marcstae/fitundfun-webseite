@@ -2,7 +2,7 @@ import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from "no
 import { promisify } from "node:util";
 import type PocketBase from "pocketbase";
 import { pbRequest } from "./pb.ts";
-import type { FamilienzugangRecord } from "./pb-types.ts";
+import type { LagerpasswortRecord } from "./pb-types.ts";
 
 export const FAMILY_ACCESS_COOKIE = "fitundfun_family_access";
 // 400 Tage = Browser-Obergrenze für Cookies; jeder geschützte Download verlängert sie wieder.
@@ -15,7 +15,7 @@ const familyEmail = process.env.FAMILY_ACCESS_EMAIL || "familie@fitundfun.local"
 const familySecret = process.env.FAMILY_ACCESS_SECRET || "";
 if (!familySecret) {
   console.error(
-    "fitundfun: FAMILY_ACCESS_SECRET ist nicht gesetzt — Familienzugang deaktiviert."
+    "fitundfun: FAMILY_ACCESS_SECRET ist nicht gesetzt — Freischalten mit Lagerpasswort deaktiviert."
   );
 }
 
@@ -27,13 +27,13 @@ function safeEqual(left: string, right: string): boolean {
 
 const scryptAsync = promisify(scrypt);
 
-export async function hashFamilyPassword(value: string): Promise<string> {
+export async function hashLagerpasswort(value: string): Promise<string> {
   const salt = randomBytes(16);
   const hash = (await scryptAsync(value, salt, 64)) as Buffer;
   return `scrypt:${salt.toString("base64url")}:${hash.toString("base64url")}`;
 }
 
-export async function verifyFamilyPasswordHash(value: string, encoded: string): Promise<boolean> {
+export async function pruefeLagerpasswortHash(value: string, encoded: string): Promise<boolean> {
   const [algorithm, saltValue, hashValue] = encoded.split(":");
   if (algorithm !== "scrypt" || !saltValue || !hashValue) return false;
   try {
@@ -45,26 +45,26 @@ export async function verifyFamilyPasswordHash(value: string, encoded: string): 
   }
 }
 
-async function familyConfig(): Promise<FamilienzugangRecord> {
+async function lagerpasswortEintrag(): Promise<LagerpasswortRecord> {
   const pb = await familyPocketBase();
-  const result = await pb.collection("familienzugang").getList<FamilienzugangRecord>(1, 1);
-  if (!result.items[0]) throw new Error("Familienzugang ist nicht eingerichtet");
+  const result = await pb.collection("lagerpasswort").getList<LagerpasswortRecord>(1, 1);
+  if (!result.items[0]) throw new Error("Lagerpasswort ist nicht eingerichtet");
   return result.items[0];
 }
 
-/** Ohne im Cockpit gesetztes Lagerpasswort ist der Familienzugang geschlossen. */
-export async function isFamilyPassword(value: string): Promise<boolean> {
+/** Ohne im Cockpit gesetztes Lagerpasswort bleibt Geschütztes zu. */
+export async function istLagerpasswort(value: string): Promise<boolean> {
   if (!value || !familySecret) return false;
   try {
-    const config = await familyConfig();
-    return !!config.password_hash && (await verifyFamilyPasswordHash(value, config.password_hash));
+    const config = await lagerpasswortEintrag();
+    return !!config.password_hash && (await pruefeLagerpasswortHash(value, config.password_hash));
   } catch {
     return false;
   }
 }
 
 export async function familyAccessCookieValue(): Promise<string> {
-  const version = (await familyConfig()).cookie_version;
+  const version = (await lagerpasswortEintrag()).cookie_version;
   const signature = createHmac("sha256", familySecret)
     .update(`fitundfun-family-access-v3:${version}`)
     .digest("base64url");

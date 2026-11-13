@@ -7,7 +7,7 @@ Website des fit&fun Familienlagers in Brigels (nur auf Einladung). Hauptzweck: F
 ```mermaid
 flowchart LR
   B["Browser<br/>Familien und Lagerleitung"]
-  subgraph RP["Reverse Proxy (HTTPS)"]
+  subgraph RP["Cloudflare Tunnel (HTTPS)"]
     D1["Website-Domain"]
     D2["API-Domain"]
   end
@@ -51,7 +51,7 @@ Für Familien gehen geschützte Inhalte immer über `web` (Lagerpasswort-Cookie)
 3. Mit `ADMIN_EMAIL`/`ADMIN_PASSWORD` anmelden; das Cockpit verlangt sofort ein eigenes Passwort.
 4. Unter Konto das Lagerpasswort setzen, vorher bleibt Geschütztes zu.
 
-Hinter einem Proxy `NEXT_PUBLIC_PB_URL` (wird beim Build eingebacken), `SITE_URL` und `PB_ORIGINS` auf HTTPS setzen, Upload-Limit ≥ 60 MB, Client-IP als `X-Real-IP` weitergeben.
+Hinter einem Proxy `NEXT_PUBLIC_PB_URL` (wird beim Build eingebacken), `SITE_URL` und `PB_ORIGINS` auf HTTPS setzen, Upload-Limit ≥ 60 MB. Produktiv läuft alles über einen Cloudflare Tunnel (Ziele `http://172.17.0.1:3843` und `:8090`); die Ports sind nur an `127.0.0.1` und `172.17.0.1` gebunden, die Client-IP kommt aus `CF-Connecting-IP`.
 
 ## Deploy
 

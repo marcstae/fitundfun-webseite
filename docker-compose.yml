@@ -13,8 +13,15 @@ services:
     container_name: fitundfun-pb
     restart: unless-stopped
     logging: *logging
+    # Nur für den Cloudflare Tunnel (cloudflared im Docker-Netz «bridge», Ziel 172.17.0.1) und für
+    # Prüfungen auf dem Server (127.0.0.1); nicht im Heimnetz. Ohne direkten Zugang ist die
+    # Client-IP aus CF-Connecting-IP verlässlich.
+    # ponytail: Linux nimmt Pakete für jede eigene IP an; ein Gerät im Heimnetz mit einer von Hand
+    # gesetzten Route nach 172.17.0.0/16 käme noch durch. Ganz dicht: cloudflared in ein gemeinsames
+    # Docker-Netz hängen, Ziele auf die Containernamen setzen und ports: entfernen.
     ports:
-      - "8090:8090"
+      - "127.0.0.1:8090:8090"
+      - "172.17.0.1:8090:8090"
     volumes:
       # Standard ./pb_data; auf dem Server per PB_DATA_DIR nach ~/docker-data verlegt.
       - ${PB_DATA_DIR:-./pb_data}:/pb/pb_data
@@ -41,7 +48,8 @@ services:
     depends_on:
       - pb
     ports:
-      - "3843:3000"
+      - "127.0.0.1:3843:3000"
+      - "172.17.0.1:3843:3000"
     environment:
       NEXT_PUBLIC_PB_URL: ${NEXT_PUBLIC_PB_URL}
       # Serverseitige Aufrufe direkt im Compose-Netz, unabhängig von DNS/HTTPS der öffentlichen URL.

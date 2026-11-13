@@ -118,9 +118,11 @@ function counted(entry: Attempts | undefined): Attempts {
 }
 
 export function clientIp(requestHeaders: Headers): string {
-  // X-Real-IP wird vom Reverse Proxy verlässlich überschrieben; X-Forwarded-For
-  // ist client-kontrollierbar und darf nur als Fallback dienen.
+  // CF-Connecting-IP setzt Cloudflare selbst; verlässlich, weil die Website nur über den
+  // Cloudflare Tunnel erreichbar ist (Ports nicht im Heimnetz, siehe docker-compose.yml).
+  // X-Real-IP und X-Forwarded-For sind client-kontrollierbar und dienen nur als Fallback.
   return (
+    requestHeaders.get("cf-connecting-ip")?.trim() ||
     requestHeaders.get("x-real-ip")?.trim() ||
     requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"

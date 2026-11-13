@@ -16,6 +16,11 @@ test("Passwort-Hash: manipulierte Werte werden abgelehnt", async () => {
   assert.equal(await familyAccess.pruefeLagerpasswortHash("x", "kaputt"), false);
 });
 
+test("clientIp: CF-Connecting-IP (von Cloudflare gesetzt) hat Vorrang vor gefälschten Headern", () => {
+  const h = new Headers({ "cf-connecting-ip": "203.0.113.7", "x-real-ip": "10.0.0.5", "x-forwarded-for": "1.2.3.4" });
+  assert.equal(familyAccess.clientIp(h), "203.0.113.7");
+});
+
 test("clientIp: X-Real-IP hat Vorrang vor X-Forwarded-For", () => {
   const h = new Headers({ "x-real-ip": "10.0.0.5", "x-forwarded-for": "1.2.3.4, 5.6.7.8" });
   assert.equal(familyAccess.clientIp(h), "10.0.0.5");

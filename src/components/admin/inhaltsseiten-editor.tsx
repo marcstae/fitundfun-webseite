@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { MediaField } from "@/components/admin/hero-settings";
 import { Dropzone } from "@/components/edit/dropzone";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
-import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
+import { DirtySaveBar, useFormular, useSaveAction } from "@/components/edit/save-dialog";
 import { INHALT_ICONS } from "@/components/inhalt-icons";
 import {
   type Eintrag,
@@ -44,15 +44,6 @@ async function seiteSpeichern(
     : await pb.collection("seiten").create<SeiteRecord>({ slug, ...data });
   await revalidatePath(`/${slug}`);
   return saved;
-}
-
-/** Zustand eines Formulars mit «ungespeichert»-Erkennung über einen Schnappschuss. */
-function useFormular<T>(start: T, sonstGeaendert = false) {
-  const [wert, setWert] = React.useState(start);
-  const [gespeichert, setGespeichert] = React.useState(() => JSON.stringify(start));
-  const dirty = JSON.stringify(wert) !== gespeichert || sonstGeaendert;
-  useLeaveGuard(dirty);
-  return { wert, setWert, dirty, alsGespeichert: (neu: T) => setGespeichert(JSON.stringify(neu)) };
 }
 
 const ohneLeere = (eintraege: Eintrag[]) =>

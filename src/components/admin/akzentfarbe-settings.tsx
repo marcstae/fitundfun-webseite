@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSaveAction } from "@/components/edit/save-dialog";
+import { DirtySaveBar, useFormular, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import { AKZENT_DUNKEL_STANDARD, AKZENT_STANDARD, akzentfarbe, DUNKLER_GRUND, kontrast } from "@/lib/utils";
@@ -39,7 +39,7 @@ type Feld = (typeof WAHLEN)[number]["feld"];
 
 export function AkzentfarbeSettings({ initial }: { initial: EinstellungenRecord | null }) {
   const router = useRouter();
-  const [farben, setFarben] = React.useState<Record<Feld, string>>({
+  const { wert: farben, setWert: setFarben, dirty, alsGespeichert } = useFormular<Record<Feld, string>>({
     akzentfarbe: akzentfarbe(initial?.akzentfarbe) || AKZENT_STANDARD,
     akzentfarbe_dunkel: akzentfarbe(initial?.akzentfarbe_dunkel, DUNKLER_GRUND) || AKZENT_DUNKEL_STANDARD,
   });
@@ -60,6 +60,7 @@ export function AkzentfarbeSettings({ initial }: { initial: EinstellungenRecord 
       const record = initial ?? (await pb.collection("einstellungen").getList<EinstellungenRecord>(1, 1)).items[0];
       if (record) await pb.collection("einstellungen").update(record.id, data);
       else await pb.collection("einstellungen").create(data);
+      alsGespeichert(farben);
       await revalidatePath("/");
       router.refresh();
     });
@@ -83,9 +84,7 @@ export function AkzentfarbeSettings({ initial }: { initial: EinstellungenRecord 
         ))}
       </div>
 
-      <Button onClick={speichern} disabled={saving || !alleLesbar} className="mt-6">
-        {saving ? "Speichert…" : "Akzentfarben speichern"}
-      </Button>
+      <DirtySaveBar dirty={dirty} saving={saving} onSave={speichern} label="Akzentfarben nicht gespeichert" />
     </section>
   );
 }

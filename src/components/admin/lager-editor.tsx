@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditableDokumentList } from "@/components/edit/editable-dokument-list";
-import { EditableImmich } from "@/components/edit/editable-immich";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
 import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
@@ -40,6 +39,7 @@ export function LagerEditor({ id }: { id: string }) {
   const [beschreibung, setBeschreibung] = React.useState("");
   const [teilnehmer, setTeilnehmer] = React.useState("");
   const [aktivitaeten, setAktivitaeten] = React.useState("");
+  const [fotoUrl, setFotoUrl] = React.useState("");
   const [videoUrl, setVideoUrl] = React.useState("");
   const [quelleUrl, setQuelleUrl] = React.useState("");
   const [status, setStatus] = React.useState<LagerPublikationsstatus>("entwurf");
@@ -69,6 +69,7 @@ export function LagerEditor({ id }: { id: string }) {
         setBeschreibung(lager.beschreibung || "");
         setTeilnehmer(lager.teilnehmer ? String(lager.teilnehmer) : "");
         setAktivitaeten((lager.aktivitaeten || []).join("\n"));
+        setFotoUrl(albums.items[0]?.url || "");
         setVideoUrl(lager.youtube_url || "");
         setQuelleUrl(lager.quelle_url || "");
         setStatus(lager.status || "entwurf");
@@ -101,6 +102,10 @@ export function LagerEditor({ id }: { id: string }) {
       toast.error("Das Enddatum muss nach dem Startdatum liegen.");
       return;
     }
+    if (fotoUrl.trim() && !isValidHttpUrl(fotoUrl.trim())) {
+      toast.error("Der Fotoalbum-Link ist ungültig.");
+      return;
+    }
     if (videoUrl && !isValidHttpUrl(videoUrl)) {
       toast.error("Der Video-Link ist ungültig.");
       return;
@@ -111,6 +116,8 @@ export function LagerEditor({ id }: { id: string }) {
     }
 
     const previousYear = loaded!.lager.jahr;
+    const album = loaded!.fotoalbum;
+    const albumUrl = fotoUrl.trim();
     let previousPublished: LagerRecord[] = [];
     const ok = await run(async () => {
       const pb = pbBrowser();
@@ -147,6 +154,18 @@ export function LagerEditor({ id }: { id: string }) {
         );
         throw error;
       }
+      // Fotoalbum liegt in einer eigenen Sammlung: leeren löscht den Eintrag, sonst anlegen oder ändern.
+      const albums = pb.collection("fotoalben");
+      let fotoalbum = album;
+      if (album && !albumUrl) {
+        await albums.delete(album.id);
+        fotoalbum = null;
+      } else if (album && albumUrl !== album.url) {
+        fotoalbum = await albums.update<FotoalbumRecord>(album.id, { url: albumUrl });
+      } else if (!album && albumUrl) {
+        fotoalbum = await albums.create<FotoalbumRecord>({ lager: id, url: albumUrl });
+      }
+      setLoaded((current) => current ? { ...current, fotoalbum } : current);
       await revalidatePath("/");
       await revalidatePath("/lager");
       await revalidatePath(`/lager/${previousYear}`);
@@ -265,8 +284,8 @@ export function LagerEditor({ id }: { id: string }) {
         </Section>
 
         <Section title="Fotos und Video" description="Das Fotoalbum ist durch das Lagerpasswort geschützt. Video-Links sind öffentlich.">
-          <Field label="Immich-Fotoalbum">
-            <EditableImmich lagerId={id} albumId={loaded.fotoalbum?.id} current={loaded.fotoalbum?.url || ""} />
+          <Field label="Fotoalbum (Immich-Share-Link mit Upload)" htmlFor="lager-fotos">
+            <Input id="lager-fotos" type="url" inputMode="url" value={fotoUrl} onChange={(event) => change(setFotoUrl, event.target.value)} placeholder="https://…/share/…" />
           </Field>
           <Field label="Video-Link (YouTube)" htmlFor="lager-video">
             <Input id="lager-video" type="url" inputMode="url" value={videoUrl} onChange={(event) => change(setVideoUrl, event.target.value)} placeholder="https://www.youtube.com/watch?v=…" />

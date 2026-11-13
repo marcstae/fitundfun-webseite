@@ -3,23 +3,26 @@
 import * as React from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dropzone } from "@/components/edit/dropzone";
-import { useSaveAction } from "@/components/edit/save-dialog";
+import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
 import { revalidatePath } from "@/lib/revalidate";
 import type { EinstellungenRecord } from "@/lib/pb-types";
 
+const HERO_TITEL = "fit&fun Lager Brigels";
+
 export function HeroSettings({ initial }: { initial: EinstellungenRecord | null }) {
   const [record, setRecord] = React.useState(initial);
-  const [title, setTitle] = React.useState(initial?.hero_titel || "fit&fun Lager Brigels");
+  const [title, setTitle] = React.useState(initial?.hero_titel || HERO_TITEL);
   const [video, setVideo] = React.useState<File | null>(null);
   const [poster, setPoster] = React.useState<File | null>(null);
   const [removeVideo, setRemoveVideo] = React.useState(false);
   const [removePoster, setRemovePoster] = React.useState(false);
   const { saving, run } = useSaveAction();
+  const dirty = title !== (record?.hero_titel || HERO_TITEL) || !!video || !!poster || removeVideo || removePoster;
+  useLeaveGuard(dirty);
 
   const save = async () => {
     if (!title.trim()) {
@@ -38,6 +41,7 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
         ? await pbBrowser().collection("einstellungen").update<EinstellungenRecord>(record.id, form)
         : await pbBrowser().collection("einstellungen").create<EinstellungenRecord>(form);
       setRecord(saved);
+      setTitle(saved.hero_titel || HERO_TITEL);
       setVideo(null);
       setPoster(null);
       setRemoveVideo(false);
@@ -94,10 +98,8 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
         <p className="text-xs font-semibold text-muted">
           Ohne eigenes Video oder Bild werden die mitgelieferten Standardmedien verwendet.
         </p>
-        <Button onClick={save} disabled={saving}>
-          {saving ? "Speichert…" : "Startseite speichern"}
-        </Button>
       </div>
+      <DirtySaveBar dirty={dirty} saving={saving} onSave={save} label="Startseite nicht gespeichert" />
     </section>
   );
 }

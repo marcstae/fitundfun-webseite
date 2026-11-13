@@ -6,6 +6,7 @@ import { KeyRound, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { changeFamilyPassword } from "@/app/admin/konto/actions";
 import { useAuth } from "@/components/providers";
+import { useLeaveGuard } from "@/components/edit/save-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,8 @@ export function AccountSettings() {
   const [savingFamily, setSavingFamily] = React.useState(false);
   const [familySet, setFamilySet] = React.useState<boolean | null>(null);
   const [familyCurrent, setFamilyCurrent] = React.useState("");
+  // Halb ausgefüllte Passwortfelder nicht still verlieren.
+  useLeaveGuard(!!(oldPassword || password || confirmation || familyPassword || familyConfirmation));
 
   React.useEffect(() => {
     pbBrowser()

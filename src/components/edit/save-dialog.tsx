@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formularOffen, VERWERFEN } from "@/lib/leave-guard";
 
 /** Verständlicher Grund aus einer PocketBase-Validierung, sonst null. */
 function fieldProblem(error: unknown): string | null {
@@ -51,38 +52,40 @@ export function useSaveAction() {
   return { saving, run };
 }
 
-/** Bei ungespeicherten Änderungen vor dem Verlassen der Seite nachfragen. */
+/** Bei ungespeicherten Änderungen vor dem Verlassen der Seite nachfragen (Link, Neuladen, Zurück). */
 export function useLeaveGuard(dirty: boolean) {
-  React.useEffect(() => {
-    if (!dirty) return;
-    const beforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    // Klicks auf Links und «Abmelden» abfangen: Next-Navigation löst kein beforeunload aus.
-    // Capture-Phase auf document läuft vor den React-Handlern.
-    // ponytail: Der Zurück-Knopf des Browsers (popstate) wird nicht abgefangen.
-    const onClick = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const target = (event.target as Element | null)?.closest('a[href]:not([target="_blank"]), [data-leave-guard]');
-      if (target && !window.confirm("Ungespeicherte Änderungen verwerfen?")) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-    document.addEventListener("click", onClick, true);
-    return () => {
-      window.removeEventListener("beforeunload", beforeUnload);
-      document.removeEventListener("click", onClick, true);
-    };
-  }, [dirty]);
+  React.useEffect(() => (dirty ? formularOffen() : undefined), [dirty]);
+}
+
+/** Zustand eines Formulars mit «ungespeichert»-Erkennung über einen Schnappschuss. */
+export function useFormular<T>(start: T, sonstGeaendert = false) {
+  const [wert, setWert] = React.useState(start);
+  const [gespeichert, setGespeichert] = React.useState(() => JSON.stringify(start));
+  const dirty = JSON.stringify(wert) !== gespeichert || sonstGeaendert;
+  useLeaveGuard(dirty);
+  return { wert, setWert, dirty, alsGespeichert: (neu: T) => setGespeichert(JSON.stringify(neu)) };
 }
 
 /** Klebende Leiste unten, sobald es ungespeicherte Änderungen gibt. */
-export function DirtySaveBar({ dirty, saving, onSave }: { dirty: boolean; saving: boolean; onSave: () => void }) {
+export function DirtySaveBar({
+  dirty,
+  saving,
+  onSave,
+  label = "Ungespeicherte Änderungen",
+}: {
+  dirty: boolean;
+  saving: boolean;
+  onSave: () => void;
+  label?: string;
+}) {
   if (!dirty) return null;
   return (
-    <div className="sticky bottom-0 z-20 -mx-4 mt-6 border-t border-ink/10 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
+    <div role="status" className="sticky bottom-0 z-20 -mx-4 mt-6 border-t border-ink/10 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-ink">Ungespeicherte Änderungen</p>
+        <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <span aria-hidden className="size-2 shrink-0 rounded-full bg-accent" />
+          {label}
+        </p>
         <Button onClick={onSave} disabled={saving} className="h-11 shrink-0">
           <Save className="size-4" /> {saving ? "Speichert…" : "Speichern"}
         </Button>
@@ -115,16 +118,27 @@ export function SaveDialog({
   onSave,
   children,
 }: SaveDialogProps) {
+  // Wurde etwas eingetippt, fragt Schliessen (Abbrechen, Escape, Klick daneben) nach.
+  // Nach erfolgreichem Speichern schliessen die Editoren direkt über ihr eigenes setOpen.
+  const [beruehrt, setBeruehrt] = React.useState(false);
+  React.useEffect(() => {
+    if (open) setBeruehrt(false);
+  }, [open]);
+  const schliessen = (next: boolean) => {
+    if (!next && beruehrt && !saving && !window.confirm(VERWERFEN)) return;
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={schliessen}>
       <DialogContent className={className}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription className="mt-1">{description}</DialogDescription> : null}
         </DialogHeader>
-        <div className="space-y-4">{children}</div>
+        <div className="space-y-4" onInput={() => setBeruehrt(true)}>{children}</div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button variant="ghost" onClick={() => schliessen(false)} disabled={saving}>
             Abbrechen
           </Button>
           <Button onClick={onSave} disabled={saving}>

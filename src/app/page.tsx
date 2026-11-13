@@ -59,7 +59,7 @@ export default async function HomePage() {
               <div className="order-1 xl:col-start-1 xl:mb-5 xl:row-start-2">
                 <h1
                   id="hero-headline"
-                  className="camp-hero-title max-w-[11ch] font-display text-[clamp(3.4rem,10vw,8.75rem)] leading-[0.8] tracking-[-0.075em] text-[#fffaf0]"
+                  className="camp-hero-title max-w-[11ch] font-display text-[clamp(3.4rem,10vw,8.75rem)] leading-[0.8] tracking-[-0.02em] text-[#fffaf0]"
                 >
                   {renderHeroTitel(heroTitel)}
                 </h1>
@@ -110,7 +110,7 @@ function renderHeroTitel(titel: string) {
     return (
       <>
         <span className="block">{renderHeroLine(titel.slice(0, lagerIndex))}</span>
-        <span className="mt-[calc(0.12em_+_2px)] block text-[0.61em] tracking-[-0.055em]">
+        <span className="mt-[0.12em] block text-[0.61em] tracking-[-0.03em]">
           {renderHeroLine(titel.slice(lagerIndex + 1))}
         </span>
       </>

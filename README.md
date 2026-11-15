@@ -1,6 +1,6 @@
 # fit&fun Website
 
-Website des fit&fun Familienlagers in Brigels (nur auf Einladung). Hauptzweck: Familien kommen schnell an die Lagerdokumente. Die Lagerleitung pflegt alles im Cockpit unter `/admin`.
+Website des fit&fun Familienlagers in Brigels. Hauptzweck: Familien kommen schnell an die Lagerdokumente. Die Lagerleitung pflegt alles im Cockpit unter `/admin`.
 
 ## Aufbau
 

@@ -40,15 +40,16 @@ Die Website ersetzt eine Jimdo-Seite. Über 100 Dokumente seit 2011 hat eine Dat
 ## 🧱 Architektur
 
 ```mermaid
-flowchart LR
+flowchart TB
   U["Familien und Lagerleitung"] -->|HTTPS| CF["Cloudflare Edge<br/>TLS, Bot-Schutz"]
-  CF --> T["cloudflared<br/>ausgehender Tunnel"]
-  subgraph H["Heimserver: Docker Compose"]
+  CF ---|"Tunnel, vom Server aus aufgebaut"| T
+  subgraph H["Heimserver"]
+    T["cloudflared"]
     T -->|"172.17.0.1:3843"| W["web: Next.js 16<br/>SSR, Server Actions"]
     T -->|"172.17.0.1:8090"| P["pb: PocketBase 0.40<br/>API, Auth, Dateien"]
+    T --> M["Umami<br/>Statistik ohne Cookies"]
     W -->|"intern pb:8090"| P
     P --- D[("pb_data<br/>SQLite und Uploads")]
-    T --> M["Umami<br/>Statistik ohne Cookies"]
   end
   W -.->|"Cache 30 Min."| S["SLF-Messnetz<br/>Schneehöhe"]
 ```
@@ -132,8 +133,7 @@ curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
   -d "{\"secret\":\"$REVALIDATE_SECRET\",\"path\":\"/\"}"
 ```
 
-> [!IMPORTANT]
-> Das Backup ist Pflicht: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Wiederherstellen heisst `pb` stoppen, Ordner zurückkopieren, starten. Ohne Revalidate zeigen Seiten bis zu 5 Minuten alte Daten, weil beim Build kein PocketBase läuft.
+> **Wichtig:** Das Backup ist Pflicht: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Wiederherstellen heisst `pb` stoppen, Ordner zurückkopieren, starten. Ohne Revalidate zeigen Seiten bis zu 5 Minuten alte Daten, weil beim Build kein PocketBase läuft.
 
 </details>
 

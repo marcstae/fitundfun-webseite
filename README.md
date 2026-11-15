@@ -42,16 +42,16 @@ Die Website ersetzt eine Jimdo-Seite. Über 100 Dokumente seit 2011 hat eine Dat
 ```mermaid
 flowchart TB
   U["Familien und Lagerleitung"] -->|HTTPS| CF["Cloudflare Edge<br/>TLS, Bot-Schutz"]
-  CF ---|"Tunnel, vom Server aus aufgebaut"| T
+  CF ---|"Tunnel, vom Server aus aufgebaut"| H
   subgraph H["Heimserver"]
-    T["cloudflared"]
-    T -->|"172.17.0.1:3843"| W["web: Next.js 16<br/>SSR, Server Actions"]
+    direction LR
+    T["cloudflared"] -->|"172.17.0.1:3843"| W["web: Next.js 16<br/>SSR, Server Actions"]
     T -->|"172.17.0.1:8090"| P["pb: PocketBase 0.40<br/>API, Auth, Dateien"]
     T --> M["Umami<br/>Statistik ohne Cookies"]
     W -->|"intern pb:8090"| P
     P --- D[("pb_data<br/>SQLite und Uploads")]
   end
-  W -.->|"Cache 30 Min."| S["SLF-Messnetz<br/>Schneehöhe"]
+  H -.->|"Schneehöhe, Cache 30 Min."| S["SLF-Messnetz"]
 ```
 
 Geschütztes verlässt PocketBase nie direkt Richtung Familien: `web` prüft das Lagerpasswort-Cookie und reicht Dateien selbst durch.

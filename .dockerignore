@@ -6,6 +6,5 @@ node_modules
 .env*
 pb
 README*.md
-ANLEITUNG*.md
 pb_data
 .pb-local

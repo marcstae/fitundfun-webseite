@@ -1,13 +1,5 @@
 export type Rol = "editor" | "familie";
 
-export interface UserRecord {
-  id: string;
-  email: string;
-  rolle: Rol;
-  created: string;
-  updated: string;
-}
-
 export type LagerPublikationsstatus =
   | "entwurf"
   | "veroeffentlicht"
@@ -115,17 +107,4 @@ export interface LagerpasswortRecord {
   cookie_version: number;
   created: string;
   updated: string;
-}
-
-export interface CollectionSchema {
-  lager: LagerRecord;
-  dokumente: DokumentRecord;
-  dokumente_intern: DokumentRecord;
-  fotoalben: FotoalbumRecord;
-  seiten: SeiteRecord;
-  links: LinkRecord;
-  kontakte: KontaktRecord;
-  einstellungen: EinstellungenRecord;
-  lagerpasswort: LagerpasswortRecord;
-  users: UserRecord;
 }

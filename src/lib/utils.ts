@@ -107,13 +107,6 @@ export function formatDateRange(von: string | Date, bis: string | Date): string 
   return `${a.getUTCDate()}. ${NB[a.getUTCMonth()]} – ${b.getUTCDate()}. ${NB[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
 }
 
-/** "30. Januar – 6. Februar 2027" */
-export function formatDateRangeLong(von: string | Date, bis: string | Date): string {
-  const a = asDate(von);
-  const b = asDate(bis);
-  return `${a.getUTCDate()}. ${NB_LONG[a.getUTCMonth()]} – ${b.getUTCDate()}. ${NB_LONG[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
-}
-
 const WOCHENTAG = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
 /** "Sa 31. Januar – Sa 7. Februar 2026" (Lager beginnen und enden meist an einem Samstag). */

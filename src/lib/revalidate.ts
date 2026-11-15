@@ -1,5 +1,3 @@
-import { PB_URL } from "./pb";
-
 /** Löst On-Demand-Revalidation einer Route aus. */
 export async function revalidatePath(path: string): Promise<void> {
   try {
@@ -17,9 +15,3 @@ export async function revalidatePath(path: string): Promise<void> {
     // silent — ISR holt ohnehin nach 5 Min nach
   }
 }
-
-export function routeFor(path: string): string {
-  return path;
-}
-
-export { PB_URL };

@@ -1,5 +1,4 @@
-import PocketBase, { ClientResponseError } from "pocketbase";
-import type { CollectionSchema } from "./pb-types";
+import PocketBase from "pocketbase";
 
 export const PB_URL =
   process.env.NEXT_PUBLIC_PB_URL || "http://localhost:8090";
@@ -44,27 +43,7 @@ export function pbBrowser(): PocketBase {
   return _browser;
 }
 
-export function isAuthError(e: unknown): boolean {
-  return e instanceof ClientResponseError && (e.status === 401 || e.status === 403);
-}
-
 /** Öffentliche Datei-URL (nur für nicht-protected Felder). */
 export function publicFileUrl(collection: string, id: string, filename: string): string {
   return `${PB_URL}/api/files/${collection}/${id}/${filename}`;
 }
-
-/** Komfort: URL für ein nicht-leeres File-Feld, sonst null. */
-export function fileUrlOr(
-  collection: string,
-  id: string,
-  filename?: string | null,
-  token?: string
-): string | null {
-  if (!filename) return null;
-  if (token) {
-    return `${PB_URL}/api/files/${collection}/${id}/${filename}?token=${encodeURIComponent(token)}`;
-  }
-  return publicFileUrl(collection, id, filename);
-}
-
-export type { CollectionSchema };

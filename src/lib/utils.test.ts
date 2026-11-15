@@ -8,7 +8,6 @@ import {
   contentDisposition,
   documentHref,
   formatDateRange,
-  formatDateRangeLong,
   formatDateRangeWithDays,
   isoToDateInput,
   isValidHttpUrl,
@@ -52,13 +51,6 @@ test("formatDateRange: Jahreswechsel (bestehendes Format: Endjahr)", () => {
   assert.equal(
     formatDateRange("2025-12-28", "2026-01-03"),
     "28. Dez – 3. Jan 2026"
-  );
-});
-
-test("formatDateRangeLong: de-CH Langform", () => {
-  assert.equal(
-    formatDateRangeLong("2026-01-31", "2026-02-07"),
-    "31. Januar – 7. Februar 2026"
   );
 });
 

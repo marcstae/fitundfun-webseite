@@ -1,43 +1,62 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Vorlage für src/app/icon.png und apple-icon.png (node scripts/favicon.mjs).
-       Gezeichnet auf ebenem Boden mit Fahrtrichtung rechts, dann als Ganzes auf den Hang
-       gedreht: Ski, Tempolinien und Schnee folgen derselben Neigung. -->
-  <g transform="rotate(16 256 300)" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Tempolinien hinter dem Fahrer, parallel zur Fahrtrichtung -->
-    <g stroke="#0f1e33" stroke-width="14" fill="none">
-      <path d="M58 214 H138"/>
-      <path d="M34 262 H130"/>
-      <path d="M70 310 H136"/>
-    </g>
+       Ein jubelndes Murmeli auf Ski. Gezeichnet auf ebenem Boden mit Blick nach rechts,
+       dann leicht auf den Hang gedreht. Jede Linie gehört zu etwas: Stöcke in den Händen,
+       Schuhe auf dem Ski, Brille auf der Mütze, Schnee am Skiende. -->
+  <defs>
+    <clipPath id="pulli"><ellipse cx="262" cy="322" rx="80" ry="72"/></clipPath>
+  </defs>
+  <g transform="rotate(7 256 300)" stroke="#0f1e33" stroke-linecap="round" stroke-linejoin="round">
     <!-- Schnee, den das Skiende aufwirbelt -->
-    <g fill="#ffffff" stroke="#0f1e33" stroke-width="12">
-      <circle cx="58" cy="352" r="18"/>
-      <circle cx="88" cy="372" r="22"/>
-      <circle cx="46" cy="388" r="13"/>
+    <g fill="#ffffff" stroke-width="10">
+      <circle cx="74" cy="404" r="16"/>
+      <circle cx="50" cy="420" r="11"/>
     </g>
+    <!-- Erhobener Stock: Griff in der hinteren Hand, Spitze mit Teller in der Luft -->
+    <path d="M168 214 L112 70" fill="none" stroke-width="11"/>
+    <path d="M108 104 L138 92" fill="none" stroke-width="8"/>
     <!-- Ski mit hochgebogener Spitze vorne -->
-    <path d="M76 400 H392 Q434 400 440 366" fill="none" stroke="#0f1e33" stroke-width="36"/>
-    <path d="M76 400 H392 Q434 400 440 366" fill="none" stroke="#ff5a36" stroke-width="18"/>
-    <!-- Bein: Schuh → Knie (nach vorn) → Hüfte (nach hinten), Hose nachtblau -->
-    <path d="M262 350 L318 292 L228 256" fill="none" stroke="#0f1e33" stroke-width="62"/>
-    <path d="M262 350 L318 292 L228 256" fill="none" stroke="#1e3a8a" stroke-width="44"/>
-    <!-- Schuh steht auf dem Ski -->
-    <rect x="224" y="342" width="86" height="42" rx="13" fill="#0f1e33"/>
-    <!-- Oberkörper nach vorn gebeugt: Hüfte → Schulter -->
-    <path d="M228 256 L286 172" fill="none" stroke="#0f1e33" stroke-width="84"/>
-    <path d="M228 256 L286 172" fill="none" stroke="#2563eb" stroke-width="64"/>
-    <path d="M240 228 L266 190" fill="none" stroke="#5b8cff" stroke-width="12"/>
-    <!-- Kopf mit Helm und Skibrille, Blick in Fahrtrichtung -->
-    <circle cx="328" cy="118" r="44" fill="#ffd9b8" stroke="#0f1e33" stroke-width="12"/>
-    <path d="M284 120 A44 44 0 0 1 372 120 Z" fill="#ff5a36" stroke="#0f1e33" stroke-width="12"/>
-    <rect x="314" y="118" width="66" height="28" rx="13" fill="#0f1e33"/>
-    <rect x="334" y="125" width="30" height="9" rx="4.5" fill="#7dd3fc"/>
-    <!-- Stock: von der Hand schräg nach vorn, Spitze im Schnee -->
-    <path d="M384 230 L400 394" fill="none" stroke="#0f1e33" stroke-width="12"/>
-    <path d="M384 376 H414" fill="none" stroke="#0f1e33" stroke-width="9"/>
-    <!-- Arm: Schulter → Ellbogen → Hand am Stock -->
-    <path d="M292 190 L324 244 L380 232" fill="none" stroke="#0f1e33" stroke-width="46"/>
-    <path d="M292 190 L324 244 L380 232" fill="none" stroke="#2563eb" stroke-width="28"/>
-    <circle cx="384" cy="232" r="18" fill="#0f1e33"/>
+    <path d="M70 434 H402 Q446 434 452 398" fill="none" stroke-width="32"/>
+    <path d="M70 434 H402 Q446 434 452 398" fill="none" stroke="#ff5a36" stroke-width="16"/>
+    <!-- Kurzer, buschiger Schwanz hinten -->
+    <ellipse cx="180" cy="372" rx="26" ry="15" fill="#8a5a2e" stroke-width="10" transform="rotate(-20 180 372)"/>
+    <!-- Beine stecken in den Skischuhen, die auf dem Ski stehen -->
+    <rect x="212" y="368" width="34" height="40" rx="12" fill="#c58a4d" stroke-width="10"/>
+    <rect x="276" y="368" width="34" height="40" rx="12" fill="#c58a4d" stroke-width="10"/>
+    <rect x="196" y="396" width="64" height="34" rx="11" fill="#0f1e33" stroke-width="6"/>
+    <rect x="262" y="396" width="68" height="34" rx="11" fill="#0f1e33" stroke-width="6"/>
+    <!-- Pulli mit Zickzack-Band -->
+    <ellipse cx="262" cy="322" rx="80" ry="72" fill="#2563eb" stroke-width="12"/>
+    <path d="M178 316 L198 300 L218 316 L238 300 L258 316 L278 300 L298 316 L318 300 L338 316 L350 306"
+          fill="none" stroke="#ff5a36" stroke-width="12" clip-path="url(#pulli)"/>
+    <!-- Hinterer Arm hoch zum Stock (jubeln) -->
+    <path d="M222 276 L196 238 L172 214" fill="none" stroke-width="40"/>
+    <path d="M222 276 L196 238 L172 214" fill="none" stroke="#2563eb" stroke-width="24"/>
+    <circle cx="168" cy="210" r="17" fill="#0f1e33" stroke-width="0"/>
+    <!-- Kopf: rund, Schnauze nach vorn -->
+    <circle cx="286" cy="196" r="74" fill="#c58a4d" stroke-width="12"/>
+    <circle cx="232" cy="186" r="17" fill="#c58a4d" stroke-width="10"/>
+    <ellipse cx="346" cy="222" rx="44" ry="34" fill="#f2d3a2" stroke-width="10"/>
+    <ellipse cx="386" cy="204" rx="14" ry="11" fill="#2b1a10" stroke-width="0"/>
+    <!-- Breites Lachen mit den zwei Nagezähnen -->
+    <path d="M326 238 Q358 244 384 232 Q378 274 350 272 Q328 268 326 238 Z" fill="#7a1f2b" stroke-width="9"/>
+    <rect x="344" y="238" width="12" height="15" rx="2" fill="#ffffff" stroke-width="4"/>
+    <rect x="357" y="237" width="12" height="15" rx="2" fill="#ffffff" stroke-width="4"/>
+    <!-- Glücklich zugekniffenes Auge und rote Backe -->
+    <path d="M300 186 Q316 168 332 184" fill="none" stroke-width="9"/>
+    <ellipse cx="312" cy="216" rx="13" ry="8" fill="#ff8f8f" stroke-width="0" opacity="0.75"/>
+    <!-- Mütze mit Streifen und Pompon, Skibrille hochgeschoben auf der Mütze -->
+    <path d="M214 176 Q212 104 282 98 Q352 94 364 152 Z" fill="#ff5a36" stroke-width="12"/>
+    <path d="M222 140 Q284 116 356 128" fill="none" stroke="#2563eb" stroke-width="12"/>
+    <circle cx="246" cy="98" r="22" fill="#ffffff" stroke-width="10"/>
+    <path d="M216 170 Q290 150 364 150" fill="none" stroke-width="10"/>
+    <ellipse cx="336" cy="146" rx="28" ry="20" fill="#7dd3fc" stroke-width="10"/>
+    <path d="M326 140 Q332 134 340 136" fill="none" stroke="#ffffff" stroke-width="5"/>
+    <!-- Vorderer Arm zum Stock, Spitze im Schnee vor dem Schuh -->
+    <path d="M384 298 L398 434" fill="none" stroke-width="11"/>
+    <path d="M384 414 H412" fill="none" stroke-width="8"/>
+    <path d="M308 290 L346 314 L380 300" fill="none" stroke-width="40"/>
+    <path d="M308 290 L346 314 L380 300" fill="none" stroke="#2563eb" stroke-width="24"/>
+    <circle cx="384" cy="298" r="17" fill="#0f1e33" stroke-width="0"/>
   </g>
 </svg>

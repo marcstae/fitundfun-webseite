@@ -84,15 +84,8 @@ sequenceDiagram
 | Container | Multi-Stage-Build mit `output: standalone`, Prozesse ohne Root-Rechte, Healthchecks, Log-Rotation (3 × 50 MB). | [`Dockerfile`](Dockerfile), [`pb/Dockerfile`](pb/Dockerfile) |
 | Netzwerk | Ports nur an `127.0.0.1` und die Docker-Bridge gebunden, öffentlich nur über den Cloudflare Tunnel. Die Client-IP fürs Rate-Limit kommt aus `CF-Connecting-IP`. | [`docker-compose.yml`](docker-compose.yml) |
 | Schema als Code | Über 30 PocketBase-Migrationen in JavaScript, nur angehängt, nie geändert; darunter die Übernahme von Jimdo. | [`pb/pb_migrations`](pb/pb_migrations) |
-| Sicherheit | Zugriffsregeln pro Sammlung, Lagerpasswort als scrypt-Hash, signiertes Cookie, Limit von 10 Fehlversuchen pro IP und 50 insgesamt pro Stunde, Sicherheits-Header inklusive CSP. | [`family-access.ts`](src/lib/family-access.ts), [`next.config.mjs`](next.config.mjs) |
+| Sicherheit | Zugriffsregeln pro Sammlung, Prüfung des Lagerpassworts über einen scrypt-Hash, signiertes Cookie, Limit von 10 Fehlversuchen pro IP und 50 insgesamt pro Stunde, Sicherheits-Header inklusive CSP. | [`family-access.ts`](src/lib/family-access.ts), [`next.config.mjs`](next.config.mjs) |
 | Betrieb | Deploy nach grüner CI von Hand: bauen, Backup, starten, Cache neu aufbauen. Besucherstatistik selbst gehostet mit Umami, ohne Cookies und ohne Cockpit. | [Betrieb](#-betrieb), [`layout.tsx`](src/app/layout.tsx) |
-
-> [!NOTE]
-> **Bekannte Grenzen, bewusst in Kauf genommen und im Code mit `ponytail:` markiert**
-> - Die Limits fürs Lagerpasswort liegen im Speicher eines Prozesses. Bei mehreren Instanzen bräuchte es einen geteilten Speicher.
-> - Das globale Limit lässt sich missbrauchen, um das Freischalten bis zu einer Stunde für alle zu sperren. Das ist besser als unbegrenztes Durchprobieren.
-> - Ein Gerät im Heimnetz mit einer von Hand gesetzten Route käme an die Bridge-Ports. Ganz dicht wäre ein gemeinsames Docker-Netz für cloudflared.
-> - Für Admins ist das Lagerpasswort zusätzlich lesbar gespeichert, damit es im Cockpit angezeigt werden kann.
 
 ## 🧰 Betrieb
 

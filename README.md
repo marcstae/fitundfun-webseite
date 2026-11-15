@@ -1,61 +1,126 @@
+<div align="center">
+
+<img src="src/app/icon.png" width="88" alt="">
+
 # fit&fun Website
 
-Website des fit&fun Familienlagers in Brigels. Hauptzweck: Familien kommen schnell an die Lagerdokumente. Die Lagerleitung pflegt alles im Cockpit unter `/admin`.
+**Dokumente, Infos und Fotos für ein Familien-Skilager in Brigels.**<br>
+Gepflegt von einer Lagerleitung ohne Technikkenntnisse, betrieben auf einem Heimserver hinter einem Cloudflare Tunnel.
 
-## Aufbau
+[![CI](https://github.com/marcstae/fitundfun-webseite/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/marcstae/fitundfun-webseite/actions/workflows/ci.yml)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![PocketBase](https://img.shields.io/badge/PocketBase-0.40-B8DBE4?logo=pocketbase&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker_Compose-2496ED?logo=docker&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?logo=cloudflare&logoColor=white)
+
+[**Live ansehen**](https://fitundfun.marcstaeuble.ch) · [Funktionen](#-funktionen) · [Architektur](#-architektur) · [DevOps](#-devops) · [Betrieb](#-betrieb)
+
+<img src="docs/screenshots-handy.webp" alt="Startseite, Menü und Lagerseite mit Dokumenten auf dem Handy" width="100%">
+
+</div>
+
+Die Website ersetzt eine Jimdo-Seite. Über 100 Dokumente seit 2011 hat eine Datenmigration übernommen. Rund 80 % der Aufrufe kommen vom Handy, darum ist alles mobile-first gebaut: Die Dokumente des aktuellen Lagers sind zwei Fingertipps entfernt.
+
+## ✨ Funktionen
+
+| 👨‍👩‍👧 Für Familien | 🛠️ Für die Lagerleitung (Cockpit) |
+|---|---|
+| **Dokumente zuerst:** alle PDFs des Lagers auf einer Seite, mit einem Tipp geöffnet | **Übersicht:** Entwurf und aktives Lager im Fokus, fehlende Angaben auf einen Blick |
+| **Lagerpasswort einmal pro Gerät:** schaltet geschützte Dokumente, Fotoalbum und Kontaktangaben für 400 Tage frei | **Lager-Lebenszyklus:** Entwurf → veröffentlicht → archiviert; die Datenbank erlaubt nur ein aktives Lager |
+| **Links aus Mails bleiben gültig,** auch nach einer neuen Fassung; ohne Passwort erst zur Abfrage, dann direkt zur Datei | **Dokumente:** hochladen, neue Fassung ersetzen, sortieren, Link für Mails kopieren; neue Dokumente sind standardmässig geschützt |
+| **Live-Schneehöhe** vom SLF-Messnetz und Countdown «Noch 86-mal schlafen» | **Inhaltsseiten:** Kontakte mit eigenen Gruppen und Sichtbarkeit pro Telefon und E-Mail, Lagerhaus, nützliche Links |
+| **Kontakt mit Anruf-Links** (E.164), die Pistenrettung immer sichtbar | **Design ohne Code:** Startbild, Video und zwei Akzentfarben mit WCAG-Kontrastprüfung (≥ 4.5:1) |
+| **Lagerhaus, Fotos und Video:** Route in Google Maps, Immich-Album, YouTube ohne Cookies | **Nichts geht verloren:** Rückfrage bei ungespeicherten Änderungen, auch beim Zurück-Knopf |
+
+<p align="center"><img src="docs/screenshot-cockpit.webp" alt="Cockpit-Übersicht mit Entwurf und aktivem Lager" width="88%"></p>
+
+## 🧱 Architektur
 
 ```mermaid
 flowchart LR
-  B["Browser<br/>Familien und Lagerleitung"]
-  subgraph RP["Cloudflare Tunnel (HTTPS)"]
-    D1["Website-Domain"]
-    D2["API-Domain"]
+  U["Familien und Lagerleitung"] -->|HTTPS| CF["Cloudflare Edge<br/>TLS, Bot-Schutz"]
+  CF --> T["cloudflared<br/>ausgehender Tunnel"]
+  subgraph H["Heimserver: Docker Compose"]
+    T -->|"172.17.0.1:3843"| W["web: Next.js 16<br/>SSR, Server Actions"]
+    T -->|"172.17.0.1:8090"| P["pb: PocketBase 0.40<br/>API, Auth, Dateien"]
+    W -->|"intern pb:8090"| P
+    P --- D[("pb_data<br/>SQLite und Uploads")]
+    T --> M["Umami<br/>Statistik ohne Cookies"]
   end
-  subgraph S["Server: docker compose"]
-    W["web<br/>Next.js 16, Port 3843"]
-    PB["pb<br/>PocketBase 0.40, Port 8090"]
-    V[("pb_data<br/>SQLite und Uploads")]
-  end
-  X["Immich-Album, YouTube, Google Maps"]
-  B --> D1 --> W
-  B -- "Cockpit-Daten, Bilder, Video" --> D2 --> PB
-  W -- "intern über pb:8090<br/>Seiten, Downloads, Familienkonto" --> PB
-  PB --- V
-  W -. "Links und Einbettung" .-> X
+  W -.->|"Cache 30 Min."| S["SLF-Messnetz<br/>Schneehöhe"]
 ```
 
-Für Familien gehen geschützte Inhalte immer über `web` (Lagerpasswort-Cookie), nie direkt aus der API. Inhalte und Uploads liegen nur in `pb_data` (`PB_DATA_DIR`), nie im Repository.
+Geschütztes verlässt PocketBase nie direkt Richtung Familien: `web` prüft das Lagerpasswort-Cookie und reicht Dateien selbst durch.
 
-## Cockpit
+```mermaid
+sequenceDiagram
+  autonumber
+  actor F as Familie
+  participant W as web (Next.js)
+  participant P as PocketBase
+  F->>W: Link aus der Mail öffnen
+  W->>W: Cookie prüfen (HMAC, Version des Passworts)
+  alt noch nicht freigeschaltet
+    W-->>F: 303 zur Passwortabfrage des Lagers
+    F->>W: Lagerpasswort (Server Action, Limit pro IP)
+    W->>P: Hash prüfen (scrypt) über ein internes Konto
+    W-->>F: Cookie für 400 Tage, Datei öffnet sich direkt
+  end
+  W->>P: Datei mit Token des internen Kontos
+  P-->>W: PDF
+  W-->>F: PDF, ohne PocketBase-URL und Token
+```
 
-| Bereich | Inhalt |
-|---|---|
-| Übersicht | Entwurf und aktives Lager im Fokus, fehlende Angaben |
-| Lager | Entwurf → veröffentlicht → archiviert; Dokumente, Texte, Album, Video. Nur ein Lager ist veröffentlicht, Veröffentlichen archiviert das bisherige. |
-| Website | Startseite, zwei Akzentfarben (Kontrast wird geprüft) |
-| Inhaltsseiten | Kontakt (Text, Personen, Gruppen), Nützliche Links, Lagerhaus |
-| Konto | Admin-Passwort, Lagerpasswort |
+## 🔄 DevOps
 
-## Was schützt das Lagerpasswort?
+| Praxis | Umsetzung | Wo |
+|---|---|---|
+| Continuous Integration | Typecheck, Lint, Unit-Tests, `npm audit` der Laufzeitpakete, Build und ein Browser-Test gegen das echte Next.js (headless Chrome über DevTools, ohne Test-Framework). Actions auf Commit-SHA gepinnt, nur Leserechte, zusätzlich jeden Montag. | [`ci.yml`](.github/workflows/ci.yml) |
+| Abhängigkeiten | Dependabot wöchentlich für npm (gruppiert) und monatlich für Actions, neue Versionen erst nach 7 Tagen. Majors, die Next.js noch nicht trägt, bewusst ausgeschlossen. | [`dependabot.yml`](.github/dependabot.yml) |
+| Container | Multi-Stage-Build mit `output: standalone`, Prozesse ohne Root-Rechte, Healthchecks, Log-Rotation (3 × 50 MB). | [`Dockerfile`](Dockerfile), [`pb/Dockerfile`](pb/Dockerfile) |
+| Netzwerk | Ports nur an `127.0.0.1` und die Docker-Bridge gebunden, öffentlich nur über den Cloudflare Tunnel. Die Client-IP fürs Rate-Limit kommt aus `CF-Connecting-IP`. | [`docker-compose.yml`](docker-compose.yml) |
+| Schema als Code | Über 30 PocketBase-Migrationen in JavaScript, nur angehängt, nie geändert; darunter die Übernahme von Jimdo. | [`pb/pb_migrations`](pb/pb_migrations) |
+| Sicherheit | Zugriffsregeln pro Sammlung, Lagerpasswort als scrypt-Hash, signiertes Cookie, Limit von 10 Fehlversuchen pro IP und 50 insgesamt pro Stunde, Sicherheits-Header inklusive CSP. | [`family-access.ts`](src/lib/family-access.ts), [`next.config.mjs`](next.config.mjs) |
+| Betrieb | Deploy nach grüner CI von Hand: bauen, Backup, starten, Cache neu aufbauen. Besucherstatistik selbst gehostet mit Umami, ohne Cookies und ohne Cockpit. | [Betrieb](#-betrieb), [`layout.tsx`](src/app/layout.tsx) |
 
-- Geschützt sind Dokumente, Fotoalbum sowie markierte E-Mail-Adressen und Telefonnummern. Neue Dokumente und Kontakte sind standardmässig geschützt.
-- Die Freischaltung gilt 400 Tage pro Gerät; jeder geschützte Download verlängert sie. Ein **neues** Lagerpasswort meldet alle Geräte ab, dasselbe erneut speichern nicht.
-- Geschütztes liest nur der Server über ein internes Konto (`FAMILY_ACCESS_SECRET`, bekommen Familien nie). Die PocketBase-API gibt es ohne Anmeldung nicht heraus.
-- «Link kopieren» (`/api/download/…`) bleibt bei neuen Fassungen gültig, nicht aber bei gewechselter Sichtbarkeit oder gelöschtem Dokument. Ohne Zugang führt er zur Passwortabfrage und danach direkt zur Datei.
-- Gegen Durchprobieren: höchstens 10 Fehlversuche pro IP und 50 insgesamt pro Stunde.
+> [!NOTE]
+> **Bekannte Grenzen, bewusst in Kauf genommen und im Code mit `ponytail:` markiert**
+> - Die Limits fürs Lagerpasswort liegen im Speicher eines Prozesses. Bei mehreren Instanzen bräuchte es einen geteilten Speicher.
+> - Das globale Limit lässt sich missbrauchen, um das Freischalten bis zu einer Stunde für alle zu sperren. Das ist besser als unbegrenztes Durchprobieren.
+> - Ein Gerät im Heimnetz mit einer von Hand gesetzten Route käme an die Bridge-Ports. Ganz dicht wäre ein gemeinsames Docker-Netz für cloudflared.
+> - Für Admins ist das Lagerpasswort zusätzlich lesbar gespeichert, damit es im Cockpit angezeigt werden kann.
 
-## Installation
+## 🧰 Betrieb
 
-1. `.env.example` → `.env`; `FAMILY_ACCESS_SECRET` und `REVALIDATE_SECRET` mit `openssl rand -base64 48` erzeugen.
-2. `docker compose up -d --build`. Migrationen laufen bei jedem Start; der erste Start übernimmt die Jimdo-Dokumente 2011–2026 (≈ 60 MB).
-3. Mit `ADMIN_EMAIL`/`ADMIN_PASSWORD` anmelden; das Cockpit verlangt sofort ein eigenes Passwort.
+<details>
+<summary><b>💻 Lokal entwickeln</b></summary>
+
+```sh
+FAMILY_ACCESS_SECRET=dev-… ADMIN_EMAIL=… ADMIN_PASSWORD=… pocketbase serve --migrationsDir=pb/pb_migrations
+NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDATE_SECRET=dev FAMILY_ACCESS_SECRET=dev-… npm run dev
+```
+
+- Vor jedem Commit `npm run typecheck`, `npm run lint` und `npm test`.
+- Browser-Test lokal: `E2E=1 npm run build && E2E=1 npx next start -p 3100 &`, danach `node scripts/e2e-schutz.mjs http://localhost:3100`. Die Testseiten (`*.e2e.tsx`) kommen nur mit `E2E=1` in den Build.
+- Schemaänderungen nur als **neue** Migration mit der nächsten Nummer. Bestehende sind auf dem Server gelaufen und bleiben unverändert, vorhandene Inhalte werden nie überschrieben.
+- Diese Next.js-Version weicht von älteren ab: vorher `node_modules/next/dist/docs/` lesen.
+
+</details>
+
+<details>
+<summary><b>🚀 Installation und Deploy</b></summary>
+
+1. `.env.example` nach `.env` kopieren; `FAMILY_ACCESS_SECRET` und `REVALIDATE_SECRET` mit `openssl rand -base64 48` erzeugen.
+2. `docker compose up -d --build`. Migrationen laufen bei jedem Start, der erste übernimmt die Jimdo-Dokumente (≈ 60 MB).
+3. Mit `ADMIN_EMAIL` und `ADMIN_PASSWORD` anmelden; das Cockpit verlangt sofort ein eigenes Passwort.
 4. Unter Konto das Lagerpasswort setzen, vorher bleibt Geschütztes zu.
 
-Hinter einem Proxy `NEXT_PUBLIC_PB_URL` (wird beim Build eingebacken), `SITE_URL` und `PB_ORIGINS` auf HTTPS setzen, Upload-Limit ≥ 60 MB. Produktiv läuft alles über einen Cloudflare Tunnel (Ziele `http://172.17.0.1:3843` und `:8090`); die Ports sind nur an `127.0.0.1` und `172.17.0.1` gebunden, die Client-IP kommt aus `CF-Connecting-IP`.
+`NEXT_PUBLIC_PB_URL` wird beim Build eingebacken; mit `SITE_URL` und `PB_ORIGINS` auf die öffentlichen HTTPS-Adressen setzen. Upload-Limit des Proxys ≥ 60 MB. Tunnel-Ziele: `http://172.17.0.1:3843` und `:8090`.
 
-Besucherstatistik: Umami unter `umami.marcstaeuble.ch` (eigener Stack auf dem Server, ohne Cookies). Das Script steht in `src/app/layout.tsx` und lädt nur, wenn `SITE_URL` die echte Domain ist. Cockpit und `/login` zählen nicht, Query-Strings werden weggelassen.
-
-## Deploy
+**Deploy, erst wenn CI grün ist:**
 
 ```sh
 set -a; . ./.env; set +a                     # PB_DATA_DIR, REVALIDATE_SECRET laden
@@ -67,34 +132,30 @@ curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
   -d "{\"secret\":\"$REVALIDATE_SECRET\",\"path\":\"/\"}"
 ```
 
-Das Backup ist Pflicht: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Wiederherstellen: `pb` stoppen, Ordner zurückkopieren, starten. Ohne Revalidate zeigen Seiten bis zu 5 Minuten alte oder leere Daten (beim Build läuft PocketBase nicht).
+> [!IMPORTANT]
+> Das Backup ist Pflicht: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Wiederherstellen heisst `pb` stoppen, Ordner zurückkopieren, starten. Ohne Revalidate zeigen Seiten bis zu 5 Minuten alte Daten, weil beim Build kein PocketBase läuft.
 
-## Wenn etwas nicht stimmt
+</details>
+
+<details>
+<summary><b>🧯 Wenn etwas nicht stimmt</b></summary>
 
 | Symptom | Ursache und Lösung |
 |---|---|
-| Familien müssen das Passwort neu eingeben | Lagerpasswort wurde geändert. |
+| Familien müssen das Passwort neu eingeben | Ein **neues** Lagerpasswort meldet alle Geräte ab; dasselbe erneut speichern nicht. |
 | Link aus einer Mail: «Nicht gefunden» | Dokument gelöscht oder Sichtbarkeit gewechselt: Link neu kopieren. |
 | Speichern im Cockpit scheitert | Sitzung abgelaufen: neu anmelden. |
 | `/_/` will einen Superuser anlegen | Es gibt bewusst keinen; die Einrichtung braucht einen Token aus den Logs. Nur im Notfall anlegen. |
 
 **Admin-Passwort vergessen:** `docker compose exec pb /pb/pocketbase superuser upsert notfall@example.ch '<temporär>'`, in `http://<host>:8090/_/` unter *users* ein temporäres Passwort setzen und `muss_passwort_aendern` einschalten (Stellvertretung: neuer Datensatz, `rolle` = editor, `verified`). Danach `superuser delete notfall@example.ch`.
 
-## Entwicklung
+</details>
 
-```sh
-FAMILY_ACCESS_SECRET=dev-… ADMIN_EMAIL=… ADMIN_PASSWORD=… pocketbase serve --migrationsDir=pb/pb_migrations
-NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDATE_SECRET=dev FAMILY_ACCESS_SECRET=dev-… npm run dev
-```
+<details>
+<summary><b>🔧 Wartung</b></summary>
 
-- Vor jedem Commit: `npm run typecheck`, `npm run lint`, `npm test`.
-- GitHub Actions (`.github/workflows/ci.yml`) prüft jeden Push auf `main`, jeden Pull Request und montags den Stand: Typecheck, Lint, Tests, `npm audit --omit=dev`, `next build`. Erst deployen, wenn CI grün ist.
-- Dazu ein Browser-Test des Speicherschutzes gegen das echte Next.js (`scripts/e2e-schutz.mjs`, Testseiten `*.e2e.tsx` nur mit `E2E=1`). Lokal: `E2E=1 npm run build && E2E=1 npx next start -p 3100 &` und dann `node scripts/e2e-schutz.mjs http://localhost:3100`.
-- Schemaänderungen nur als **neue** Migration mit der nächsten Nummer; bestehende nie ändern (sie sind auf dem Server gelaufen), vorhandene Inhalte nie überschreiben.
-- Diese Next.js-Version weicht von älteren ab: vorher `node_modules/next/dist/docs/` lesen.
-
-## Wartung
-
-- Dependabot (`.github/dependabot.yml`) öffnet wöchentlich Pull Requests für npm-Pakete und monatlich für die Actions; neue Versionen erst nach 7 Tagen. Mergen, wenn CI grün ist, dann mit `--pull` deployen. Zurückgestellt, bis Next.js sie unterstützt: TypeScript 7, ESLint 10 (in Dependabot ausgeschlossen).
+- Dependabot-Pull-Requests mergen, wenn CI grün ist, dann mit `--pull` deployen. Zurückgestellt, bis Next.js sie unterstützt: TypeScript 7, ESLint 10.
 - `npm audit --omit=dev` muss 0 zeigen; Meldungen nur in Entwicklungswerkzeugen betreffen die Website nicht.
 - PocketBase: `PB_VERSION` in `pb/Dockerfile` anheben. Laut Upstream ist 0.40.6 die letzte Version auf GitHub; für neuere die Download-URL anpassen.
+
+</details>

@@ -101,6 +101,7 @@ NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDA
 - Browser-Test lokal: `E2E=1 npm run build && E2E=1 npx next start -p 3100 &`, danach `node scripts/e2e-schutz.mjs http://localhost:3100`. Die Testseiten (`*.e2e.tsx`) kommen nur mit `E2E=1` in den Build.
 - Schemaänderungen nur als **neue** Migration mit der nächsten Nummer. Bestehende sind auf dem Server gelaufen und bleiben unverändert, vorhandene Inhalte werden nie überschrieben.
 - Diese Next.js-Version weicht von älteren ab: vorher `node_modules/next/dist/docs/` lesen.
+- Favicon: Vorlage `docs/favicon.svg` bearbeiten, dann `node scripts/favicon.mjs` (schreibt `icon.png` und `apple-icon.png`).
 
 </details>
 

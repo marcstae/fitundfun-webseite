@@ -134,8 +134,8 @@ export function SiteHeader({
         className={cn(
           "z-40",
           // Startseite: Logo und Menü sitzen gleich weit vom Rand entfernt wie der Inhalt
-          // (Handy randlos: 24 px seitlich, 20 px unter der Statusleiste; ab sm Rahmen 28 px
-          // vom Rand + 24/32 px Abstand).
+          // (Handy randlos: 24 px seitlich, 20 px unter der Statusleiste; ab sm 40/48 px vom Rand
+          // der Videofläche, die 12 px vom Fensterrand sitzt).
           isHome
             ? "absolute left-[env(safe-area-inset-left)] right-[env(safe-area-inset-right)] top-[calc(1.25rem+env(safe-area-inset-top))] bg-transparent sm:top-[3.25rem] lg:top-[3.75rem]"
             : "sticky top-0 pt-[env(safe-area-inset-top)] border-b border-ink/[0.08] bg-white/[0.92] shadow-[0_8px_30px_rgba(14,28,48,0.04)] backdrop-blur-xl"

@@ -31,7 +31,7 @@ export default async function HomePage() {
         className="camp-hero relative h-dvh min-h-[36rem] overflow-hidden bg-sand sm:p-3"
         aria-labelledby="hero-headline"
       >
-        {/* Handy: randlos bis an den Bildschirmrand und hinter die Statusleiste. Ab sm: Rahmen. */}
+        {/* Handy: randlos bis an den Bildschirmrand und hinter die Statusleiste. Ab sm: abgerundete Fläche mit 12 px Rand. */}
         <div className="relative isolate h-full overflow-hidden bg-navy-900 sm:rounded-[2rem]">
           <HeroVideo
             videoUrl={heroVideoUrl}
@@ -42,7 +42,7 @@ export default async function HomePage() {
           <div aria-hidden className="camp-hero-grain pointer-events-none absolute inset-0 z-[4]" />
 
           {/* Abstand gleich wie Logo und Menü, siehe site-header: Handy 24 px vom Bildschirmrand
-              (plus Statusleiste und Home-Balken), ab sm 24/32 px vom weissen Rahmen. */}
+              (plus Statusleiste und Home-Balken), ab sm 40/48 px vom Rand der Videofläche. */}
           <div className="relative z-10 mx-auto flex h-full w-full max-w-[96rem] flex-col px-6 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] pt-[calc(6rem+env(safe-area-inset-top))] sm:px-10 sm:pb-10 sm:pt-32 lg:px-12 lg:pb-12 xl:pt-9">
 
             <div className="mt-auto w-full max-xl:contents xl:grid xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] xl:items-end xl:gap-x-8">
@@ -94,10 +94,6 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-4 z-20 hidden rounded-[1.45rem] border border-white/40 sm:block"
-          />
         </div>
       </section>
 

@@ -25,9 +25,13 @@ services:
     volumes:
       # Standard ./pb_data; auf dem Server per PB_DATA_DIR nach ~/docker-data verlegt.
       - ${PB_DATA_DIR:-./pb_data}:/pb/pb_data
+      # Backups aus dem Cockpit (/admin/backups) und dem Zeitplan; auf dem Server per BACKUP_DIR.
+      - ${BACKUP_DIR:-./pb_backups}:/pb/pb_data/backups
     environment:
       TZ: Europe/Zurich
       PB_ORIGINS: ${PB_ORIGINS}
+      # Nur zur Anzeige im Cockpit.
+      BACKUP_ORT: ${BACKUP_DIR:-./pb_backups}
       # Bei bestehenden Installationen optional; eine Neuinstallation bricht
       # ohne diese Werte mit einer klaren Migrationsmeldung ab.
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}

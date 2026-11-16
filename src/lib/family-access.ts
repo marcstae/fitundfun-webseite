@@ -81,18 +81,34 @@ export async function hasFamilyAccess(value?: string): Promise<boolean> {
 }
 
 // Token des Familienkontos wiederverwenden, statt bei jedem Aufruf neu anzumelden
-// (PocketBase begrenzt Anmeldungen pro IP, und alle kommen vom Webserver).
+// (PocketBase begrenzt Anmeldungen pro IP, und alle kommen vom Webserver). Höchstens 5 Minuten:
+// Nach einer Wiederherstellung kann es ungültig sein, und PocketBase behandelt ungültige Tokens
+// still als Gast. Geschütztes fehlte dann bis zum Neustart des Webservers.
 let familyToken = "";
+let familyTokenSeit = 0;
+const FAMILY_TOKEN_MAX_MS = 5 * 60 * 1000;
+// Gleichzeitige Seitenaufrufe teilen sich eine Anmeldung, statt das Limit (10 pro Minute) zu sprengen.
+let familyLogin: Promise<string> | null = null;
 
 export async function familyPocketBase(): Promise<PocketBase> {
   if (!familySecret) throw new Error("FAMILY_ACCESS_SECRET nicht gesetzt");
   const pb = pbRequest();
-  if (familyToken) {
+  if (familyToken && Date.now() - familyTokenSeit < FAMILY_TOKEN_MAX_MS) {
     pb.authStore.save(familyToken);
     if (pb.authStore.isValid) return pb;
   }
-  await pb.collection("users").authWithPassword(familyEmail, familySecret);
-  familyToken = pb.authStore.token;
+  familyLogin ??= pbRequest()
+    .collection("users")
+    .authWithPassword(familyEmail, familySecret)
+    .then((result) => {
+      familyToken = result.token;
+      familyTokenSeit = Date.now();
+      return result.token;
+    })
+    .finally(() => {
+      familyLogin = null;
+    });
+  pb.authStore.save(await familyLogin);
   return pb;
 }
 

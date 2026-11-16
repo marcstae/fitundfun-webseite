@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
+  DatabaseBackup,
   ExternalLink,
   Files,
   Globe,
@@ -23,6 +24,7 @@ const nav = [
   // Unterpunkte klappen auf, sobald «Inhaltsseiten» offen ist; ohne Auswahl gilt der erste.
   { href: "/admin/inhaltsseiten", label: "Inhaltsseiten", icon: Files, unterpunkte: INHALTSSEITEN_BEREICHE },
   { href: "/admin/konto", label: "Konto", icon: Settings },
+  { href: "/admin/backups", label: "Backups", icon: DatabaseBackup },
 ];
 
 export function AdminShell({

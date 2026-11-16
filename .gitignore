@@ -23,6 +23,7 @@ next-env.d.ts
 # pb
 /pb/pb_data
 /pb_data
+/pb_backups
 
 # debug
 npm-debug.log*

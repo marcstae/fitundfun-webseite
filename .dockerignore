@@ -7,5 +7,6 @@ node_modules
 pb
 README*.md
 pb_data
+pb_backups
 .pb-local
 docs

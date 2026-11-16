@@ -33,7 +33,7 @@ Die Website ersetzt eine Jimdo-Seite. Über 100 Dokumente seit 2011 hat eine Dat
 | **Links aus Mails bleiben gültig,** auch nach einer neuen Fassung; ohne Passwort erst zur Abfrage, dann direkt zur Datei | **Dokumente:** hochladen, neue Fassung ersetzen, sortieren, Link für Mails kopieren; neue Dokumente sind standardmässig geschützt |
 | **Live-Schneehöhe** vom SLF-Messnetz und Countdown «Noch 86-mal schlafen» | **Inhaltsseiten:** Kontakte mit eigenen Gruppen und Sichtbarkeit pro Telefon und E-Mail, Lagerhaus, nützliche Links |
 | **Kontakt mit Anruf-Links** (E.164), die Pistenrettung immer sichtbar | **Design ohne Code:** Startbild, Video und zwei Akzentfarben mit WCAG-Kontrastprüfung (≥ 4.5:1) |
-| **Lagerhaus, Fotos und Video:** Route in Google Maps, Immich-Album, YouTube ohne Cookies | **Nichts geht verloren:** Rückfrage bei ungespeicherten Änderungen, auch beim Zurück-Knopf |
+| **Lagerhaus, Fotos und Video:** Route in Google Maps, Immich-Album, YouTube ohne Cookies | **Nichts geht verloren:** Backups mit Zeitplan, Download und Wiederherstellung; Rückfrage bei ungespeicherten Änderungen, auch beim Zurück-Knopf |
 
 <p align="center"><img src="docs/screenshot-cockpit.webp" alt="Cockpit-Übersicht mit Entwurf und aktivem Lager" width="88%"></p>
 
@@ -49,7 +49,7 @@ flowchart TB
     T -->|"172.17.0.1:8090"| P["pb: PocketBase 0.40<br/>API, Auth, Dateien"]
     T --> M["Umami<br/>Statistik ohne Cookies"]
     W -->|"intern pb:8090"| P
-    P --- D[("pb_data<br/>SQLite und Uploads")]
+    P --- D[("pb_data und Backups<br/>SQLite, Uploads, Zip täglich")]
   end
   H -.->|"Schneehöhe, Cache 30 Min."| S["SLF-Messnetz"]
 ```
@@ -85,6 +85,7 @@ sequenceDiagram
 | Netzwerk | Ports nur an `127.0.0.1` und die Docker-Bridge gebunden, öffentlich nur über den Cloudflare Tunnel. Die Client-IP fürs Rate-Limit kommt aus `CF-Connecting-IP`. | [`docker-compose.yml`](docker-compose.yml) |
 | Schema als Code | Über 30 PocketBase-Migrationen in JavaScript, nur angehängt, nie geändert; darunter die Übernahme von Jimdo. | [`pb/pb_migrations`](pb/pb_migrations) |
 | Sicherheit | Zugriffsregeln pro Sammlung, Prüfung des Lagerpassworts über einen scrypt-Hash, signiertes Cookie, Limit von 10 Fehlversuchen pro IP und 50 insgesamt pro Stunde, Sicherheits-Header inklusive CSP. | [`family-access.ts`](src/lib/family-access.ts), [`next.config.mjs`](next.config.mjs) |
+| Backup und Wiederherstellung | PocketBase sichert im laufenden Betrieb (`VACUUM INTO`, kein Stopp) täglich um 03:00 Schweizer Zeit in einen eigenen Ordner. Zeitplan, Download, Upload und Wiederherstellung im Cockpit über eigene Hooks mit der Cockpit-Regel statt eines Superusers; vorher entsteht ein Sicherheitsbackup. Eine neue `.env` gleicht der Start-Hook ab. | [`backup.pb.js`](pb/pb_hooks/backup.pb.js), [`backup-verwaltung.tsx`](src/components/admin/backup-verwaltung.tsx) |
 | Betrieb | Deploy nach grüner CI von Hand: bauen, Backup, starten, Cache neu aufbauen. Besucherstatistik selbst gehostet mit Umami, ohne Cookies und ohne Cockpit. | [Betrieb](#-betrieb), [`layout.tsx`](src/app/layout.tsx) |
 
 ## 🧰 Betrieb
@@ -93,7 +94,7 @@ sequenceDiagram
 <summary><b>💻 Lokal entwickeln</b></summary>
 
 ```sh
-FAMILY_ACCESS_SECRET=dev-… ADMIN_EMAIL=… ADMIN_PASSWORD=… pocketbase serve --migrationsDir=pb/pb_migrations
+FAMILY_ACCESS_SECRET=dev-… ADMIN_EMAIL=… ADMIN_PASSWORD=… pocketbase serve --migrationsDir=pb/pb_migrations --hooksDir=pb/pb_hooks
 NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDATE_SECRET=dev FAMILY_ACCESS_SECRET=dev-… npm run dev
 ```
 
@@ -108,7 +109,7 @@ NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDA
 <details>
 <summary><b>🚀 Installation und Deploy</b></summary>
 
-1. `.env.example` nach `.env` kopieren; `FAMILY_ACCESS_SECRET` und `REVALIDATE_SECRET` mit `openssl rand -base64 48` erzeugen.
+1. `.env.example` nach `.env` kopieren; `FAMILY_ACCESS_SECRET` und `REVALIDATE_SECRET` mit `openssl rand -base64 48` erzeugen. `BACKUP_DIR` auf einen eigenen Ordner setzen, am besten auf einem anderen Datenträger.
 2. `docker compose up -d --build`. Migrationen laufen bei jedem Start, der erste übernimmt die Jimdo-Dokumente (≈ 60 MB).
 3. Mit `ADMIN_EMAIL` und `ADMIN_PASSWORD` anmelden; das Cockpit verlangt sofort ein eigenes Passwort.
 4. Unter Konto das Lagerpasswort setzen, vorher bleibt Geschütztes zu.
@@ -140,6 +141,8 @@ curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
 | Link aus einer Mail: «Nicht gefunden» | Dokument gelöscht oder Sichtbarkeit gewechselt: Link neu kopieren. |
 | Speichern im Cockpit scheitert | Sitzung abgelaufen: neu anmelden. |
 | `/_/` will einen Superuser anlegen | Es gibt bewusst keinen; die Einrichtung braucht einen Token aus den Logs. Nur im Notfall anlegen. |
+
+**Server neu oder `.env` verloren:** Ein Backup-Zip ist der Inhalt von `pb_data`. Vor dem ersten Start `unzip <backup>.zip -d "$PB_DATA_DIR"`, eine neue `.env` aus `.env.example` anlegen, dann `docker compose up -d --build`. Es gelten die Konten aus dem Backup. Das Familienkonto gleicht PocketBase beim Start an das neue `FAMILY_ACCESS_SECRET` an; Familien geben das Lagerpasswort einmal neu ein. Läuft die Website schon, geht es auch im Cockpit unter *Backups* (Upload über Cloudflare bis 100 MB, grössere Zips in `BACKUP_DIR` legen).
 
 **Admin-Passwort vergessen:** `docker compose exec pb /pb/pocketbase superuser upsert notfall@example.ch '<temporär>'`, in `http://<host>:8090/_/` unter *users* ein temporäres Passwort setzen und `muss_passwort_aendern` einschalten (Stellvertretung: neuer Datensatz, `rolle` = editor, `verified`). Danach `superuser delete notfall@example.ch`.
 

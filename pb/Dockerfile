@@ -24,6 +24,7 @@ chmod +x /pb/pocketbase
 EOF
 
 COPY pb_migrations /pb/pb_migrations
+COPY pb_hooks /pb/pb_hooks
 
 RUN mkdir -p /pb/pb_data && chown -R pb:pb /pb
 
@@ -32,6 +33,7 @@ EXPOSE 8090
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://127.0.0.1:8090/api/health || exit 1
 
-# Startet als root, damit ein frisch angelegter Bind-Mount ./pb_data (root:root) dem
-# pb-User gehört; PocketBase selbst läuft danach ohne Root-Rechte.
-CMD ["/bin/sh", "-c", "chown -R pb:pb /pb/pb_data && exec su-exec pb /pb/pocketbase serve --http=0.0.0.0:8090 --origins=\"${PB_ORIGINS}\""]
+# Startet als root, damit frisch angelegte Bind-Mounts (root:root) dem pb-User gehören; PocketBase
+# selbst läuft danach ohne Root-Rechte. -xdev: Liegt der Backup-Ordner auf einem anderen Datenträger
+# (z. B. NAS), nur dessen Wurzel übernehmen und nicht abbrechen, wenn das Ziel chown verweigert.
+CMD ["/bin/sh", "-c", "find /pb/pb_data -xdev -exec chown pb:pb {} + ; chown pb:pb /pb/pb_data/backups 2>/dev/null; exec su-exec pb /pb/pocketbase serve --http=0.0.0.0:8090 --origins=\"${PB_ORIGINS}\""]

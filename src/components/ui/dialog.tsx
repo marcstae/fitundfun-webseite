@@ -4,9 +4,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Dialog = DialogPrimitive.Root;
-const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
-const DialogClose = DialogPrimitive.Close;
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -25,7 +23,7 @@ DialogOverlay.displayName = "DialogOverlay";
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { title?: string }
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
@@ -87,10 +85,6 @@ DialogDescription.displayName = "DialogDescription";
 
 export {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogClose,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogFooter,

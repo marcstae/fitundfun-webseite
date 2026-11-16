@@ -191,8 +191,8 @@ async function loadProtectedContent(
   };
 }
 
-async function getDokumenteForRelation(
-  recordId: string,
+export async function getDokumenteForLager(
+  lagerId: string,
   authCookie = "",
   familyAccess = false
 ): Promise<LagerInhaltResult> {
@@ -202,7 +202,7 @@ async function getDokumenteForRelation(
   try {
     const liste = (pb: PocketBase) =>
       pb.collection("dokumente").getList<DokumentRecord>(1, 500, {
-        filter: `lager = "${recordId}"`,
+        filter: `lager = "${lagerId}"`,
         sort: "sort,name",
       });
     // Seit PocketBase 0.42 wird ein ungültig gewordenes Admin-Token (z. B. Passwort anderswo
@@ -230,7 +230,7 @@ async function getDokumenteForRelation(
 
   if (session?.authStore.isValid) {
     try {
-      protectedContent = await loadProtectedContent(session, recordId);
+      protectedContent = await loadProtectedContent(session, lagerId);
       protectedLoaded = true;
       revealProtected = true;
     } catch (e) {
@@ -240,7 +240,7 @@ async function getDokumenteForRelation(
 
   if (!protectedLoaded) {
     try {
-      protectedContent = await mitFamilienkonto((pb) => loadProtectedContent(pb, recordId));
+      protectedContent = await mitFamilienkonto((pb) => loadProtectedContent(pb, lagerId));
       protectedLoaded = true;
       revealProtected = familyAccess;
     } catch (e) {
@@ -265,14 +265,6 @@ async function getDokumenteForRelation(
     hasProtectedPhoto: !!protectedContent.fotoalbum,
     accessGranted: revealProtected,
   };
-}
-
-export async function getDokumenteForLager(
-  lagerId: string,
-  authCookie = "",
-  familyAccess = false
-): Promise<LagerInhaltResult> {
-  return getDokumenteForRelation(lagerId, authCookie, familyAccess);
 }
 
 export async function getSeite(slug: string): Promise<SeiteRecord | null> {

@@ -31,7 +31,8 @@ EOF
 COPY pb_migrations /pb/pb_migrations
 COPY pb_hooks /pb/pb_hooks
 
-RUN mkdir -p /pb/pb_data && chown -R pb:pb /pb
+# Programm, Migrationen und Hooks gehören root; PocketBase darf nur in pb_data schreiben.
+RUN mkdir -p /pb/pb_data && chown pb:pb /pb/pb_data
 
 EXPOSE 8090
 
@@ -41,4 +42,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # Startet als root, damit frisch angelegte Bind-Mounts (root:root) dem pb-User gehören; PocketBase
 # selbst läuft danach ohne Root-Rechte. -xdev: Liegt der Backup-Ordner auf einem anderen Datenträger
 # (z. B. NAS), nur dessen Wurzel übernehmen und nicht abbrechen, wenn das Ziel chown verweigert.
-CMD ["/bin/sh", "-c", "find /pb/pb_data -xdev -exec chown pb:pb {} + ; chown pb:pb /pb/pb_data/backups 2>/dev/null; exec su-exec pb /pb/pocketbase serve --http=0.0.0.0:8090 --origins=\"${PB_ORIGINS}\""]
+# chown -h: Symlinks selbst umstellen, nie ihr Ziel (sonst änderte root Dateien ausserhalb von pb_data).
+CMD ["/bin/sh", "-c", "find /pb/pb_data -xdev -exec chown -h pb:pb {} + ; chown -h pb:pb /pb/pb_data/backups 2>/dev/null; exec su-exec pb /pb/pocketbase serve --http=0.0.0.0:8090 --origins=\"${PB_ORIGINS}\""]

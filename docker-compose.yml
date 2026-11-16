@@ -12,6 +12,8 @@ services:
     image: fitundfun-webseite-pb
     container_name: fitundfun-pb
     restart: unless-stopped
+    # su-exec gibt Rechte ab (setuid als root), das bleibt erlaubt; neue Rechte per setuid-Binary nicht.
+    security_opt: ["no-new-privileges:true"]
     logging: *logging
     # Nur für den Cloudflare Tunnel (cloudflared im Docker-Netz «bridge», Ziel 172.17.0.1) und für
     # Prüfungen auf dem Server (127.0.0.1); nicht im Heimnetz. Ohne direkten Zugang ist die
@@ -29,7 +31,7 @@ services:
       - ${BACKUP_DIR:-./pb_backups}:/pb/pb_data/backups
     environment:
       TZ: Europe/Zurich
-      PB_ORIGINS: ${PB_ORIGINS}
+      PB_ORIGINS: ${PB_ORIGINS:?PB_ORIGINS ist erforderlich}
       # Nur zur Anzeige im Cockpit.
       BACKUP_ORT: ${BACKUP_DIR:-./pb_backups}
       # Bei bestehenden Installationen optional; eine Neuinstallation bricht
@@ -43,11 +45,15 @@ services:
     build:
       context: .
       args:
-        - NEXT_PUBLIC_PB_URL=${NEXT_PUBLIC_PB_URL}
-        - SITE_URL=${SITE_URL}
+        # Werden beim Build eingebacken; fehlen sie, bricht der Build ab, statt still localhost zu nehmen.
+        - NEXT_PUBLIC_PB_URL=${NEXT_PUBLIC_PB_URL:?NEXT_PUBLIC_PB_URL ist erforderlich}
+        - SITE_URL=${SITE_URL:?SITE_URL ist erforderlich}
     image: fitundfun-webseite-web
     container_name: fitundfun-web
     restart: unless-stopped
+    # Node läuft als Benutzer nextjs auf Port 3000 und braucht keine Linux-Capabilities.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
     logging: *logging
     depends_on:
       - pb
@@ -55,10 +61,10 @@ services:
       - "127.0.0.1:3843:3000"
       - "172.17.0.1:3843:3000"
     environment:
-      NEXT_PUBLIC_PB_URL: ${NEXT_PUBLIC_PB_URL}
+      NEXT_PUBLIC_PB_URL: ${NEXT_PUBLIC_PB_URL:?NEXT_PUBLIC_PB_URL ist erforderlich}
       # Serverseitige Aufrufe direkt im Compose-Netz, unabhängig von DNS/HTTPS der öffentlichen URL.
       PB_INTERNAL_URL: http://pb:8090
-      SITE_URL: ${SITE_URL}
+      SITE_URL: ${SITE_URL:?SITE_URL ist erforderlich}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
       FAMILY_ACCESS_EMAIL: ${FAMILY_ACCESS_EMAIL:-familie@fitundfun.local}
       FAMILY_ACCESS_SECRET: ${FAMILY_ACCESS_SECRET:?FAMILY_ACCESS_SECRET ist erforderlich}

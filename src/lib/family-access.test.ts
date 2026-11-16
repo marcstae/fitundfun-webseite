@@ -45,8 +45,21 @@ test("Rate-Limit: andere IP bleibt unberührt", () => {
   assert.equal(familyAccess.unlockAttemptAllowed("ganz-andere-ip"), true);
 });
 
+test("Freischalten: reservierter und wieder freigegebener Versuch zählt nicht", () => {
+  const ip = "198.51.100.77";
+  for (let i = 0; i < 9; i++) familyAccess.recordUnlockFailure(ip);
+  assert.equal(familyAccess.unlockAttemptAllowed(ip), true);
+  // Gleichzeitige Anfragen: jede reserviert vor der Prüfung, die zehnte füllt das Limit.
+  familyAccess.recordUnlockFailure(ip);
+  assert.equal(familyAccess.unlockAttemptAllowed(ip), false, "elfte gleichzeitige Anfrage blockiert");
+  // Richtiges Passwort oder technischer Fehler gibt den Versuch zurück.
+  familyAccess.releaseUnlockAttempt(ip);
+  assert.equal(familyAccess.unlockAttemptAllowed(ip), true);
+});
+
 test("Rate-Limit: wechselnde (gefälschte) IPs stossen an das globale Limit", () => {
-  // Bisher 20 Fehlversuche; 30 weitere mit je neuer IP erreichen das globale Maximum von 50.
+  // Bisher 29 gezählte Fehlversuche (20 + 10 reserviert − 1 freigegeben); 30 weitere mit je neuer IP
+  // überschreiten das globale Maximum von 50.
   for (let i = 0; i < 30; i++) familyAccess.recordUnlockFailure(`10.0.0.${i}`);
   assert.equal(familyAccess.unlockAttemptAllowed("nie-gesehene-ip"), false);
 });

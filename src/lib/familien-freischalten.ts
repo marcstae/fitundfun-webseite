@@ -9,6 +9,7 @@ import {
   familyAccessCookieValue,
   istLagerpasswort,
   recordUnlockFailure,
+  releaseUnlockAttempt,
   unlockAttemptAllowed,
 } from "@/lib/family-access";
 
@@ -20,14 +21,23 @@ export async function unlockFamilyAccess(_state: UnlockState, formData: FormData
   const headerStore = await headers();
   const ip = clientIp(headerStore);
   if (!unlockAttemptAllowed(ip)) return { fehler: "blockiert" };
+  // Den Versuch vor der asynchronen Prüfung zählen: Sonst kämen gleichzeitige Anfragen alle durch,
+  // bevor der erste Fehlversuch gezählt ist. Freigegeben wird er auf jedem Weg ausser «falsch».
+  recordUnlockFailure(ip);
 
   const password = formData.get("password");
-  if (typeof password !== "string" || !(await istLagerpasswort(password))) {
-    recordUnlockFailure(ip);
-    return { fehler: "falsch" };
+  let cookieWert: string;
+  try {
+    if (typeof password !== "string" || !(await istLagerpasswort(password))) return { fehler: "falsch" };
+    cookieWert = await familyAccessCookieValue();
+  } catch (e) {
+    releaseUnlockAttempt(ip);
+    console.error("fitundfun: Lagerpasswort konnte nicht geprüft werden", e);
+    return { fehler: "technisch" };
   }
+  releaseUnlockAttempt(ip);
 
-  (await cookies()).set(FAMILY_ACCESS_COOKIE, await familyAccessCookieValue(), {
+  (await cookies()).set(FAMILY_ACCESS_COOKIE, cookieWert, {
     httpOnly: true,
     maxAge: FAMILY_ACCESS_MAX_AGE,
     path: "/",

@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export type UnlockState = { ok?: boolean; fehler?: "falsch" | "blockiert" };
+export type UnlockState = { ok?: boolean; fehler?: "falsch" | "blockiert" | "technisch" };
 export type UnlockAction = (state: UnlockState, formData: FormData) => Promise<UnlockState>;
 
 /**
@@ -129,7 +129,9 @@ export function FamilyUnlock({
                 <p id={`${inputId}-fehler`} role="alert" className="text-sm font-semibold text-red-700">
                   {state.fehler === "blockiert"
                     ? "Zu viele Versuche – bitte in einer Stunde erneut versuchen."
-                    : "Das Lagerpasswort ist nicht korrekt."}
+                    : state.fehler === "technisch"
+                      ? "Das Lagerpasswort kann gerade nicht geprüft werden. Bitte in ein paar Minuten nochmals versuchen."
+                      : "Das Lagerpasswort ist nicht korrekt."}
                 </p>
               ) : null}
               <button

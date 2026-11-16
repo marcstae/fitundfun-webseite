@@ -46,21 +46,27 @@ export async function pruefeLagerpasswortHash(value: string, encoded: string): P
 }
 
 async function lagerpasswortEintrag(): Promise<LagerpasswortRecord> {
-  const pb = await familyPocketBase();
-  const result = await pb.collection("lagerpasswort").getList<LagerpasswortRecord>(1, 1);
+  const lesen = async () =>
+    (await familyPocketBase()).collection("lagerpasswort").getList<LagerpasswortRecord>(1, 1);
+  // Nach einer Wiederherstellung kann das zwischengespeicherte Token ungültig sein: Der 401 setzt es
+  // zurück (afterSend), der zweite Versuch meldet sich neu an.
+  const result = await lesen().catch((e) => (e?.status === 401 ? lesen() : Promise.reject(e)));
   if (!result.items[0]) throw new Error("Lagerpasswort ist nicht eingerichtet");
   return result.items[0];
 }
 
-/** Ohne im Cockpit gesetztes Lagerpasswort bleibt Geschütztes zu. */
+/**
+ * Ohne im Cockpit gesetztes Lagerpasswort bleibt Geschütztes zu (false). Technische Fehler
+ * (PocketBase nicht erreichbar, falsches FAMILY_ACCESS_SECRET) werfen: Sie sind kein falsches Passwort.
+ */
 export async function istLagerpasswort(value: string): Promise<boolean> {
-  if (!value || !familySecret) return false;
-  try {
-    const config = await lagerpasswortEintrag();
-    return !!config.password_hash && (await pruefeLagerpasswortHash(value, config.password_hash));
-  } catch {
-    return false;
-  }
+  if (!familySecret) throw new Error("FAMILY_ACCESS_SECRET nicht gesetzt");
+  if (!value) return false;
+  const config = await lagerpasswortEintrag().catch((e: Error) => {
+    if (e.message === "Lagerpasswort ist nicht eingerichtet") return null;
+    throw e;
+  });
+  return !!config?.password_hash && (await pruefeLagerpasswortHash(value, config.password_hash));
 }
 
 export async function familyAccessCookieValue(): Promise<string> {
@@ -81,9 +87,8 @@ export async function hasFamilyAccess(value?: string): Promise<boolean> {
 }
 
 // Token des Familienkontos wiederverwenden, statt bei jedem Aufruf neu anzumelden
-// (PocketBase begrenzt Anmeldungen pro IP, und alle kommen vom Webserver). Höchstens 5 Minuten:
-// Nach einer Wiederherstellung kann es ungültig sein, und PocketBase behandelt ungültige Tokens
-// still als Gast. Geschütztes fehlte dann bis zum Neustart des Webservers.
+// (PocketBase begrenzt Anmeldungen pro IP, und alle kommen vom Webserver). Höchstens 5 Minuten,
+// zusätzlich zum Zurücksetzen bei 401: Nach einer Wiederherstellung kann es ungültig sein.
 let familyToken = "";
 let familyTokenSeit = 0;
 const FAMILY_TOKEN_MAX_MS = 5 * 60 * 1000;
@@ -157,6 +162,19 @@ export function unlockAttemptAllowed(ip: string): boolean {
     within(globalAttempts, MAX_GLOBAL_UNLOCK_ATTEMPTS) &&
     within(unlockAttempts.get(ip), MAX_UNLOCK_ATTEMPTS)
   );
+}
+
+/**
+ * Gibt einen reservierten Versuch zurück (richtiges Passwort oder technischer Fehler). Reserviert wird
+ * mit recordUnlockFailure vor der asynchronen Prüfung, damit gleichzeitige Anfragen das Limit nicht
+ * unterlaufen.
+ */
+export function releaseUnlockAttempt(ip: string): void {
+  const frei = (entry: Attempts) =>
+    Date.now() <= entry.resetAt && entry.count > 0 ? { ...entry, count: entry.count - 1 } : entry;
+  globalAttempts = frei(globalAttempts);
+  const entry = unlockAttempts.get(ip);
+  if (entry) unlockAttempts.set(ip, frei(entry));
 }
 
 export function recordUnlockFailure(ip: string): void {

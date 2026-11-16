@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  blattSchliessen,
+  blattVersatz,
   frischeSchneehoehe,
   letzteSchneemessung,
   telefonAnzeige,
@@ -150,4 +152,18 @@ test("telefonAnzeige/telefonLink: einheitlich anzeigen, Anruf-Link in E.164", ()
   assert.equal(telefonLink("+49 30 1234567"), "+49301234567");
   assert.equal(telefonLink("0049 30 1234567"), "+49301234567");
   assert.equal(telefonAnzeige("079 123 45"), "079 123 45"); // unvollständig: unverändert
+});
+
+test("Handy-Menü: Schliessen ab einem Viertel der Höhe oder bei schnellem Wisch, sonst zurückfedern", () => {
+  assert.equal(blattSchliessen(200, 900, 800), true); // langsam, aber ein Viertel
+  assert.equal(blattSchliessen(150, 900, 800), false); // langsam und zu kurz
+  assert.equal(blattSchliessen(50, 60, 800), true); // kurzer schneller Wisch
+  assert.equal(blattSchliessen(-80, 50, 800), false); // nach oben schliesst nie
+});
+
+test("Handy-Menü: nach unten 1:1, nach oben gedämpft und nie weiter als gezogen", () => {
+  assert.equal(blattVersatz(120), 120);
+  assert.equal(blattVersatz(-3), 0); // kleine Bewegung nach oben: keine Reaktion
+  const hoch = blattVersatz(-100);
+  assert.ok(hoch < 0 && hoch > -25, `gedämpft: ${hoch}`);
 });

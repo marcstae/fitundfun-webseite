@@ -234,3 +234,14 @@ export function telefonLink(roh: string): string {
   if (roh.trim().startsWith("+")) return `+${ziffern}`;
   return ziffern.startsWith("00") ? `+${ziffern.slice(2)}` : ziffern;
 }
+
+// Handy-Menü als Blatt von unten, Werte wie Vaul (Radix-Drawer von Emil Kowalski).
+/** Versatz beim Ziehen: nach unten 1:1, nach oben gedämpft wie ein Gummiband. */
+export function blattVersatz(dy: number): number {
+  return dy >= 0 ? dy : Math.min(0, 8 * (2 - Math.log(1 - dy)));
+}
+
+/** Schliessen ab einem Viertel der Höhe oder bei einem schnellen Wisch (über 0,4 px/ms). */
+export function blattSchliessen(dy: number, dauerMs: number, hoehe: number): boolean {
+  return dy > 0 && (dy >= hoehe * 0.25 || dy / Math.max(dauerMs, 1) > 0.4);
+}

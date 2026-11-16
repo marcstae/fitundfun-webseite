@@ -15,7 +15,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { blattSchliessen, blattVersatz, cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers";
 
 const NAV = [
@@ -39,6 +39,10 @@ export function SiteHeader({
   lagerZeitraum: string | null;
 }) {
   const [open, setOpen] = React.useState(false);
+  const blatt = React.useRef<HTMLDivElement>(null);
+  const abdunkler = React.useRef<HTMLDivElement>(null);
+  const zug = React.useRef<{ x: number; y: number; zeit: number; dy: number; aktiv: boolean } | null>(null);
+  const zuletztGescrollt = React.useRef(0);
   const pathname = usePathname();
   const { isEditor, logout } = useAuth();
   const isHome = pathname === "/";
@@ -65,6 +69,64 @@ export function SiteHeader({
     document.head.append(meta);
     return () => meta.remove();
   }, [open]);
+
+  // Handy, verstecktes Extra: Nach unten wischen schliesst das Menü wie ein Blatt unter iOS.
+  // Regeln wie Vaul (Radix-Drawer von Emil Kowalski): Richtung erst nach 10 px festlegen, damit
+  // Antippen nichts bewegt; nur ziehen, wenn der Inhalt ganz oben steht, nicht eben gescrollt wurde
+  // und das Öffnen fertig ist. Natives Scrollen und Nachfedern unterdrückt Radix (RemoveScroll),
+  // solange der Inhalt nicht weiter nach oben scrollen kann.
+  const zurueck = () => {
+    const el = blatt.current;
+    const dunkel = abdunkler.current;
+    zug.current = null;
+    if (el) Object.assign(el.style, { transition: "", transform: "", willChange: "" });
+    if (dunkel) Object.assign(dunkel.style, { transition: "", opacity: "" });
+  };
+  const ziehen = {
+    onTouchStart(event: React.TouchEvent) {
+      const el = blatt.current;
+      if (!el || el.getAnimations().length > 0 || window.matchMedia("(min-width: 40rem)").matches) return;
+      const t = event.touches[0];
+      zug.current = { x: t.clientX, y: t.clientY, zeit: event.timeStamp, dy: 0, aktiv: false };
+    },
+    onTouchMove(event: React.TouchEvent) {
+      const el = blatt.current;
+      const z = zug.current;
+      if (!el || !z) return;
+      const t = event.touches[0];
+      const dx = t.clientX - z.x;
+      const dy = t.clientY - z.y;
+      if (!z.aktiv) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return;
+        // Seitwärts, nach oben, gescrollt oder eben noch gescrollt (Schwung bis oben): Die Geste gehört dem Inhalt.
+        if (dy <= Math.abs(dx) || el.scrollTop > 0 || event.timeStamp - zuletztGescrollt.current < 100) {
+          zug.current = null;
+          return;
+        }
+        z.aktiv = true;
+        Object.assign(el.style, { transition: "none", willChange: "transform" });
+        if (abdunkler.current) abdunkler.current.style.transition = "none";
+      }
+      z.dy = dy;
+      el.style.transform = `translateY(${blattVersatz(dy)}px)`;
+      if (abdunkler.current) abdunkler.current.style.opacity = String(1 - Math.max(0, dy) / el.offsetHeight);
+    },
+    onTouchEnd(event: React.TouchEvent) {
+      const el = blatt.current;
+      const z = zug.current;
+      if (!el || !z?.aktiv) {
+        zug.current = null;
+        return;
+      }
+      if (!blattSchliessen(z.dy, event.timeStamp - z.zeit, el.offsetHeight)) return zurueck();
+      zug.current = null;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return setOpen(false);
+      // Mit den Übergängen aus den Klassen hinausgleiten, dann schliessen.
+      Object.assign(el.style, { transition: "", transform: "translateY(100%)", willChange: "" });
+      if (abdunkler.current) Object.assign(abdunkler.current.style, { transition: "", opacity: "0" });
+      window.setTimeout(() => setOpen(false), 300);
+    },
+  };
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -125,14 +187,20 @@ export function SiteHeader({
       </header>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-navy-950/92 transition-opacity duration-200 starting:opacity-0" />
+        <Dialog.Overlay ref={abdunkler} className="fixed inset-0 z-50 bg-navy-950/92 transition-opacity duration-200 starting:opacity-0" />
         <Dialog.Content
+          ref={blatt}
+          {...ziehen}
+          onTouchCancel={zurueck}
+          onScroll={(event) => {
+            zuletztGescrollt.current = event.timeStamp;
+          }}
           aria-describedby={undefined}
           // Ein Handler für alle Links: schliesst auch bei Hash-Links und der aktuellen Seite.
           onClick={(event) => {
             if ((event.target as Element).closest("a")) setOpen(false);
           }}
-          className="fixed inset-x-0 bottom-0 z-[51] flex max-h-[calc(100dvh-3rem-env(safe-area-inset-top))] flex-col overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink shadow-[0_-12px_40px_rgba(14,28,48,0.18)] outline-none transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:translate-y-full sm:inset-y-0 sm:left-auto sm:max-h-none sm:w-96 sm:rounded-l-[1.75rem] sm:rounded-tr-none sm:px-5 sm:pr-[max(1.25rem,env(safe-area-inset-right))] sm:starting:translate-x-full sm:starting:translate-y-0"
+          className="fixed inset-x-0 bottom-0 top-[calc(1.5rem+env(safe-area-inset-top))] z-[51] flex flex-col overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink shadow-[0_-12px_40px_rgba(14,28,48,0.18)] outline-none transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:translate-y-full sm:inset-y-0 sm:left-auto sm:w-96 sm:rounded-l-[1.75rem] sm:rounded-tr-none sm:px-5 sm:pr-[max(1.25rem,env(safe-area-inset-right))] sm:starting:translate-x-full sm:starting:translate-y-0"
         >
           <Dialog.Title className="sr-only">Menü</Dialog.Title>
 
@@ -152,7 +220,7 @@ export function SiteHeader({
             </Dialog.Close>
           </div>
 
-          <nav aria-label="Hauptnavigation" className="shrink-0">
+          <nav aria-label="Hauptnavigation" className="mb-3 shrink-0">
             {lagerHref ? (
               <div className="rounded-[1.25rem] bg-ink p-2 text-white">
                 <Link
@@ -221,7 +289,7 @@ export function SiteHeader({
 
           <nav
             aria-label="Weitere Links"
-            className="mt-3 shrink-0 border-t border-ink/[0.08] pt-2 sm:mt-auto"
+            className="mt-auto shrink-0 border-t border-ink/[0.08] pt-2"
           >
             {/* mx-3 + px-2 der Links = 20 px: Text auf derselben Linie wie der Inhalt im Lagerkasten
                 (p-2 + px-3) und die Symbole der Menüeinträge (px-5). */}

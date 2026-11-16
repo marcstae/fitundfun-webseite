@@ -4,9 +4,9 @@ import { cookies, headers } from "next/headers";
 import type { UnlockState } from "@/components/family-unlock";
 import {
   FAMILY_ACCESS_COOKIE,
-  FAMILY_ACCESS_MAX_AGE,
   clientIp,
   familyAccessCookieValue,
+  familyCookieOptionen,
   istLagerpasswort,
   recordUnlockFailure,
   releaseUnlockAttempt,
@@ -37,12 +37,6 @@ export async function unlockFamilyAccess(_state: UnlockState, formData: FormData
   }
   releaseUnlockAttempt(ip);
 
-  (await cookies()).set(FAMILY_ACCESS_COOKIE, cookieWert, {
-    httpOnly: true,
-    maxAge: FAMILY_ACCESS_MAX_AGE,
-    path: "/",
-    sameSite: "lax",
-    secure: headerStore.get("x-forwarded-proto") === "https",
-  });
+  (await cookies()).set(FAMILY_ACCESS_COOKIE, cookieWert, familyCookieOptionen(headerStore.get("x-forwarded-proto")));
   return { ok: true };
 }

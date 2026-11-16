@@ -7,7 +7,18 @@ import type { LagerpasswortRecord } from "./pb-types.ts";
 export const FAMILY_ACCESS_COOKIE = "fitundfun_family_access";
 // 400 Tage = Browser-Obergrenze für Cookies; jeder geschützte Download verlängert sie wieder.
 // Ungültig wird der Zugang nur, wenn die Lagerleitung ein neues Lagerpasswort setzt.
-export const FAMILY_ACCESS_MAX_AGE = 400 * 24 * 60 * 60;
+const FAMILY_ACCESS_MAX_AGE = 400 * 24 * 60 * 60;
+
+/** Einstellungen des Freischalt-Cookies (Freischalten und Verlängern beim Download). */
+export function familyCookieOptionen(forwardedProto: string | null) {
+  return {
+    httpOnly: true,
+    maxAge: FAMILY_ACCESS_MAX_AGE,
+    path: "/",
+    sameSite: "lax" as const,
+    secure: forwardedProto === "https",
+  };
+}
 
 const familyEmail = process.env.FAMILY_ACCESS_EMAIL || "familie@fitundfun.local";
 // Internes Servergeheimnis: Cookie-Signatur und Passwort des PB-Familienkontos.

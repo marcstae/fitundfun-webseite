@@ -2,7 +2,7 @@ import type PocketBase from "pocketbase";
 import { NextRequest, NextResponse } from "next/server";
 import {
   FAMILY_ACCESS_COOKIE,
-  FAMILY_ACCESS_MAX_AGE,
+  familyCookieOptionen,
   familyPocketBase,
   mitFamilienkonto,
   hasFamilyAccess,
@@ -49,13 +49,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // Zugang bei jeder Nutzung um die maximale Dauer verlängern: Wer regelmässig Dokumente
     // öffnet, muss das Lagerpasswort erst nach einem Passwortwechsel wieder eingeben.
     if (familieOk && zugang && response.ok) {
-      response.cookies.set(FAMILY_ACCESS_COOKIE, zugang, {
-        httpOnly: true,
-        maxAge: FAMILY_ACCESS_MAX_AGE,
-        path: "/",
-        sameSite: "lax",
-        secure: req.headers.get("x-forwarded-proto") === "https",
-      });
+      response.cookies.set(FAMILY_ACCESS_COOKIE, zugang, familyCookieOptionen(req.headers.get("x-forwarded-proto")));
     }
     return response;
   }

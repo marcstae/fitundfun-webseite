@@ -151,7 +151,8 @@ curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
 <details>
 <summary><b>🔧 Wartung</b></summary>
 
-- Dependabot-Pull-Requests mergen, wenn CI grün ist, dann mit `--pull` deployen. Zurückgestellt, bis Next.js sie unterstützt: TypeScript 7, ESLint 10.
+- Dependabot-Pull-Requests mergen, wenn CI grün ist, dann mit `--pull` deployen. ESLint 10 ist zurückgestellt, bis die Plugins in `eslint-config-next` es unterstützen.
+- TypeScript läuft nach [Microsofts Empfehlung](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0) parallel: `tsc` ist TypeScript 7 (`@typescript/native`), `typescript` ein Alias auf `@typescript/typescript6`, weil typescript-eslint die Programmierschnittstelle braucht, die erst TypeScript 7.1 wieder hat. Die npm-Warnung zum optionalen Peer `@typescript/native` ist bis dahin erwartet. Mit 7.1 beide Einträge auf `typescript@7` zusammenführen.
 - `npm audit --omit=dev` muss 0 zeigen; Meldungen nur in Entwicklungswerkzeugen betreffen die Website nicht.
 - PocketBase: `PB_VERSION` in `pb/Dockerfile` anheben. Laut Upstream ist 0.40.6 die letzte Version auf GitHub; für neuere die Download-URL anpassen.
 

@@ -12,9 +12,11 @@ updates:
       npm-minor-patch:
         update-types: [minor, patch]
     ignore:
-      # Zurückgestellt, bis Next.js sie unterstützt (README «Wartung»).
+      # TypeScript läuft parallel (README «Wartung»): tsc ist TypeScript 7 (@typescript/native),
+      # «typescript» ein Alias auf @typescript/typescript6 für typescript-eslint, bis TS 7.1 eine API hat.
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # Zurückgestellt, bis die Plugins in eslint-config-next ESLint 10 unterstützen.
       - dependency-name: eslint
         update-types: ["version-update:semver-major"]
 

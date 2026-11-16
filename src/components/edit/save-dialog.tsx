@@ -69,7 +69,9 @@ export function useFormular<T>(start: T, sonstGeaendert = false) {
   const [gespeichert, setGespeichert] = React.useState(() => JSON.stringify(start));
   const dirty = JSON.stringify(wert) !== gespeichert || sonstGeaendert;
   useLeaveGuard(dirty);
-  return { wert, setWert, dirty, alsGespeichert: (neu: T) => setGespeichert(JSON.stringify(neu)) };
+  // Stabil, damit es in useCallback/useEffect-Abhängigkeiten stehen kann (z. B. nach dem Laden).
+  const alsGespeichert = React.useCallback((neu: T) => setGespeichert(JSON.stringify(neu)), []);
+  return { wert, setWert, dirty, alsGespeichert };
 }
 
 /**

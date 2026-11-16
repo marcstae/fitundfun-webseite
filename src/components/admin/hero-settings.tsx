@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dropzone, useDateiUrl } from "@/components/edit/dropzone";
-import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
+import { DirtySaveBar, useFormular, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser, publicFileUrl } from "@/lib/pb";
 import { revalidieren } from "@/lib/revalidate";
 import type { EinstellungenRecord } from "@/lib/pb-types";
@@ -15,14 +15,16 @@ const HERO_TITEL = "fit&fun Lager Brigels";
 
 export function HeroSettings({ initial }: { initial: EinstellungenRecord | null }) {
   const [record, setRecord] = React.useState(initial);
-  const [title, setTitle] = React.useState(initial?.hero_titel || HERO_TITEL);
   const [video, setVideo] = React.useState<File | null>(null);
   const [poster, setPoster] = React.useState<File | null>(null);
   const [removeVideo, setRemoveVideo] = React.useState(false);
   const [removePoster, setRemovePoster] = React.useState(false);
+  // Dateien gehören nicht in den Schnappschuss (JSON), sie zählen über den zweiten Parameter.
+  const { wert: title, setWert: setTitle, dirty, alsGespeichert } = useFormular(
+    initial?.hero_titel || HERO_TITEL,
+    !!video || !!poster || removeVideo || removePoster
+  );
   const { saving, run } = useSaveAction();
-  const dirty = title !== (record?.hero_titel || HERO_TITEL) || !!video || !!poster || removeVideo || removePoster;
-  useLeaveGuard(dirty);
   // Vorschau: neu gewählte Datei, sonst die gespeicherte, sonst die mitgelieferten Standardmedien.
   const neuesVideo = useDateiUrl(video);
   const neuesPoster = useDateiUrl(poster);
@@ -48,7 +50,9 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
         ? await pbBrowser().collection("einstellungen").update<EinstellungenRecord>(record.id, form)
         : await pbBrowser().collection("einstellungen").create<EinstellungenRecord>(form);
       setRecord(saved);
-      setTitle(saved.hero_titel || HERO_TITEL);
+      const gespeicherterTitel = saved.hero_titel || HERO_TITEL;
+      setTitle(gespeicherterTitel);
+      alsGespeichert(gespeicherterTitel);
       setVideo(null);
       setPoster(null);
       setRemoveVideo(false);

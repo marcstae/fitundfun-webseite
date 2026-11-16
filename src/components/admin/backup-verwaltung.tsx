@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArchiveRestore, CalendarClock, DatabaseBackup, Download, HardDrive, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers";
-import { useLeaveGuard } from "@/components/edit/save-dialog";
+import { useFormular } from "@/components/edit/save-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +26,7 @@ import {
   type BackupDatei,
   type BackupStand,
   type Rhythmus,
+  type Zeitplan,
 } from "@/lib/backup";
 import { pbBrowser } from "@/lib/pb";
 import { revalidieren } from "@/lib/revalidate";
@@ -73,16 +74,14 @@ export function BackupVerwaltung() {
   const [ladeFehler, setLadeFehler] = React.useState(false);
   const [beschaeftigt, setBeschaeftigt] = React.useState<"" | "sichern" | "hochladen" | "zeitplan" | "wiederherstellen">("");
   const [ziel, setZiel] = React.useState<BackupDatei | null>(null);
-  const [rhythmus, setRhythmus] = React.useState<Rhythmus>("taeglich");
-  const [uhrzeit, setUhrzeit] = React.useState("03:00");
-  const [wochentag, setWochentag] = React.useState(0);
-  const [behalten, setBehalten] = React.useState(7);
-  const [gespeichert, setGespeichert] = React.useState("");
+  const {
+    wert: zeitplan,
+    setWert: setZeitplan,
+    dirty: zeitplanGeaendert,
+    alsGespeichert,
+  } = useFormular<Zeitplan & { behalten: number }>({ rhythmus: "taeglich", uhrzeit: "03:00", wochentag: 0, behalten: 7 });
+  const { rhythmus, uhrzeit, wochentag, behalten } = zeitplan;
   const dateiFeld = React.useRef<HTMLInputElement>(null);
-
-  const formular = JSON.stringify({ rhythmus, uhrzeit, wochentag, behalten });
-  const zeitplanGeaendert = !!gespeichert && formular !== gespeichert;
-  useLeaveGuard(zeitplanGeaendert);
 
   const laden = React.useCallback(async (zeitplanUebernehmen = false) => {
     try {
@@ -93,16 +92,15 @@ export function BackupVerwaltung() {
       if (zeitplanUebernehmen) {
         const plan = zeitplanAusCron(neu.cron) ?? { rhythmus: "taeglich" as const, uhrzeit: "03:00", wochentag: 0 };
         const anzahl = neu.behalten || 7;
-        setRhythmus(plan.rhythmus);
-        setUhrzeit(plan.uhrzeit);
-        setWochentag(plan.wochentag);
-        setBehalten(anzahl);
-        setGespeichert(JSON.stringify({ ...plan, behalten: anzahl }));
+        // Dasselbe Objekt für Formular und Schnappschuss, sonst bliebe «ungespeichert» stehen.
+        const geladen = { ...plan, behalten: anzahl };
+        setZeitplan(geladen);
+        alsGespeichert(geladen);
       }
     } catch {
       setLadeFehler(true);
     }
-  }, []);
+  }, [alsGespeichert, setZeitplan]);
 
   React.useEffect(() => {
     void laden(true);
@@ -150,7 +148,7 @@ export function BackupVerwaltung() {
         method: "PUT",
         body: { cron: cronAusZeitplan({ rhythmus, uhrzeit, wochentag }), behalten },
       });
-      setGespeichert(formular);
+      alsGespeichert(zeitplan);
       toast.success(rhythmus === "aus" ? "Automatische Backups ausgeschaltet." : "Zeitplan gespeichert.");
       await laden();
     } catch (error) {
@@ -295,7 +293,7 @@ export function BackupVerwaltung() {
           <form onSubmit={zeitplanSpeichern} className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="backup-rhythmus">Automatisch sichern</Label>
-              <select id="backup-rhythmus" value={rhythmus} onChange={(event) => setRhythmus(event.target.value as Rhythmus)} className={SELECT}>
+              <select id="backup-rhythmus" value={rhythmus} onChange={(event) => setZeitplan({ ...zeitplan, rhythmus: event.target.value as Rhythmus })} className={SELECT}>
                 <option value="taeglich">Täglich</option>
                 <option value="woechentlich">Wöchentlich</option>
                 <option value="aus">Aus</option>
@@ -304,7 +302,7 @@ export function BackupVerwaltung() {
             {rhythmus === "woechentlich" ? (
               <div className="space-y-2">
                 <Label htmlFor="backup-wochentag">Wochentag</Label>
-                <select id="backup-wochentag" value={wochentag} onChange={(event) => setWochentag(Number(event.target.value))} className={SELECT}>
+                <select id="backup-wochentag" value={wochentag} onChange={(event) => setZeitplan({ ...zeitplan, wochentag: Number(event.target.value) })} className={SELECT}>
                   {WOCHENTAGE.map((tag, index) => (
                     <option key={tag} value={index}>{tag}</option>
                   ))}
@@ -315,7 +313,7 @@ export function BackupVerwaltung() {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="backup-uhrzeit">Uhrzeit</Label>
-                  <Input id="backup-uhrzeit" type="time" required value={uhrzeit} onChange={(event) => setUhrzeit(event.target.value)} />
+                  <Input id="backup-uhrzeit" type="time" required value={uhrzeit} onChange={(event) => setZeitplan({ ...zeitplan, uhrzeit: event.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="backup-behalten">Automatische Backups behalten</Label>
@@ -327,7 +325,7 @@ export function BackupVerwaltung() {
                     max={60}
                     required
                     value={behalten}
-                    onChange={(event) => setBehalten(Math.round(Number(event.target.value)))}
+                    onChange={(event) => setZeitplan({ ...zeitplan, behalten: Math.round(Number(event.target.value)) })}
                   />
                 </div>
               </>

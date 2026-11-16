@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dropzone } from "./dropzone";
-import { SaveDialog, useSaveAction } from "./save-dialog";
+import { reihenfolgeAendern, SaveDialog, useSaveAction } from "./save-dialog";
 import type { DokumentRecord } from "@/lib/pb-types";
 
 const ICON_BUTTON =
@@ -27,27 +27,10 @@ export function EditableDokumentList({
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<DokumentRecord | null>(null);
 
-  const move = async (index: number, delta: -1 | 1) => {
-    const target = index + delta;
-    if (target < 0 || target >= items.length) return;
-    const previous = items;
-    const swapped = [...items];
-    [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
-    const next = swapped.map((document, sort) => ({ ...document, sort: sort + 1 }));
-    setItems(next);
-    try {
-      await Promise.all(
-        next.map((document) =>
-          pbBrowser().collection(document.collection).update(document.id, { sort: document.sort })
-        )
-      );
-      await revalidieren();
-      toast.success("Reihenfolge gespeichert");
-    } catch {
-      setItems(previous);
-      toast.error("Reihenfolge konnte nicht gespeichert werden.");
-    }
-  };
+  const move = (index: number, delta: -1 | 1) =>
+    reihenfolgeAendern(items, setItems, index, delta, (document) =>
+      pbBrowser().collection(document.collection).update(document.id, { sort: document.sort })
+    );
 
   const copyLink = async (document: DokumentRecord) => {
     const url = new URL(documentHref(document), window.location.origin).href;

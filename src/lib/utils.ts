@@ -245,3 +245,12 @@ export function blattVersatz(dy: number): number {
 export function blattSchliessen(dy: number, dauerMs: number, hoehe: number): boolean {
   return dy > 0 && (dy >= hoehe * 0.25 || dy / Math.max(dauerMs, 1) > 0.4);
 }
+
+/** Eintrag um eine Stelle nach oben (-1) oder unten (1) tauschen; am Rand dieselbe Liste zurück. */
+export function getauscht<T>(items: T[], index: number, delta: -1 | 1): T[] {
+  const ziel = index + delta;
+  if (ziel < 0 || ziel >= items.length) return items;
+  const neu = [...items];
+  [neu[index], neu[ziel]] = [neu[ziel], neu[index]];
+  return neu;
+}

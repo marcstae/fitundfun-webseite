@@ -26,7 +26,7 @@ import {
 } from "@/lib/inhaltsseiten";
 import { pbBrowser, publicFileUrl } from "@/lib/pb";
 import { revalidieren } from "@/lib/revalidate";
-import { isValidHttpUrl } from "@/lib/utils";
+import { getauscht, isValidHttpUrl } from "@/lib/utils";
 import type { SeiteRecord } from "@/lib/pb-types";
 
 const ICON_BUTTON =
@@ -279,11 +279,7 @@ function EintragListe({
 }) {
   const aendern = (index: number, teil: Partial<Eintrag>) =>
     onChange(eintraege.map((e, i) => (i === index ? { ...e, ...teil } : e)));
-  const verschieben = (index: number, delta: -1 | 1) => {
-    const neu = [...eintraege];
-    [neu[index], neu[index + delta]] = [neu[index + delta], neu[index]];
-    onChange(neu);
-  };
+  const verschieben = (index: number, delta: -1 | 1) => onChange(getauscht(eintraege, index, delta));
 
   return (
     <div className="space-y-3">

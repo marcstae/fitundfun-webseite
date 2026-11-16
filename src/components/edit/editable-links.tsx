@@ -8,7 +8,7 @@ import { revalidieren } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SaveDialog, useSaveAction } from "./save-dialog";
+import { reihenfolgeAendern, SaveDialog, useSaveAction } from "./save-dialog";
 import { isValidHttpUrl } from "@/lib/utils";
 import type { LinkRecord } from "@/lib/pb-types";
 
@@ -37,23 +37,10 @@ export function EditableLinks() {
     load();
   }, [load]);
 
-  const move = async (index: number, delta: -1 | 1) => {
-    const target = index + delta;
-    if (target < 0 || target >= items.length) return;
-    const previous = items;
-    const swapped = [...items];
-    [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
-    const next = swapped.map((item, sort) => ({ ...item, sort: sort + 1 }));
-    setItems(next);
-    try {
-      await Promise.all(next.map((item) => pbBrowser().collection("links").update(item.id, { sort: item.sort })));
-      await revalidieren();
-      toast.success("Reihenfolge gespeichert");
-    } catch {
-      setItems(previous);
-      toast.error("Reihenfolge konnte nicht gespeichert werden.");
-    }
-  };
+  const move = (index: number, delta: -1 | 1) =>
+    reihenfolgeAendern(items, setItems, index, delta, (item) =>
+      pbBrowser().collection("links").update(item.id, { sort: item.sort })
+    );
 
   const del = async (it: LinkRecord) => {
     if (!window.confirm(`Link «${it.titel}» löschen?`)) return;

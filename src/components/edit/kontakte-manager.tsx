@@ -8,7 +8,7 @@ import { revalidieren } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SaveDialog, useSaveAction } from "./save-dialog";
+import { reihenfolgeAendern, SaveDialog, useSaveAction } from "./save-dialog";
 import { telefonAnzeige } from "@/lib/utils";
 import type { KontaktgruppeRecord, KontaktRecord } from "@/lib/pb-types";
 
@@ -17,23 +17,10 @@ export function KontakteManager({ existing, gruppen }: { existing: KontaktRecord
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<KontaktRecord | null>(null);
 
-  const move = async (index: number, delta: -1 | 1) => {
-    const target = index + delta;
-    if (target < 0 || target >= items.length) return;
-    const previous = items;
-    const swapped = [...items];
-    [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
-    const next = swapped.map((item, sort) => ({ ...item, sort: sort + 1 }));
-    setItems(next);
-    try {
-      await Promise.all(next.map((item) => pbBrowser().collection("kontakte").update(item.id, { sort: item.sort })));
-      await revalidieren();
-      toast.success("Reihenfolge gespeichert");
-    } catch {
-      setItems(previous);
-      toast.error("Reihenfolge konnte nicht gespeichert werden.");
-    }
-  };
+  const move = (index: number, delta: -1 | 1) =>
+    reihenfolgeAendern(items, setItems, index, delta, (item) =>
+      pbBrowser().collection("kontakte").update(item.id, { sort: item.sort })
+    );
   const del = async (it: KontaktRecord) => {
     if (!window.confirm(`«${it.name}» löschen?`)) return;
     try {
@@ -238,23 +225,10 @@ export function GruppenManager({ existing, kontakte }: { existing: Kontaktgruppe
   const [editing, setEditing] = React.useState<KontaktgruppeRecord | null>(null);
   const anzahl = (id: string) => kontakte.filter((k) => k.gruppe === id).length;
 
-  const move = async (index: number, delta: -1 | 1) => {
-    const target = index + delta;
-    if (target < 0 || target >= items.length) return;
-    const previous = items;
-    const swapped = [...items];
-    [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
-    const next = swapped.map((item, sort) => ({ ...item, sort: sort + 1 }));
-    setItems(next);
-    try {
-      await Promise.all(next.map((item) => pbBrowser().collection("kontaktgruppen").update(item.id, { sort: item.sort })));
-      await revalidieren();
-      toast.success("Reihenfolge gespeichert");
-    } catch {
-      setItems(previous);
-      toast.error("Reihenfolge konnte nicht gespeichert werden.");
-    }
-  };
+  const move = (index: number, delta: -1 | 1) =>
+    reihenfolgeAendern(items, setItems, index, delta, (item) =>
+      pbBrowser().collection("kontaktgruppen").update(item.id, { sort: item.sort })
+    );
   const del = async (it: KontaktgruppeRecord) => {
     const pb = pbBrowser();
     try {

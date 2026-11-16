@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formularOffen, VERWERFEN } from "@/lib/leave-guard";
+import { revalidieren } from "@/lib/revalidate";
+import { getauscht } from "@/lib/utils";
 
 /** Verständlicher Grund aus einer PocketBase-Validierung, sonst null. */
 function fieldProblem(error: unknown): string | null {
@@ -164,4 +166,29 @@ export function SaveDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * Nach oben/unten in einer sofort gespeicherten Liste: gleich anzeigen, alle Positionen neu
+ * durchnummeriert speichern, bei einem Fehler die alte Reihenfolge zurück.
+ */
+export async function reihenfolgeAendern<T extends { id: string; sort: number }>(
+  items: T[],
+  setItems: (items: T[]) => void,
+  index: number,
+  delta: -1 | 1,
+  speichern: (item: T) => Promise<unknown>
+) {
+  const getauschteListe = getauscht(items, index, delta);
+  if (getauschteListe === items) return;
+  const next = getauschteListe.map((item, sort) => ({ ...item, sort: sort + 1 }));
+  setItems(next);
+  try {
+    await Promise.all(next.map(speichern));
+    await revalidieren();
+    toast.success("Reihenfolge gespeichert");
+  } catch {
+    setItems(items);
+    toast.error("Reihenfolge konnte nicht gespeichert werden.");
+  }
 }

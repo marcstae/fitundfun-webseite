@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   blattSchliessen,
+  getauscht,
   blattVersatz,
   frischeSchneehoehe,
   letzteSchneemessung,
@@ -166,4 +167,13 @@ test("Handy-Menü: nach unten 1:1, nach oben gedämpft und nie weiter als gezoge
   assert.equal(blattVersatz(-3), 0); // kleine Bewegung nach oben: keine Reaktion
   const hoch = blattVersatz(-100);
   assert.ok(hoch < 0 && hoch > -25, `gedämpft: ${hoch}`);
+});
+
+test("getauscht: tauscht mit dem Nachbarn, am Rand bleibt dieselbe Liste", () => {
+  const liste = ["a", "b", "c"];
+  assert.deepEqual(getauscht(liste, 1, -1), ["b", "a", "c"]);
+  assert.deepEqual(getauscht(liste, 1, 1), ["a", "c", "b"]);
+  assert.equal(getauscht(liste, 0, -1), liste);
+  assert.equal(getauscht(liste, 2, 1), liste);
+  assert.deepEqual(liste, ["a", "b", "c"]);
 });

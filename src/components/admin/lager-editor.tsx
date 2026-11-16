@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditableDokumentList } from "@/components/edit/editable-dokument-list";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
-import { DirtySaveBar, Hinweis, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
+import { DirtySaveBar, Hinweis, useFormular, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
 import { revalidieren } from "@/lib/revalidate";
 import { isValidHttpUrl, isoToDateInput } from "@/lib/utils";
@@ -27,22 +27,43 @@ interface LoadedData {
   fotoalbum: FotoalbumRecord | null;
 }
 
+/** Felder des Formulars, so wie sie in den Eingaben stehen. */
+function formularAus(lager: LagerRecord, fotoalbum: FotoalbumRecord | null) {
+  return {
+    jahr: String(lager.jahr),
+    titel: lager.titel || "",
+    von: dateInput(lager.datum_von),
+    bis: dateInput(lager.datum_bis),
+    beschreibung: lager.beschreibung || "",
+    teilnehmer: lager.teilnehmer ? String(lager.teilnehmer) : "",
+    aktivitaeten: (lager.aktivitaeten || []).join("\n"),
+    fotoUrl: fotoalbum?.url || "",
+    videoUrl: lager.youtube_url || "",
+    quelleUrl: lager.quelle_url || "",
+    status: (lager.status || "entwurf") as LagerPublikationsstatus,
+  };
+}
+type LagerFormular = ReturnType<typeof formularAus>;
+const LEER: LagerFormular = {
+  jahr: "",
+  titel: "",
+  von: "",
+  bis: "",
+  beschreibung: "",
+  teilnehmer: "",
+  aktivitaeten: "",
+  fotoUrl: "",
+  videoUrl: "",
+  quelleUrl: "",
+  status: "entwurf",
+};
+
 export function LagerEditor({ id }: { id: string }) {
   const router = useRouter();
   const [loaded, setLoaded] = React.useState<LoadedData | null>(null);
   const [loadError, setLoadError] = React.useState(false);
-  const [dirty, setDirty] = React.useState(false);
-  const [jahr, setJahr] = React.useState("");
-  const [titel, setTitel] = React.useState("");
-  const [von, setVon] = React.useState("");
-  const [bis, setBis] = React.useState("");
-  const [beschreibung, setBeschreibung] = React.useState("");
-  const [teilnehmer, setTeilnehmer] = React.useState("");
-  const [aktivitaeten, setAktivitaeten] = React.useState("");
-  const [fotoUrl, setFotoUrl] = React.useState("");
-  const [videoUrl, setVideoUrl] = React.useState("");
-  const [quelleUrl, setQuelleUrl] = React.useState("");
-  const [status, setStatus] = React.useState<LagerPublikationsstatus>("entwurf");
+  const { wert: formular, setWert: setFormular, dirty, alsGespeichert } = useFormular(LEER);
+  const { jahr, titel, von, bis, beschreibung, teilnehmer, aktivitaeten, fotoUrl, videoUrl, quelleUrl, status } = formular;
   const { saving, run } = useSaveAction();
 
   React.useEffect(() => {
@@ -62,29 +83,19 @@ export function LagerEditor({ id }: { id: string }) {
           ].sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),
           fotoalbum: albums.items[0] || null,
         });
-        setJahr(String(lager.jahr));
-        setTitel(lager.titel || "");
-        setVon(dateInput(lager.datum_von));
-        setBis(dateInput(lager.datum_bis));
-        setBeschreibung(lager.beschreibung || "");
-        setTeilnehmer(lager.teilnehmer ? String(lager.teilnehmer) : "");
-        setAktivitaeten((lager.aktivitaeten || []).join("\n"));
-        setFotoUrl(albums.items[0]?.url || "");
-        setVideoUrl(lager.youtube_url || "");
-        setQuelleUrl(lager.quelle_url || "");
-        setStatus(lager.status || "entwurf");
+        // Dasselbe Objekt für Formular und Schnappschuss, sonst bliebe «ungespeichert» stehen.
+        const geladen = formularAus(lager, albums.items[0] || null);
+        setFormular(geladen);
+        alsGespeichert(geladen);
       })
       .catch(() => setLoadError(true));
-  }, [id]);
+  }, [id, alsGespeichert, setFormular]);
 
-  useLeaveGuard(dirty);
-
-  const change = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
-    setter(value);
-    setDirty(true);
-  };
+  const change = <K extends keyof LagerFormular>(feld: K, value: LagerFormular[K]) =>
+    setFormular((aktuell) => ({ ...aktuell, [feld]: value }));
 
   const save = async () => {
+    const abgeschickt = formular;
     const numericYear = Number(jahr);
     if (!numericYear || numericYear < 1900 || numericYear > 2100) {
       toast.error("Bitte ein gültiges Lagerjahr eingeben.");
@@ -173,7 +184,8 @@ export function LagerEditor({ id }: { id: string }) {
       await revalidieren();
     }, "Speichern fehlgeschlagen — ist das Lagerjahr bereits vorhanden?");
     if (ok) {
-      setDirty(false);
+      // Was beim Klick in den Feldern stand, ist gespeichert; danach Getipptes bleibt ungespeichert.
+      alsGespeichert(abgeschickt);
       router.refresh();
     }
   };
@@ -232,7 +244,7 @@ export function LagerEditor({ id }: { id: string }) {
         <Section title="Veröffentlichung" description="Entwürfe sind nur im Cockpit sichtbar. Veröffentlicht erscheint das Lager auf der Website.">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Status" htmlFor="lager-status">
-              <select id="lager-status" value={status} onChange={(event) => change(setStatus, event.target.value as LagerPublikationsstatus)} className="flex h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30">
+              <select id="lager-status" value={status} onChange={(event) => change("status", event.target.value as LagerPublikationsstatus)} className="flex h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30">
                 <option value="entwurf">Entwurf – nicht öffentlich</option>
                 <option value="veroeffentlicht">Veröffentlicht – aktuelles Lager</option>
                 <option value="archiviert">Archiviert – früheres Lager</option>
@@ -255,40 +267,40 @@ export function LagerEditor({ id }: { id: string }) {
         <Section title="Grunddaten" description="Diese Angaben erscheinen auf der Lagerseite. Änderungen hier mit «Speichern» sichern.">
           <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
             <Field label="Jahr" htmlFor="lager-jahr">
-              <Input id="lager-jahr" type="number" inputMode="numeric" value={jahr} onChange={(event) => change(setJahr, event.target.value)} />
+              <Input id="lager-jahr" type="number" inputMode="numeric" value={jahr} onChange={(event) => change("jahr", event.target.value)} />
             </Field>
             <Field label="Titel" htmlFor="lager-titel">
-              <Input id="lager-titel" value={titel} onChange={(event) => change(setTitel, event.target.value)} />
+              <Input id="lager-titel" value={titel} onChange={(event) => change("titel", event.target.value)} />
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Startdatum" htmlFor="lager-von">
-              <Input id="lager-von" type="date" value={von} onChange={(event) => change(setVon, event.target.value)} />
+              <Input id="lager-von" type="date" value={von} onChange={(event) => change("von", event.target.value)} />
             </Field>
             <Field label="Enddatum" htmlFor="lager-bis">
-              <Input id="lager-bis" type="date" value={bis} onChange={(event) => change(setBis, event.target.value)} />
+              <Input id="lager-bis" type="date" value={bis} onChange={(event) => change("bis", event.target.value)} />
             </Field>
           </div>
           <Field label="Beschreibung">
-            <MinimalEditor label="Beschreibung" value={beschreibung} onChange={(value) => change(setBeschreibung, value)} placeholder="Das Wichtigste zum Lager…" />
+            <MinimalEditor label="Beschreibung" value={beschreibung} onChange={(value) => change("beschreibung", value)} placeholder="Das Wichtigste zum Lager…" />
           </Field>
           <Field label="Anzahl Teilnehmende (optional)" htmlFor="lager-teilnehmer">
-            <Input id="lager-teilnehmer" type="number" inputMode="numeric" min="0" className="max-w-xs" value={teilnehmer} onChange={(event) => change(setTeilnehmer, event.target.value)} />
+            <Input id="lager-teilnehmer" type="number" inputMode="numeric" min="0" className="max-w-xs" value={teilnehmer} onChange={(event) => change("teilnehmer", event.target.value)} />
           </Field>
           <Field label="Aktivitäten (eine pro Zeile)" htmlFor="lager-aktivitaeten">
-            <textarea id="lager-aktivitaeten" value={aktivitaeten} onChange={(event) => change(setAktivitaeten, event.target.value)} rows={6} className="w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30" placeholder={'Skifahren\nSnowboarden\nSpieleabend'} />
+            <textarea id="lager-aktivitaeten" value={aktivitaeten} onChange={(event) => change("aktivitaeten", event.target.value)} rows={6} className="w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30" placeholder={'Skifahren\nSnowboarden\nSpieleabend'} />
           </Field>
         </Section>
 
         <Section title="Fotos und Video" description="Das Fotoalbum ist durch das Lagerpasswort geschützt. Video-Links sind öffentlich.">
           <Field label="Fotoalbum (Immich-Share-Link mit Upload)" htmlFor="lager-fotos">
-            <Input id="lager-fotos" type="url" inputMode="url" value={fotoUrl} onChange={(event) => change(setFotoUrl, event.target.value)} placeholder="https://…/share/…" />
+            <Input id="lager-fotos" type="url" inputMode="url" value={fotoUrl} onChange={(event) => change("fotoUrl", event.target.value)} placeholder="https://…/share/…" />
           </Field>
           <Field label="Video-Link (YouTube)" htmlFor="lager-video">
-            <Input id="lager-video" type="url" inputMode="url" value={videoUrl} onChange={(event) => change(setVideoUrl, event.target.value)} placeholder="https://www.youtube.com/watch?v=…" />
+            <Input id="lager-video" type="url" inputMode="url" value={videoUrl} onChange={(event) => change("videoUrl", event.target.value)} placeholder="https://www.youtube.com/watch?v=…" />
           </Field>
           <Field label="Link zur alten Lagerseite (optional)" htmlFor="lager-quelle">
-            <Input id="lager-quelle" type="url" inputMode="url" value={quelleUrl} onChange={(event) => change(setQuelleUrl, event.target.value)} placeholder="https://…" />
+            <Input id="lager-quelle" type="url" inputMode="url" value={quelleUrl} onChange={(event) => change("quelleUrl", event.target.value)} placeholder="https://…" />
           </Field>
         </Section>
 

@@ -5,9 +5,8 @@ import type { UnlockState } from "@/components/family-unlock";
 import {
   FAMILY_ACCESS_COOKIE,
   clientIp,
-  familyAccessCookieValue,
   familyCookieOptionen,
-  istLagerpasswort,
+  freischaltCookie,
   recordUnlockFailure,
   releaseUnlockAttempt,
   unlockAttemptAllowed,
@@ -26,15 +25,15 @@ export async function unlockFamilyAccess(_state: UnlockState, formData: FormData
   recordUnlockFailure(ip);
 
   const password = formData.get("password");
-  let cookieWert: string;
+  let cookieWert: string | null;
   try {
-    if (typeof password !== "string" || !(await istLagerpasswort(password))) return { fehler: "falsch" };
-    cookieWert = await familyAccessCookieValue();
+    cookieWert = typeof password === "string" ? await freischaltCookie(password) : null;
   } catch (e) {
     releaseUnlockAttempt(ip);
     console.error("fitundfun: Lagerpasswort konnte nicht geprüft werden", e);
     return { fehler: "technisch" };
   }
+  if (!cookieWert) return { fehler: "falsch" };
   releaseUnlockAttempt(ip);
 
   (await cookies()).set(FAMILY_ACCESS_COOKIE, cookieWert, familyCookieOptionen(headerStore.get("x-forwarded-proto")));

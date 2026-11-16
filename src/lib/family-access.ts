@@ -63,20 +63,7 @@ async function lagerpasswortEintrag(): Promise<LagerpasswortRecord | null> {
   return result.items[0] ?? null;
 }
 
-/**
- * Ohne im Cockpit gesetztes Lagerpasswort bleibt Geschütztes zu (false). Technische Fehler
- * (PocketBase nicht erreichbar, falsches FAMILY_ACCESS_SECRET) werfen: Sie sind kein falsches Passwort.
- */
-export async function istLagerpasswort(value: string): Promise<boolean> {
-  if (!familySecret) throw new Error("FAMILY_ACCESS_SECRET nicht gesetzt");
-  if (!value) return false;
-  const config = await lagerpasswortEintrag();
-  return !!config?.password_hash && (await pruefeLagerpasswortHash(value, config.password_hash));
-}
-
-export async function familyAccessCookieValue(): Promise<string> {
-  const eintrag = await lagerpasswortEintrag();
-  if (!eintrag) throw new Error("Lagerpasswort ist nicht eingerichtet");
+function cookieWert(eintrag: LagerpasswortRecord): string {
   const version = eintrag.cookie_version;
   const signature = createHmac("sha256", familySecret)
     .update(`fitundfun-family-access-v3:${version}`)
@@ -84,10 +71,24 @@ export async function familyAccessCookieValue(): Promise<string> {
   return `${version}.${signature}`;
 }
 
+/**
+ * Cookie-Wert der Freischaltung, wenn das Lagerpasswort stimmt, sonst null; ohne im Cockpit gesetztes
+ * Lagerpasswort bleibt Geschütztes zu. Technische Fehler (PocketBase nicht erreichbar, falsches
+ * FAMILY_ACCESS_SECRET) werfen: Sie sind kein falsches Passwort.
+ */
+export async function freischaltCookie(value: string): Promise<string | null> {
+  if (!familySecret) throw new Error("FAMILY_ACCESS_SECRET nicht gesetzt");
+  if (!value) return null;
+  const eintrag = await lagerpasswortEintrag();
+  if (!eintrag?.password_hash || !(await pruefeLagerpasswortHash(value, eintrag.password_hash))) return null;
+  return cookieWert(eintrag);
+}
+
 export async function hasFamilyAccess(value?: string): Promise<boolean> {
   if (!familySecret || !value) return false;
   try {
-    return safeEqual(value, await familyAccessCookieValue());
+    const eintrag = await lagerpasswortEintrag();
+    return !!eintrag && safeEqual(value, cookieWert(eintrag));
   } catch {
     return false;
   }

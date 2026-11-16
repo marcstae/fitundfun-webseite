@@ -1,13 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy-50: #f2f5f9;
-  --color-navy-100: #dce5f0;
-  --color-navy-400: #3a5bf0;
-  --color-navy-500: #3a5bf0;
-  --color-navy-600: #2a4bd0;
-  --color-navy-700: #1c3854;
-  --color-navy-800: #122741;
   /* Farbkonzept: Schneeweiss und Nachtblau; Eisblau (accent) auf hellem Grund,
      Signalorange (accent-light) nur auf dunklen Flächen. */
   --color-navy-900: #0f1e33;
@@ -61,15 +54,6 @@
   }
   ::selection {
     @apply bg-accent text-white;
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .focus-ring {
-    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-white;
   }
 }
 
@@ -129,10 +113,6 @@
   text-shadow: 0 0 35px color-mix(in oklab, var(--color-accent-light) 34%, transparent);
 }
 
-.camp-hero-meta {
-  animation: camp-fade 700ms 80ms ease-out both;
-}
-
 .camp-hero-kicker {
   animation: camp-rise 750ms 100ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
 }
@@ -149,15 +129,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes camp-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }
 

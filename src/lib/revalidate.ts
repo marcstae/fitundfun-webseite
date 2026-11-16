@@ -1,17 +1,12 @@
-/** Löst On-Demand-Revalidation einer Route aus. */
-export async function revalidatePath(path: string): Promise<void> {
+/** Erneuert nach dem Speichern die öffentliche Website. Still bei Fehlern: Sie lädt ohnehin nach 5 Minuten neu. */
+export async function revalidieren(): Promise<void> {
   try {
-    const pb = await import("./pb").then((m) => m.pbBrowser());
-    const token = pb.authStore.token;
+    const token = await import("./pb").then((m) => m.pbBrowser().authStore.token);
     await fetch("/api/revalidate", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-      body: JSON.stringify({ path }),
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   } catch {
-    // silent — ISR holt ohnehin nach 5 Min nach
+    // siehe oben
   }
 }

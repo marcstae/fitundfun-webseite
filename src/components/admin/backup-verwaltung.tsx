@@ -28,7 +28,7 @@ import {
   type Rhythmus,
 } from "@/lib/backup";
 import { pbBrowser } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 
 const SELECT =
   "flex h-12 w-full rounded-xl border border-ink/15 bg-white px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30";
@@ -219,7 +219,7 @@ export function BackupVerwaltung() {
       router.refresh();
       return;
     }
-    await revalidatePath("/");
+    await revalidieren();
     toast.success("Wiederhergestellt. Die Website zeigt jetzt diesen Stand.");
     setBeschaeftigt("");
     await laden(true);

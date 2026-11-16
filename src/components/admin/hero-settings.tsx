@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dropzone, useDateiUrl } from "@/components/edit/dropzone";
 import { DirtySaveBar, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser, publicFileUrl } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import type { EinstellungenRecord } from "@/lib/pb-types";
 
 const HERO_TITEL = "fit&fun Lager Brigels";
@@ -53,7 +53,7 @@ export function HeroSettings({ initial }: { initial: EinstellungenRecord | null 
       setPoster(null);
       setRemoveVideo(false);
       setRemovePoster(false);
-      await revalidatePath("/");
+      await revalidieren();
     });
   };
 

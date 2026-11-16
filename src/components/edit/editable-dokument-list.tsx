@@ -4,7 +4,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, FileText, Link2, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import { documentHref } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +41,7 @@ export function EditableDokumentList({
           pbBrowser().collection(document.collection).update(document.id, { sort: document.sort })
         )
       );
-      await revalidatePath(window.location.pathname);
+      await revalidieren();
       toast.success("Reihenfolge gespeichert");
     } catch {
       setItems(previous);
@@ -216,7 +216,7 @@ function DokumentForm({
         const created = await pb.collection(collection).create<DokumentRecord>(form);
         saved = { ...created, collection };
       }
-      await revalidatePath(window.location.pathname);
+      await revalidieren();
     });
     if (ok && saved) onSaved(saved);
   };
@@ -314,7 +314,7 @@ function DeleteDoc({ doc, onDeleted }: { doc: DokumentRecord; onDeleted: () => v
     setBusy(true);
     try {
       await pbBrowser().collection(doc.collection).delete(doc.id);
-      await revalidatePath(window.location.pathname);
+      await revalidieren();
       toast.success("Gelöscht");
       onDeleted();
     } catch (e) {

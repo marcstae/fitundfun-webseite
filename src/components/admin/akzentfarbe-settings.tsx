@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DirtySaveBar, useFormular, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import { AKZENT_DUNKEL_STANDARD, AKZENT_STANDARD, akzentfarbe, DUNKLER_GRUND, kontrast } from "@/lib/utils";
 import type { EinstellungenRecord } from "@/lib/pb-types";
 
@@ -61,7 +61,7 @@ export function AkzentfarbeSettings({ initial }: { initial: EinstellungenRecord 
       if (record) await pb.collection("einstellungen").update(record.id, data);
       else await pb.collection("einstellungen").create(data);
       alsGespeichert(farben);
-      await revalidatePath("/");
+      await revalidieren();
       router.refresh();
     });
   };

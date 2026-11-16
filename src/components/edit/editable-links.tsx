@@ -4,7 +4,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +47,7 @@ export function EditableLinks() {
     setItems(next);
     try {
       await Promise.all(next.map((item) => pbBrowser().collection("links").update(item.id, { sort: item.sort })));
-      await revalidatePath("/lager");
+      await revalidieren();
       toast.success("Reihenfolge gespeichert");
     } catch {
       setItems(previous);
@@ -59,7 +59,7 @@ export function EditableLinks() {
     if (!window.confirm(`Link «${it.titel}» löschen?`)) return;
     try {
       await pbBrowser().collection("links").delete(it.id);
-      await revalidatePath(window.location.pathname);
+      await revalidieren();
       toast.success("Gelöscht");
       load();
     } catch (e) {
@@ -155,7 +155,7 @@ function LinkForm({
       } else {
         await pb.collection("links").create({ titel, url, sort: nextSort });
       }
-      await revalidatePath(window.location.pathname);
+      await revalidieren();
     });
     if (ok) onSaved();
   };

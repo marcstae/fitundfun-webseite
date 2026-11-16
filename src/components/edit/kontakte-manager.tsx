@@ -4,7 +4,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, Lock, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ export function KontakteManager({ existing, gruppen }: { existing: KontaktRecord
     setItems(next);
     try {
       await Promise.all(next.map((item) => pbBrowser().collection("kontakte").update(item.id, { sort: item.sort })));
-      await revalidatePath("/kontakt");
+      await revalidieren();
       toast.success("Reihenfolge gespeichert");
     } catch {
       setItems(previous);
@@ -38,7 +38,7 @@ export function KontakteManager({ existing, gruppen }: { existing: KontaktRecord
     if (!window.confirm(`«${it.name}» löschen?`)) return;
     try {
       await pbBrowser().collection("kontakte").delete(it.id);
-      await revalidatePath("/kontakt");
+      await revalidieren();
       toast.success("Gelöscht");
       setItems((s) => s.filter((x) => x.id !== it.id));
     } catch (e) {
@@ -155,7 +155,7 @@ function KontaktForm({
       } else {
         await pb.collection("kontakte").create({ ...data, sort: nextSort });
       }
-      await revalidatePath("/kontakt");
+      await revalidieren();
     });
     if (ok) onSaved();
   };
@@ -248,7 +248,7 @@ export function GruppenManager({ existing, kontakte }: { existing: Kontaktgruppe
     setItems(next);
     try {
       await Promise.all(next.map((item) => pbBrowser().collection("kontaktgruppen").update(item.id, { sort: item.sort })));
-      await revalidatePath("/kontakt");
+      await revalidieren();
       toast.success("Reihenfolge gespeichert");
     } catch {
       setItems(previous);
@@ -266,7 +266,7 @@ export function GruppenManager({ existing, kontakte }: { existing: Kontaktgruppe
       }
       if (!window.confirm(`Gruppe «${it.name}» löschen?`)) return;
       await pb.collection("kontaktgruppen").delete(it.id);
-      await revalidatePath("/kontakt");
+      await revalidieren();
       toast.success("Gelöscht");
       setItems((s) => s.filter((x) => x.id !== it.id));
     } catch (e) {
@@ -341,7 +341,7 @@ function GruppeForm({
       const pb = pbBrowser();
       if (item) await pb.collection("kontaktgruppen").update(item.id, { name: name.trim() });
       else await pb.collection("kontaktgruppen").create({ name: name.trim(), sort: nextSort });
-      await revalidatePath("/kontakt");
+      await revalidieren();
     });
     if (ok) onSaved();
   };

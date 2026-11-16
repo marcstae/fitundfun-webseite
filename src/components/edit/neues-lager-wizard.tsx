@@ -4,7 +4,7 @@ import * as React from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SaveDialog, useSaveAction } from "./save-dialog";
@@ -52,8 +52,7 @@ export function NeuesLagerButton() {
           status: "entwurf",
         });
         createdId = created.id;
-        await revalidatePath("/");
-        await revalidatePath("/lager");
+        await revalidieren();
       },
       "Anlegen fehlgeschlagen — existiert das Jahr bereits?"
     );

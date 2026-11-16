@@ -25,7 +25,7 @@ import {
   telefonGueltig,
 } from "@/lib/inhaltsseiten";
 import { pbBrowser, publicFileUrl } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import { isValidHttpUrl } from "@/lib/utils";
 import type { SeiteRecord } from "@/lib/pb-types";
 
@@ -45,7 +45,7 @@ async function seiteSpeichern(
   const saved = id
     ? await pb.collection("seiten").update<SeiteRecord>(id, data)
     : await pb.collection("seiten").create<SeiteRecord>({ slug, ...data });
-  await revalidatePath(`/${slug}`);
+  await revalidieren();
   return saved;
 }
 

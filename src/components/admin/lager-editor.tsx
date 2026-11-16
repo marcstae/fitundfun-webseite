@@ -12,7 +12,7 @@ import { EditableDokumentList } from "@/components/edit/editable-dokument-list";
 import { MinimalEditor } from "@/components/edit/minimal-editor";
 import { DirtySaveBar, Hinweis, useLeaveGuard, useSaveAction } from "@/components/edit/save-dialog";
 import { pbBrowser } from "@/lib/pb";
-import { revalidatePath } from "@/lib/revalidate";
+import { revalidieren } from "@/lib/revalidate";
 import { isValidHttpUrl, isoToDateInput } from "@/lib/utils";
 import type {
   DokumentRecord,
@@ -115,7 +115,6 @@ export function LagerEditor({ id }: { id: string }) {
       return;
     }
 
-    const previousYear = loaded!.lager.jahr;
     const album = loaded!.fotoalbum;
     const albumUrl = fotoUrl.trim();
     let previousPublished: LagerRecord[] = [];
@@ -171,13 +170,7 @@ export function LagerEditor({ id }: { id: string }) {
         );
         throw error;
       }
-      await revalidatePath("/");
-      await revalidatePath("/lager");
-      await revalidatePath(`/lager/${previousYear}`);
-      await Promise.all(
-        previousPublished.map((lager) => revalidatePath(`/lager/${lager.jahr}`))
-      );
-      if (numericYear !== previousYear) await revalidatePath(`/lager/${numericYear}`);
+      await revalidieren();
     }, "Speichern fehlgeschlagen — ist das Lagerjahr bereits vorhanden?");
     if (ok) {
       setDirty(false);
@@ -193,8 +186,7 @@ export function LagerEditor({ id }: { id: string }) {
     if (answer !== String(loaded.lager.jahr)) return;
     try {
       await pbBrowser().collection("lager").delete(id);
-      await revalidatePath("/");
-      await revalidatePath("/lager");
+      await revalidieren();
       toast.success("Lager gelöscht");
       router.replace("/admin/lager");
       router.refresh();

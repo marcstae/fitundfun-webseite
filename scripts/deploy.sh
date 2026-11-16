@@ -46,7 +46,7 @@ main() {
   git tag -f deployed >/dev/null
 
   # Secret über stdin, nicht in der Prozessliste.
-  printf '{"secret":"%s","path":"/"}' "$REVALIDATE_SECRET" |
+  printf '{"secret":"%s"}' "$REVALIDATE_SECRET" |
     curl -fsS -o /dev/null -X POST http://127.0.0.1:3843/api/revalidate -H 'content-type: application/json' --data @-
   echo "Fertig: $neu läuft, Cache neu aufgebaut."
 }

@@ -57,6 +57,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     const pb = pbBrowser();
+    // Jedes save() und clear() des SDK löst onChange aus (Anmelden, Erneuern, Abmelden): Zustand und
+    // Cookie werden nur hier nachgeführt.
     const unsubscribe = pb.authStore.onChange(() => {
       const record = pb.authStore.record;
       setUser(record ? userFromModel(record) : null);
@@ -74,7 +76,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       } catch {
         pb.authStore.clear();
       } finally {
-        syncAuthCookie(pb);
         if (active) setLoading(false);
       }
     })();
@@ -105,16 +106,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const res = await pb
       .collection("users")
       .authWithPassword(email, password);
-    syncAuthCookie(pb);
-    const next = userFromModel(res.record as unknown as Record<string, unknown>);
-    setUser(next);
-    return next;
+    return userFromModel(res.record);
   }, []);
 
   const logout = React.useCallback(() => {
     pbBrowser().authStore.clear();
-    syncAuthCookie(pbBrowser());
-    setUser(null);
   }, []);
 
   const auth: AuthCtx = {

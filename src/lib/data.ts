@@ -61,35 +61,30 @@ export async function getNeustesFotoalbum(
   hasFotoalbum: boolean;
 }> {
   const empty = { fotoalbum: null, jahr: null, hasFotoalbum: false };
-  const request = authCookie ? pbRequest(authCookie) : null;
-  let authenticated: PocketBase;
-  let reveal = false;
-
-  if (request?.authStore.isValid) {
-    authenticated = request;
-    reveal = true;
-  } else {
-    try {
-      authenticated = await familyPocketBase();
-      reveal = familyAccess;
-    } catch (e) {
-      console.error("fitundfun: Fotoalbum-Zugriff fehlgeschlagen", e);
-      return empty;
-    }
-  }
-
-  try {
+  const laden = async (pb: PocketBase, reveal: boolean) => {
     const [albums, lager] = await Promise.all([
-      authenticated.collection("fotoalben").getFullList<FotoalbumRecord>(),
+      pb.collection("fotoalben").getFullList<FotoalbumRecord>(),
       getLager(),
     ]);
     const latest = pickNeustesFotoalbum(albums, lager);
-
     return {
       fotoalbum: reveal ? latest?.fotoalbum || null : null,
       jahr: latest?.jahr || null,
       hasFotoalbum: !!latest,
     };
+  };
+
+  const request = authCookie ? pbRequest(authCookie) : null;
+  if (request?.authStore.isValid) {
+    try {
+      return await laden(request, true);
+    } catch {
+      // Seit PocketBase 0.42 gibt ein ungültig gewordenes Admin-Token 401: weiter wie ohne Anmeldung.
+    }
+  }
+
+  try {
+    return await laden(await familyPocketBase(), familyAccess);
   } catch (e) {
     console.error("fitundfun: Fotoalben konnten nicht geladen werden", e);
     return empty;

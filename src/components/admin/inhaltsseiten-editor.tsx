@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, ICON_BUTTON } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MediaField } from "@/components/admin/hero-settings";
@@ -29,8 +29,6 @@ import { revalidieren } from "@/lib/revalidate";
 import { getauscht, isValidHttpUrl } from "@/lib/utils";
 import type { SeiteRecord } from "@/lib/pb-types";
 
-const ICON_BUTTON =
-  "inline-flex size-10 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink disabled:opacity-25 sm:size-8";
 const FELD =
   "w-full rounded-xl border border-ink/15 bg-white px-4 text-base text-ink placeholder:text-muted/70 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30";
 

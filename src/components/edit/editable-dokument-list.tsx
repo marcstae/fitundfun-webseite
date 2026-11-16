@@ -6,15 +6,13 @@ import { toast } from "sonner";
 import { pbBrowser } from "@/lib/pb";
 import { revalidieren } from "@/lib/revalidate";
 import { documentHref } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, ICON_BUTTON } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dropzone } from "./dropzone";
 import { reihenfolgeAendern, SaveDialog, useSaveAction } from "./save-dialog";
 import type { DokumentRecord } from "@/lib/pb-types";
 
-const ICON_BUTTON =
-  "inline-flex size-10 items-center justify-center rounded-md text-ink/60 hover:bg-ink/10 hover:text-ink disabled:opacity-25 sm:size-8";
 
 export function EditableDokumentList({
   lagerId,

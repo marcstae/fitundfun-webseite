@@ -14,19 +14,15 @@ import { pbBrowser } from "@/lib/pb";
 import type { LagerpasswortRecord } from "@/lib/pb-types";
 
 export function AccountSettings() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const router = useRouter();
-  const [oldPassword, setOldPassword] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [confirmation, setConfirmation] = React.useState("");
   const [lagerpasswort, setLagerpasswort] = React.useState("");
   const [lagerpasswortBestaetigung, setLagerpasswortBestaetigung] = React.useState("");
-  const [savingAdmin, setSavingAdmin] = React.useState(false);
   const [speichertLagerpasswort, setSpeichertLagerpasswort] = React.useState(false);
   const [lagerpasswortGesetzt, setLagerpasswortGesetzt] = React.useState<boolean | null>(null);
   const [aktuellesLagerpasswort, setAktuellesLagerpasswort] = React.useState("");
   // Halb ausgefüllte Passwortfelder nicht still verlieren.
-  useLeaveGuard(!!(oldPassword || password || confirmation || lagerpasswort || lagerpasswortBestaetigung));
+  useLeaveGuard(!!(lagerpasswort || lagerpasswortBestaetigung));
 
   React.useEffect(() => {
     pbBrowser()
@@ -38,35 +34,6 @@ export function AccountSettings() {
       })
       .catch(() => setLagerpasswortGesetzt(null));
   }, []);
-
-  const saveAdminPassword = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!user) return;
-    if (password.length < 8) {
-      toast.error("Das neue Passwort braucht mindestens 8 Zeichen.");
-      return;
-    }
-    if (password !== confirmation) {
-      toast.error("Die Passwörter stimmen nicht überein.");
-      return;
-    }
-    setSavingAdmin(true);
-    try {
-      await pbBrowser().collection("users").update(user.id, {
-        oldPassword,
-        password,
-        passwordConfirm: confirmation,
-      });
-      toast.success("Admin-Passwort geändert. Bitte neu anmelden.");
-      logout();
-      router.replace("/login?geaendert=1&redirect=/admin");
-      router.refresh();
-    } catch {
-      toast.error("Änderung fehlgeschlagen — ist das aktuelle Passwort korrekt?");
-    } finally {
-      setSavingAdmin(false);
-    }
-  };
 
   const lagerpasswortSpeichern = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -99,12 +66,14 @@ export function AccountSettings() {
         <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
           Passwort für die Anmeldung der Lagerleitung ändern.
         </p>
-        <form onSubmit={saveAdminPassword} className="mt-6 space-y-4">
-          <Field label="Aktuelles Passwort" id="account-old" value={oldPassword} onChange={setOldPassword} autoComplete="current-password" />
-          <Field label="Neues Passwort" id="account-new" value={password} onChange={setPassword} autoComplete="new-password" />
-          <Field label="Neues Passwort wiederholen" id="account-confirm" value={confirmation} onChange={setConfirmation} autoComplete="new-password" />
-          <Button type="submit" disabled={savingAdmin}>{savingAdmin ? "Speichert…" : "Admin-Passwort ändern"}</Button>
-        </form>
+        <AdminPasswortFormular
+          nachSpeichern={() => {
+            toast.success("Admin-Passwort geändert. Bitte neu anmelden.");
+            logout();
+            router.replace("/login?geaendert=1&redirect=/admin");
+            router.refresh();
+          }}
+        />
       </section>
 
       <section className="rounded-[1.5rem] border border-ink/10 bg-white p-5 sm:p-8">
@@ -136,6 +105,65 @@ export function AccountSettings() {
         </form>
       </section>
     </div>
+  );
+}
+
+/**
+ * Admin-Passwort ändern: auf der Konto-Seite und als erzwungene Änderung des Startpassworts
+ * (startpasswort). Was nach dem Speichern geschieht (Meldung, Abmelden, Ziel), bestimmt die Seite.
+ */
+export function AdminPasswortFormular({
+  startpasswort = false,
+  nachSpeichern,
+}: {
+  startpasswort?: boolean;
+  nachSpeichern: () => void;
+}) {
+  const { user } = useAuth();
+  const [alt, setAlt] = React.useState("");
+  const [neu, setNeu] = React.useState("");
+  const [wiederholt, setWiederholt] = React.useState("");
+  const [speichert, setSpeichert] = React.useState(false);
+  // Halb ausgefüllte Felder nicht still verlieren; beim Startpasswort führt kein anderer Weg weiter.
+  useLeaveGuard(!startpasswort && !!(alt || neu || wiederholt));
+
+  const speichern = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!user) return;
+    if (neu.length < 8) {
+      toast.error("Das neue Passwort braucht mindestens 8 Zeichen.");
+      return;
+    }
+    if (neu !== wiederholt) {
+      toast.error("Die Passwörter stimmen nicht überein.");
+      return;
+    }
+    setSpeichert(true);
+    try {
+      await pbBrowser().collection("users").update(user.id, {
+        oldPassword: alt,
+        password: neu,
+        passwordConfirm: wiederholt,
+        ...(startpasswort ? { muss_passwort_aendern: false } : {}),
+      });
+    } catch {
+      toast.error("Speichern fehlgeschlagen — ist das aktuelle Passwort korrekt?");
+      return;
+    } finally {
+      setSpeichert(false);
+    }
+    nachSpeichern();
+  };
+
+  return (
+    <form onSubmit={speichern} className="mt-6 space-y-4">
+      <Field label="Aktuelles Passwort" id="passwort-alt" value={alt} onChange={setAlt} autoComplete="current-password" minLength={1} />
+      <Field label="Neues Passwort (mind. 8 Zeichen)" id="passwort-neu" value={neu} onChange={setNeu} autoComplete="new-password" />
+      <Field label="Neues Passwort wiederholen" id="passwort-wiederholt" value={wiederholt} onChange={setWiederholt} autoComplete="new-password" />
+      <Button type="submit" disabled={speichert} size={startpasswort ? "lg" : undefined} className={startpasswort ? "w-full" : undefined}>
+        {speichert ? "Speichert…" : "Passwort speichern"}
+      </Button>
+    </form>
   );
 }
 

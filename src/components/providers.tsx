@@ -58,12 +58,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const pb = pbBrowser();
     const unsubscribe = pb.authStore.onChange(() => {
-      const model = pb.authStore.model as Record<string, unknown> | null;
-      if (model) {
-        setUser(userFromModel(model));
-      } else {
-        setUser(null);
-      }
+      const record = pb.authStore.record;
+      setUser(record ? userFromModel(record) : null);
       syncAuthCookie(pb);
     });
 

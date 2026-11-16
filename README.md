@@ -46,7 +46,7 @@ flowchart TB
   subgraph H["Heimserver"]
     direction LR
     T["cloudflared"] -->|"172.17.0.1:3843"| W["web: Next.js 16<br/>SSR, Server Actions"]
-    T -->|"172.17.0.1:8090"| P["pb: PocketBase 0.40<br/>API, Auth, Dateien"]
+    T -->|"172.17.0.1:8090"| P["pb: PocketBase 0.42<br/>API, Auth, Dateien"]
     T --> M["Umami<br/>Statistik ohne Cookies"]
     W -->|"intern pb:8090"| P
     P --- D[("pb_data und Backups<br/>SQLite, Uploads, Zip täglich")]
@@ -116,19 +116,9 @@ NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDA
 
 `NEXT_PUBLIC_PB_URL` wird beim Build eingebacken; mit `SITE_URL` und `PB_ORIGINS` auf die öffentlichen HTTPS-Adressen setzen. Upload-Limit des Proxys ≥ 60 MB. Tunnel-Ziele: `http://172.17.0.1:3843` und `:8090`.
 
-**Deploy, erst wenn CI grün ist:**
+**Deploy, erst wenn CI grün ist:** auf dem Server im Projektordner [`scripts/deploy.sh`](scripts/deploy.sh). Es zieht den neuen Stand, baut, solange alles läuft, stoppt `pb` kurz und kopiert `pb_data` nach `DEPLOY_BACKUP_DIR`, startet, wartet auf gesunde Container und baut den Cache neu auf. Bei jedem Fehler bricht es ab; scheitert die Kopie, läuft wieder das bisherige `pb`.
 
-```sh
-set -a; . ./.env; set +a                     # PB_DATA_DIR, REVALIDATE_SECRET laden
-git pull && docker compose build --pull      # bauen, solange alles noch läuft
-docker compose stop pb && cp -a "${PB_DATA_DIR:-./pb_data}" \
-  "<backups>/pre-$(git rev-parse --short HEAD)-$(date -u +%Y%m%dT%H%M%SZ)"
-docker compose up -d
-curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
-  -d "{\"secret\":\"$REVALIDATE_SECRET\",\"path\":\"/\"}"
-```
-
-> **Wichtig:** Das Backup ist Pflicht: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Wiederherstellen heisst `pb` stoppen, Ordner zurückkopieren, starten. Ohne Revalidate zeigen Seiten bis zu 5 Minuten alte Daten, weil beim Build kein PocketBase läuft.
+> **Wichtig:** Ohne Backup kein Start: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Zurückgehen heisst `pb` stoppen, `pb_data` durch die Kopie `pre-<neu>-von-<alt>-…` ersetzen, `git checkout <alt>`, `docker compose up -d --build`.
 
 </details>
 
@@ -144,7 +134,7 @@ curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
 
 **Server neu oder `.env` verloren:** Ein Backup-Zip ist der Inhalt von `pb_data`. Vor dem ersten Start `unzip <backup>.zip -d "$PB_DATA_DIR"`, eine neue `.env` aus `.env.example` anlegen, dann `docker compose up -d --build`. Es gelten die Konten aus dem Backup. Das Familienkonto gleicht PocketBase beim Start an das neue `FAMILY_ACCESS_SECRET` an; Familien geben das Lagerpasswort einmal neu ein. Läuft die Website schon, geht es auch im Cockpit unter *Backups* (Upload über Cloudflare bis 100 MB; grössere Zips mit `docker compose cp <backup>.zip pb:/pb/pb_data/backups/` ablegen).
 
-**Admin-Passwort vergessen:** `docker compose exec pb /pb/pocketbase superuser upsert notfall@example.ch '<temporär>'`, in `http://<host>:8090/_/` unter *users* ein temporäres Passwort setzen und `muss_passwort_aendern` einschalten (Stellvertretung: neuer Datensatz, `rolle` = editor, `verified`). Danach `superuser delete notfall@example.ch`.
+**Admin-Passwort vergessen:** `docker compose exec pb /pb/pocketbase superuser upsert notfall@example.ch '<temporär>'`, über einen SSH-Tunnel (`ssh -L 8090:127.0.0.1:8090 <server>`, dann `http://localhost:8090/_/`) unter *users* ein temporäres Passwort setzen und `muss_passwort_aendern` einschalten (Stellvertretung: neuer Datensatz, `rolle` = editor, `verified`). Danach `superuser delete notfall@example.ch`.
 
 </details>
 

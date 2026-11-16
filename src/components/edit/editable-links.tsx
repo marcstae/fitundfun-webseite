@@ -13,14 +13,6 @@ import { isValidHttpUrl } from "@/lib/utils";
 import type { LinkRecord } from "@/lib/pb-types";
 
 export function EditableLinks() {
-  return (
-    <div>
-      <LinkManager />
-    </div>
-  );
-}
-
-function LinkManager() {
   const [items, setItems] = React.useState<LinkRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [ladefehler, setLadefehler] = React.useState(false);

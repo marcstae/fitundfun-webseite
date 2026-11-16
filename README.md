@@ -142,7 +142,7 @@ curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
 | Speichern im Cockpit scheitert | Sitzung abgelaufen: neu anmelden. |
 | `/_/` will einen Superuser anlegen | Es gibt bewusst keinen; die Einrichtung braucht einen Token aus den Logs. Nur im Notfall anlegen. |
 
-**Server neu oder `.env` verloren:** Ein Backup-Zip ist der Inhalt von `pb_data`. Vor dem ersten Start `unzip <backup>.zip -d "$PB_DATA_DIR"`, eine neue `.env` aus `.env.example` anlegen, dann `docker compose up -d --build`. Es gelten die Konten aus dem Backup. Das Familienkonto gleicht PocketBase beim Start an das neue `FAMILY_ACCESS_SECRET` an; Familien geben das Lagerpasswort einmal neu ein. Läuft die Website schon, geht es auch im Cockpit unter *Backups* (Upload über Cloudflare bis 100 MB, grössere Zips in `BACKUP_DIR` legen).
+**Server neu oder `.env` verloren:** Ein Backup-Zip ist der Inhalt von `pb_data`. Vor dem ersten Start `unzip <backup>.zip -d "$PB_DATA_DIR"`, eine neue `.env` aus `.env.example` anlegen, dann `docker compose up -d --build`. Es gelten die Konten aus dem Backup. Das Familienkonto gleicht PocketBase beim Start an das neue `FAMILY_ACCESS_SECRET` an; Familien geben das Lagerpasswort einmal neu ein. Läuft die Website schon, geht es auch im Cockpit unter *Backups* (Upload über Cloudflare bis 100 MB; grössere Zips mit `docker compose cp <backup>.zip pb:/pb/pb_data/backups/` ablegen).
 
 **Admin-Passwort vergessen:** `docker compose exec pb /pb/pocketbase superuser upsert notfall@example.ch '<temporär>'`, in `http://<host>:8090/_/` unter *users* ein temporäres Passwort setzen und `muss_passwort_aendern` einschalten (Stellvertretung: neuer Datensatz, `rolle` = editor, `verified`). Danach `superuser delete notfall@example.ch`.
 

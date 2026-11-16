@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { istEditor, sitzungskonto } from "@/lib/admin-auth";
 import { safeEqual } from "@/lib/family-access";
 import { pbRequest, REVALIDATE_SECRET } from "@/lib/pb";
 
@@ -11,27 +12,16 @@ export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization") || "";
   const body = await req.json().catch(() => ({}));
 
-  // Request-scoped Client — niemals den geteilten Server-AuthStore mutieren.
-  const pb = pbRequest();
-  try {
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (token) {
-      pb.authStore.save(token);
-      await pb.collection("users").authRefresh();
-    }
-    const model = pb.authStore.model as Record<string, unknown> | null;
-    const editor =
-      pb.authStore.isValid &&
-      model?.rolle === "editor" &&
-      model.muss_passwort_aendern !== true;
-    const secret: unknown = body?.secret;
-    const server =
-      typeof secret === "string" && !!secret && !!REVALIDATE_SECRET && safeEqual(secret, REVALIDATE_SECRET);
-    if (!editor && !server) {
+  const secret: unknown = body?.secret;
+  const server =
+    typeof secret === "string" && !!secret && !!REVALIDATE_SECRET && safeEqual(secret, REVALIDATE_SECRET);
+  if (!server) {
+    // Request-scoped Client — niemals den geteilten Server-AuthStore mutieren.
+    const pb = pbRequest();
+    pb.authStore.save(authHeader.replace(/^Bearer\s+/i, "").trim());
+    if (!istEditor(await sitzungskonto(pb))) {
       return NextResponse.json({ error: "nicht autorisiert" }, { status: 401 });
     }
-  } catch {
-    return NextResponse.json({ error: "session ungültig" }, { status: 401 });
   }
 
   revalidatePath("/", "layout");

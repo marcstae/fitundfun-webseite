@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { hashLagerpasswort, pruefeLagerpasswortHash } from "@/lib/family-access";
+import { istEditor, sitzungskonto } from "@/lib/admin-auth";
 import { pbRequest } from "@/lib/pb";
 import type { LagerpasswortRecord } from "@/lib/pb-types";
 
@@ -20,14 +21,7 @@ export async function lagerpasswortAendern(
 
   const pb = pbRequest((await cookies()).toString());
   try {
-    if (!pb.authStore.isValid) throw new Error("Keine Sitzung");
-    const auth = await pb.collection("users").authRefresh();
-    if (
-      auth.record.rolle !== "editor" ||
-      auth.record.muss_passwort_aendern === true
-    ) {
-      throw new Error("Keine Berechtigung");
-    }
+    if (!istEditor(await sitzungskonto(pb))) throw new Error("Keine Berechtigung");
 
     const result = await pb
       .collection("lagerpasswort")

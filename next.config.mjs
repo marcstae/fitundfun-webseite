@@ -8,7 +8,8 @@ const csp = [
   `media-src 'self' blob: ${pbUrl}`,
   "font-src 'self' https://fonts.gstatic.com data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${umamiUrl}`,
+  // 'unsafe-eval' nur für die Entwicklung (Next.js-Doku «Content Security Policy»); Umami braucht es nicht.
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} ${umamiUrl}`,
   "frame-src https://www.youtube-nocookie.com",
   `connect-src 'self' ${pbUrl} ${umamiUrl}`,
   "object-src 'none'",

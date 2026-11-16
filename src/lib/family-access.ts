@@ -96,7 +96,8 @@ export async function familyPocketBase(): Promise<PocketBase> {
   // Seit PocketBase 0.42 kommt ein ungültig gewordenes Token als 401 zurück (z. B. nach einer
   // Wiederherstellung): dann meldet sich der nächste Aufruf neu an, statt bis zu 5 Minuten zu warten.
   pb.afterSend = (response, data) => {
-    if (response.status === 401) familyToken = "";
+    // Nur verwerfen, wenn diese Anfrage das aktuelle Token benutzt hat (nicht eine späte alte Antwort).
+    if (response.status === 401 && pb.authStore.token === familyToken) familyToken = "";
     return data;
   };
   if (familyToken && Date.now() - familyTokenSeit < FAMILY_TOKEN_MAX_MS) {

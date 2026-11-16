@@ -104,6 +104,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const login = React.useCallback(async (email: string, password: string) => {
     const pb = pbBrowser();
+    // Das SDK schickt ein gespeichertes Token auch bei der Anmeldung mit. Seit PocketBase 0.42 lehnt
+    // der Server ein ungültig gewordenes Token (z. B. Passwort anderswo geändert) dabei mit 401 ab.
+    pb.authStore.clear();
     const res = await pb
       .collection("users")
       .authWithPassword(email, password);

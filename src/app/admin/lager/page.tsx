@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { ArrowRight, CalendarDays, Eye } from "lucide-react";
 import { pbBrowser } from "@/lib/pb";
 import type { LagerRecord } from "@/lib/pb-types";
@@ -10,7 +9,6 @@ import { formatDateRange } from "@/lib/utils";
 import { NeuesLagerButton } from "@/components/edit/neues-lager-wizard";
 
 export default function AdminLagerPage() {
-  const search = useSearchParams();
   const [lager, setLager] = React.useState<LagerRecord[] | null>(null);
   const [error, setError] = React.useState(false);
 
@@ -32,7 +30,7 @@ export default function AdminLagerPage() {
             Entwürfe vorbereiten, Lager veröffentlichen und abgeschlossene Jahre archivieren.
           </p>
         </div>
-        <NeuesLagerButton defaultOpen={search.get("neu") === "1"} />
+        <NeuesLagerButton />
       </div>
 
       {error ? (

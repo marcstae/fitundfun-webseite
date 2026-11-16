@@ -12,10 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** "Neues Lager anlegen" — 2-Schritt-Wizard (Jahr + Daten). */
-export function NeuesLagerButton({ defaultOpen = false }: { defaultOpen?: boolean }) {
+export function NeuesLagerButton() {
   const router = useRouter();
   const nextJahr = new Date().getFullYear() + 1;
-  const [open, setOpen] = React.useState(defaultOpen);
+  const [open, setOpen] = React.useState(false);
   const [jahr, setJahr] = React.useState(String(nextJahr));
   const [von, setVon] = React.useState("");
   const [bis, setBis] = React.useState("");

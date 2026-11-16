@@ -204,11 +204,16 @@ async function getDokumenteForRelation(
   // Mit Editor-Sitzung lesen, damit die Entwurfsvorschau auch öffentliche Dokumente zeigt.
   const session = authCookie ? pbRequest(authCookie) : null;
   try {
-    const reader = session?.authStore.isValid ? session : pbServer();
-    const pub = await reader.collection("dokumente").getList<DokumentRecord>(1, 500, {
-      filter: `lager = "${recordId}"`,
-      sort: "sort,name",
-    });
+    const liste = (pb: PocketBase) =>
+      pb.collection("dokumente").getList<DokumentRecord>(1, 500, {
+        filter: `lager = "${recordId}"`,
+        sort: "sort,name",
+      });
+    // Seit PocketBase 0.42 wird ein ungültig gewordenes Admin-Token (z. B. Passwort anderswo
+    // geändert) mit 401 abgewiesen statt als Gast behandelt: dann öffentlich lesen.
+    const pub = session?.authStore.isValid
+      ? await liste(session).catch(() => liste(pbServer()))
+      : await liste(pbServer());
     out.push(
       ...pub.items.map((document) => ({
         ...document,

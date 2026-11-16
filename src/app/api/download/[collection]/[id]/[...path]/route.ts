@@ -27,7 +27,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   // Editor-Sitzung zuerst (auch für Entwürfe), danach die Freischaltung mit Lagerpasswort.
   const session = pbRequest(req.headers.get("cookie") || "");
   const readers: (() => Promise<PocketBase>)[] = [];
-  if (session.authStore.isValid || collection === "dokumente") readers.push(async () => session);
+  if (session.authStore.isValid) readers.push(async () => session);
+  // Öffentliche Dokumente auch als Gast: Seit PocketBase 0.42 gibt ein ungültig gewordenes
+  // Admin-Token 401 statt der Gastsicht.
+  if (collection === "dokumente") readers.push(async () => pbRequest());
   const zugang = req.cookies.get(FAMILY_ACCESS_COOKIE)?.value;
   const familieOk = collection === "dokumente_intern" && (await hasFamilyAccess(zugang));
   if (familieOk) readers.push(familyPocketBase);

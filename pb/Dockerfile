@@ -1,23 +1,28 @@
 # PocketBase — Minimal-Image mit Migrations
 FROM alpine:3.24
 
-ARG PB_VERSION=0.40.6
+ARG PB_VERSION=0.42.3
+# SHA-256 aus checksums.txt des Releases (https://ganigeorgiev.com/pocketbase/pocketbase/releases);
+# beim Anheben von PB_VERSION mit anpassen. Nur genau diese Dateien kommen ins Image.
+ARG PB_SHA256_AMD64=89b1ded352404c648dd92c2d884fc8ff7858138697cb1ccb52722ccaa0bbd2a9
+ARG PB_SHA256_ARM64=f2af25259c5565e856aac5907a8fd9a7ce01d18375ac70b18121c9d41fd56dbe
 
 RUN apk add --no-cache unzip ca-certificates tzdata curl su-exec && \
     addgroup -S pb && adduser -S -G pb pb
 
 WORKDIR /pb
 
-# PocketBase-Binary (amd64; für arm64 den entsprechenden Release wählen)
+# PocketBase-Binary für amd64 oder arm64, mit Prüfsumme
 RUN <<EOF
 set -e
-ARCH=amd64
 case "$(uname -m)" in
-  aarch64|arm64) ARCH=arm64 ;;
-  x86_64) ARCH=amd64 ;;
+  aarch64|arm64) ARCH=arm64; SHA="$PB_SHA256_ARM64" ;;
+  x86_64) ARCH=amd64; SHA="$PB_SHA256_AMD64" ;;
   *) echo "Nicht unterstützte Architektur: $(uname -m)" >&2; exit 1 ;;
 esac
-wget -q -O /tmp/pb.zip "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_${ARCH}.zip"
+# Seit 0.41 nicht mehr auf GitHub; die Adresse leitet auf die eigentliche Datei weiter.
+curl -fsSL -o /tmp/pb.zip "https://ganigeorgiev.com/meta/pocketbase/pocketbase/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_${ARCH}.zip"
+echo "${SHA}  /tmp/pb.zip" | sha256sum -c -
 unzip /tmp/pb.zip -d /pb
 rm /tmp/pb.zip
 chmod +x /pb/pocketbase

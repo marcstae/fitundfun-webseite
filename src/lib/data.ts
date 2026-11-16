@@ -1,6 +1,6 @@
 import type PocketBase from "pocketbase";
 import { unstable_cache } from "next/cache";
-import { familyPocketBase } from "./family-access";
+import { mitFamilienkonto } from "./family-access";
 import { letzteSchneemessung, pickNeustesFotoalbum } from "./utils";
 import { pbRequest, pbServer } from "./pb";
 import type {
@@ -78,13 +78,14 @@ export async function getNeustesFotoalbum(
   if (request?.authStore.isValid) {
     try {
       return await laden(request, true);
-    } catch {
+    } catch (e) {
       // Seit PocketBase 0.42 gibt ein ungültig gewordenes Admin-Token 401: weiter wie ohne Anmeldung.
+      if ((e as { status?: number })?.status !== 401) console.error("fitundfun: Fotoalben mit Admin-Cookie fehlgeschlagen", e);
     }
   }
 
   try {
-    return await laden(await familyPocketBase(), familyAccess);
+    return await mitFamilienkonto((pb) => laden(pb, familyAccess));
   } catch (e) {
     console.error("fitundfun: Fotoalben konnten nicht geladen werden", e);
     return empty;
@@ -99,7 +100,7 @@ export const getLinks = unstable_cache(
 
 export const getKontaktgruppen = unstable_cache(
   async () =>
-    (await familyPocketBase()).collection("kontaktgruppen").getFullList<KontaktgruppeRecord>({ sort: "sort,name" }),
+    mitFamilienkonto((pb) => pb.collection("kontaktgruppen").getFullList<KontaktgruppeRecord>({ sort: "sort,name" })),
   ["kontaktgruppen"],
   { revalidate: REVALIDATE }
 );
@@ -107,7 +108,7 @@ export const getKontaktgruppen = unstable_cache(
 // Kontakte sind nicht öffentlich lesbar (geschützte E-Mail/Telefon, Migration 26): lesen über das
 // Familienkonto des Servers; was Besucher sehen, entscheidet lib/inhaltsseiten sichtbarerKontakt.
 export const getKontakte = unstable_cache(
-  async () => (await familyPocketBase()).collection("kontakte").getFullList<KontaktRecord>({ sort: "sort" }),
+  async () => mitFamilienkonto((pb) => pb.collection("kontakte").getFullList<KontaktRecord>({ sort: "sort" })),
   ["kontakte"],
   { revalidate: REVALIDATE }
 );
@@ -239,11 +240,7 @@ async function getDokumenteForRelation(
 
   if (!protectedLoaded) {
     try {
-      const authenticated = await familyPocketBase();
-      protectedContent = await loadProtectedContent(
-        authenticated,
-        recordId
-      );
+      protectedContent = await mitFamilienkonto((pb) => loadProtectedContent(pb, recordId));
       protectedLoaded = true;
       revealProtected = familyAccess;
     } catch (e) {

@@ -4,6 +4,7 @@ import {
   FAMILY_ACCESS_COOKIE,
   FAMILY_ACCESS_MAX_AGE,
   familyPocketBase,
+  mitFamilienkonto,
   hasFamilyAccess,
 } from "@/lib/family-access";
 import { pbRequest, PB_INTERNAL_URL } from "@/lib/pb";
@@ -65,10 +66,11 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 /** Ohne Freischaltung zur Abfrage des Lagerpassworts; danach geht es direkt zur Datei weiter. */
 async function familyGate(id: string, pathname: string) {
   try {
-    const pb = await familyPocketBase();
-    const record = await pb
-      .collection("dokumente_intern")
-      .getOne<DokumentRecord & { expand?: { lager?: LagerRecord } }>(id, { expand: "lager" });
+    const record = await mitFamilienkonto((pb) =>
+      pb
+        .collection("dokumente_intern")
+        .getOne<DokumentRecord & { expand?: { lager?: LagerRecord } }>(id, { expand: "lager" })
+    );
     const jahr = record.expand?.lager?.jahr;
     if (jahr) {
       return new NextResponse(null, {

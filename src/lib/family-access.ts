@@ -45,14 +45,10 @@ export async function pruefeLagerpasswortHash(value: string, encoded: string): P
   }
 }
 
-async function lagerpasswortEintrag(): Promise<LagerpasswortRecord> {
-  const lesen = async () =>
-    (await familyPocketBase()).collection("lagerpasswort").getList<LagerpasswortRecord>(1, 1);
-  // Nach einer Wiederherstellung kann das zwischengespeicherte Token ungültig sein: Der 401 setzt es
-  // zurück (afterSend), der zweite Versuch meldet sich neu an.
-  const result = await lesen().catch((e) => (e?.status === 401 ? lesen() : Promise.reject(e)));
-  if (!result.items[0]) throw new Error("Lagerpasswort ist nicht eingerichtet");
-  return result.items[0];
+/** null, solange im Cockpit kein Lagerpasswort gesetzt wurde. */
+async function lagerpasswortEintrag(): Promise<LagerpasswortRecord | null> {
+  const result = await mitFamilienkonto((pb) => pb.collection("lagerpasswort").getList<LagerpasswortRecord>(1, 1));
+  return result.items[0] ?? null;
 }
 
 /**
@@ -62,15 +58,14 @@ async function lagerpasswortEintrag(): Promise<LagerpasswortRecord> {
 export async function istLagerpasswort(value: string): Promise<boolean> {
   if (!familySecret) throw new Error("FAMILY_ACCESS_SECRET nicht gesetzt");
   if (!value) return false;
-  const config = await lagerpasswortEintrag().catch((e: Error) => {
-    if (e.message === "Lagerpasswort ist nicht eingerichtet") return null;
-    throw e;
-  });
+  const config = await lagerpasswortEintrag();
   return !!config?.password_hash && (await pruefeLagerpasswortHash(value, config.password_hash));
 }
 
 export async function familyAccessCookieValue(): Promise<string> {
-  const version = (await lagerpasswortEintrag()).cookie_version;
+  const eintrag = await lagerpasswortEintrag();
+  if (!eintrag) throw new Error("Lagerpasswort ist nicht eingerichtet");
+  const version = eintrag.cookie_version;
   const signature = createHmac("sha256", familySecret)
     .update(`fitundfun-family-access-v3:${version}`)
     .digest("base64url");
@@ -122,6 +117,19 @@ export async function familyPocketBase(): Promise<PocketBase> {
     });
   pb.authStore.save(await familyLogin);
   return pb;
+}
+
+/**
+ * Mit dem Familienkonto lesen. Ist das zwischengespeicherte Token ungültig geworden (401, etwa nach
+ * einer Wiederherstellung), setzt afterSend es zurück, und der zweite Versuch meldet sich neu an.
+ */
+export async function mitFamilienkonto<T>(lesen: (pb: PocketBase) => Promise<T>): Promise<T> {
+  try {
+    return await lesen(await familyPocketBase());
+  } catch (e) {
+    if ((e as { status?: number })?.status !== 401) throw e;
+    return lesen(await familyPocketBase());
+  }
 }
 
 // ponytail: In-Memory-Limits pro Prozess; bei mehreren Web-Instanzen bräuchte es einen geteilten Speicher.

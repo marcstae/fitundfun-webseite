@@ -58,8 +58,10 @@ test("Freischalten: reservierter und wieder freigegebener Versuch zählt nicht",
 });
 
 test("Rate-Limit: wechselnde (gefälschte) IPs stossen an das globale Limit", () => {
-  // Bisher 29 gezählte Fehlversuche (20 + 10 reserviert − 1 freigegeben); 30 weitere mit je neuer IP
-  // überschreiten das globale Maximum von 50.
-  for (let i = 0; i < 30; i++) familyAccess.recordUnlockFailure(`10.0.0.${i}`);
+  // Bisher 29 gezählte Fehlversuche (20 + 10 reserviert − 1 freigegeben); mit 20 weiteren ist das
+  // globale Maximum von 50 knapp nicht erreicht, mit 21 genau erreicht.
+  for (let i = 0; i < 20; i++) familyAccess.recordUnlockFailure(`10.0.0.${i}`);
+  assert.equal(familyAccess.unlockAttemptAllowed("nie-gesehene-ip"), true);
+  familyAccess.recordUnlockFailure("10.0.0.20");
   assert.equal(familyAccess.unlockAttemptAllowed("nie-gesehene-ip"), false);
 });

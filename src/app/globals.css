@@ -190,3 +190,10 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Formatierter Text aus dem Cockpit: Lagerseite, Lagerhaus und der Editor selbst sehen gleich aus. */
+.richtext a { @apply font-semibold text-accent underline; }
+.richtext strong { @apply text-ink; }
+.richtext p + p { @apply mt-3; }
+.richtext ul { @apply list-disc pl-5; }
+.richtext ol { @apply list-decimal pl-5; }

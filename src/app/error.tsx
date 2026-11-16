@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-export default function ErrorPage({ reset }: { reset: () => void }) {
+export default function ErrorPage({ retry }: { retry: () => void }) {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-sand px-6 text-center">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
@@ -17,7 +17,7 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
       </p>
       <div className="mt-2 flex gap-3">
         <button
-          onClick={reset}
+          onClick={() => retry()}
           className="inline-flex h-11 items-center rounded-full bg-accent px-5 text-sm font-bold text-white transition-colors hover:bg-ink"
         >
           Neu laden

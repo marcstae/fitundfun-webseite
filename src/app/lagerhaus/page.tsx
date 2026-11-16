@@ -85,7 +85,7 @@ export default async function LagerhausPage() {
         </div>
 
         <div
-          className="wrap-break-word rounded-2xl bg-white p-5 text-base leading-relaxed text-ink/85 sm:p-6 [&_a]:font-semibold [&_a]:text-accent [&_a]:underline [&_p+p]:mt-3 [&_ul]:list-disc [&_ul]:pl-5"
+          className="richtext wrap-break-word rounded-2xl bg-white p-5 text-base leading-relaxed text-ink/85 sm:p-6"
           dangerouslySetInnerHTML={{ __html: einleitung }}
         />
 

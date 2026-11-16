@@ -1,6 +1,6 @@
 "use client";
 
-export default function GlobalError({ reset }: { reset: () => void }) {
+export default function GlobalError({ retry }: { retry: () => void }) {
   return (
     <html lang="de-CH">
       <body
@@ -22,7 +22,7 @@ export default function GlobalError({ reset }: { reset: () => void }) {
             Bitte Seite neu laden oder die Lagerleitung kontaktieren.
           </p>
           <button
-            onClick={reset}
+            onClick={() => retry()}
             style={{
               marginTop: "1rem",
               padding: "0.75rem 1.5rem",

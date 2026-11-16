@@ -78,10 +78,10 @@ export function KontakteManager({ existing, gruppen }: { existing: KontaktRecord
             <span className="flex shrink-0 gap-1">
               <button onClick={() => move(index, -1)} disabled={index === 0} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.name} nach oben verschieben`}><ArrowUp className="size-4" /></button>
               <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 disabled:opacity-25" aria-label={`${it.name} nach unten verschieben`}><ArrowDown className="size-4" /></button>
-              <button onClick={() => { setEditing(it); setOpen(true); }} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 hover:text-ink" aria-label="Bearbeiten">
+              <button onClick={() => { setEditing(it); setOpen(true); }} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 hover:text-ink" aria-label={`${it.name} bearbeiten`}>
                 <Pencil className="size-4" />
               </button>
-              <button onClick={() => del(it)} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-red-600/70 hover:bg-red-50 hover:text-red-600" aria-label="Löschen">
+              <button onClick={() => del(it)} className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-red-600/70 hover:bg-red-50 hover:text-red-600" aria-label={`${it.name} löschen`}>
                 <Trash2 className="size-4" />
               </button>
             </span>

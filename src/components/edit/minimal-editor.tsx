@@ -84,7 +84,7 @@ export function MinimalEditor({
         suppressContentEditableWarning
         data-placeholder={placeholder}
         onInput={() => onChange(ref.current?.innerHTML || "")}
-        className="min-h-[120px] px-4 py-3 text-base text-ink focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-accent [&_a]:underline empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
+        className="richtext min-h-[120px] px-4 py-3 text-base text-ink focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
       />
     </div>
   );

@@ -101,6 +101,7 @@ export default async function LagerPage({
   ]);
   const dokumente = documentResult.items;
   const schnee = frischeSchneehoehe(schneeMessung);
+  const haus = lagerhausInhalt(lagerhaus?.daten);
 
   const zeitraum =
     lager.datum_von && lager.datum_bis
@@ -222,7 +223,7 @@ export default async function LagerPage({
             <div className="rounded-2xl bg-white p-5 sm:p-6">
               {beschreibung ? (
                 <div
-                  className="wrap-break-word text-base leading-relaxed text-ink/85 [&_a]:font-semibold [&_a]:text-accent [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-3 [&_strong]:text-ink [&_ul]:list-disc [&_ul]:pl-5"
+                  className="richtext wrap-break-word text-base leading-relaxed text-ink/85"
                   dangerouslySetInnerHTML={{ __html: beschreibung }}
                 />
               ) : null}
@@ -311,13 +312,13 @@ export default async function LagerPage({
         ) : null}
 
         <nav aria-label="Weiter" className="space-y-2.5">
-          <a href={mapsUrl(lagerhausInhalt(lagerhaus?.daten))} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
+          <a href={mapsUrl(haus)} target="_blank" rel="noopener noreferrer" className={LINK_KARTE}>
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sand text-accent">
               <MapPin className="size-5" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block font-bold">Weg zum Lagerhaus</span>
-              <span className="block text-sm text-muted">Ferienheim Albin in Google Maps</span>
+              <span className="block text-sm text-muted">{haus.name} in Google Maps</span>
             </span>
             <ArrowUpRight className="size-5 shrink-0 text-muted" aria-hidden />
           </a>

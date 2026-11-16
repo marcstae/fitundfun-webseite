@@ -23,6 +23,7 @@ export function EditableLinks() {
 function LinkManager() {
   const [items, setItems] = React.useState<LinkRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [ladefehler, setLadefehler] = React.useState(false);
   const [editing, setEditing] = React.useState<LinkRecord | null>(null);
   const [open, setOpen] = React.useState(false);
 
@@ -32,8 +33,9 @@ function LinkManager() {
         .collection("links")
         .getList<LinkRecord>(1, 500, { sort: "sort,titel" });
       setItems(res.items);
+      setLadefehler(false);
     } catch {
-      // collection existiert evtl. noch nicht
+      setLadefehler(true);
     } finally {
       setLoading(false);
     }
@@ -87,6 +89,11 @@ function LinkManager() {
           <Plus /> Hinzufügen
         </Button>
       </div>
+      {ladefehler ? (
+        <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800">
+          Die Links konnten nicht geladen werden. Bitte die Seite neu laden.
+        </p>
+      ) : null}
       {!loading && items.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {items.map((it, index) => (
@@ -101,14 +108,14 @@ function LinkManager() {
                 <button
                   onClick={() => { setEditing(it); setOpen(true); }}
                   className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-ink/60 hover:bg-ink/10 hover:text-ink"
-                  aria-label="Bearbeiten"
+                  aria-label={`${it.titel} bearbeiten`}
                 >
                   <Pencil className="size-4" />
                 </button>
                 <button
                   onClick={() => del(it)}
                   className="inline-flex size-10 items-center justify-center rounded-md sm:size-8 text-red-600/70 hover:bg-red-50 hover:text-red-600"
-                  aria-label="Löschen"
+                  aria-label={`${it.titel} löschen`}
                 >
                   <Trash2 className="size-4" />
                 </button>

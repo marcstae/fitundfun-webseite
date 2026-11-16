@@ -71,8 +71,15 @@ export function AccountSettings() {
   const lagerpasswortSpeichern = async (event: React.FormEvent) => {
     event.preventDefault();
     setSpeichertLagerpasswort(true);
-    const result = await lagerpasswortAendern(lagerpasswort, lagerpasswortBestaetigung);
-    setSpeichertLagerpasswort(false);
+    let result: Awaited<ReturnType<typeof lagerpasswortAendern>>;
+    try {
+      result = await lagerpasswortAendern(lagerpasswort, lagerpasswortBestaetigung);
+    } catch {
+      toast.error("Speichern fehlgeschlagen. Bitte nochmals versuchen.");
+      return;
+    } finally {
+      setSpeichertLagerpasswort(false);
+    }
     if (!result.ok) {
       toast.error(result.message);
       return;

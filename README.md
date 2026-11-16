@@ -151,9 +151,15 @@ curl -X POST localhost:3843/api/revalidate -H 'content-type: application/json' \
 <details>
 <summary><b>🔧 Wartung</b></summary>
 
-- Dependabot-Pull-Requests mergen, wenn CI grün ist, dann mit `--pull` deployen. ESLint 10 ist zurückgestellt, bis die Plugins in `eslint-config-next` es unterstützen.
-- TypeScript läuft nach [Microsofts Empfehlung](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0) parallel: `tsc` ist TypeScript 7 (`@typescript/native`), `typescript` ein Alias auf `@typescript/typescript6`, weil typescript-eslint die Programmierschnittstelle braucht, die erst TypeScript 7.1 wieder hat. Die npm-Warnung zum optionalen Peer `@typescript/native` ist bis dahin erwartet. Mit 7.1 beide Einträge auf `typescript@7` zusammenführen.
-- `npm audit --omit=dev` muss 0 zeigen; Meldungen nur in Entwicklungswerkzeugen betreffen die Website nicht.
-- PocketBase: Releases seit 0.41 unter [ganigeorgiev.com](https://ganigeorgiev.com/pocketbase/pocketbase/releases), nicht mehr auf GitHub; Dependabot sieht sie nicht. Zum Anheben in `pb/Dockerfile` `PB_VERSION` und die beiden SHA-256 aus `checksums.txt` setzen.
+- Dependabot-Pull-Requests mergen, wenn CI grün ist, dann mit `--pull` deployen.
+- `npm audit --omit=dev` muss 0 zeigen (prüft auch die CI); Meldungen nur in Entwicklungswerkzeugen betreffen die Website nicht.
+- PocketBase sieht Dependabot nicht: Releases seit 0.41 unter [ganigeorgiev.com](https://ganigeorgiev.com/pocketbase/pocketbase/releases), nicht mehr auf GitHub. Bei jeder Update-Runde dort nachsehen; zum Anheben in `pb/Dockerfile` `PB_VERSION` und die beiden SHA-256 aus `checksums.txt` setzen.
+
+**Offene Übergangslösungen** (bei jeder Update-Runde prüfen und auflösen, sobald möglich):
+
+| Thema | Heute | Auflösen, sobald | Dann |
+|---|---|---|---|
+| TypeScript 7 | `tsc` ist 7.0 (`@typescript/native`); `typescript` ist ein Alias auf `@typescript/typescript6`, weil typescript-eslint eine API braucht, die 7.0 nicht hat ([Microsofts Übergangsweg](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0)). Die npm-Warnung zum optionalen Peer `@typescript/native` ist erwartet. | TypeScript ≥ 7.1 stabil und von typescript-eslint unterstützt ([#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)): `npm view typescript-eslint@latest peerDependencies.typescript` | beide Einträge durch `typescript@^7.1` ersetzen, Dependabot-Ausnahme für den Major prüfen, volle CI inkl. `next build` |
+| ESLint 10 | 9.39.5, upstream nicht mehr unterstützt | eslint-plugin-react, -import und -jsx-a11y (aus `eslint-config-next`) erlauben ESLint 10: `npm view eslint-plugin-react peerDependencies.eslint` | `eslint@^10`, Dependabot-Ausnahme entfernen, Lint ohne `--legacy-peer-deps` grün |
 
 </details>

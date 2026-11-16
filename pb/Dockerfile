@@ -31,8 +31,9 @@ EOF
 COPY pb_migrations /pb/pb_migrations
 COPY pb_hooks /pb/pb_hooks
 
-# Programm, Migrationen und Hooks gehören root; PocketBase darf nur in pb_data schreiben.
-RUN mkdir -p /pb/pb_data && chown pb:pb /pb/pb_data
+# Programm, Migrationen und Hooks gehören root; PocketBase darf nur in pb_data schreiben. Lesen darf
+# pb sie unabhängig von der umask des Checkouts.
+RUN mkdir -p /pb/pb_data && chown pb:pb /pb/pb_data && chmod -R a+rX /pb/pb_hooks /pb/pb_migrations
 
 EXPOSE 8090
 
@@ -43,4 +44,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # selbst läuft danach ohne Root-Rechte. -xdev: Liegt der Backup-Ordner auf einem anderen Datenträger
 # (z. B. NAS), nur dessen Wurzel übernehmen und nicht abbrechen, wenn das Ziel chown verweigert.
 # chown -h: Symlinks selbst umstellen, nie ihr Ziel (sonst änderte root Dateien ausserhalb von pb_data).
-CMD ["/bin/sh", "-c", "find /pb/pb_data -xdev -exec chown -h pb:pb {} + ; chown -h pb:pb /pb/pb_data/backups 2>/dev/null; exec su-exec pb /pb/pocketbase serve --http=0.0.0.0:8090 --origins=\"${PB_ORIGINS}\""]
+# --automigrate=false: Die Migrationen im Image sind die Quelle; Schema-Änderungen in /_/ schrieben sonst
+# vergeblich Dateien in den root-eigenen Ordner. Vorhandene Migrationen laufen beim Start trotzdem.
+CMD ["/bin/sh", "-c", "find /pb/pb_data -xdev -exec chown -h pb:pb {} + ; chown -h pb:pb /pb/pb_data/backups 2>/dev/null; exec su-exec pb /pb/pocketbase serve --automigrate=false --http=0.0.0.0:8090 --origins=\"${PB_ORIGINS}\""]

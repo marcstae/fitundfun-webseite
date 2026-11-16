@@ -118,7 +118,7 @@ NEXT_PUBLIC_PB_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:3000 REVALIDA
 
 **Deploy, erst wenn CI grün ist:** auf dem Server im Projektordner [`scripts/deploy.sh`](scripts/deploy.sh). Es zieht den neuen Stand, baut, solange alles läuft, stoppt `pb` kurz und kopiert `pb_data` nach `DEPLOY_BACKUP_DIR`, startet, wartet auf gesunde Container und baut den Cache neu auf. Bei jedem Fehler bricht es ab; scheitert die Kopie, läuft wieder das bisherige `pb`.
 
-> **Wichtig:** Ohne Backup kein Start: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Zurückgehen heisst `pb` stoppen, `pb_data` durch die Kopie `pre-<neu>-von-<alt>-…` ersetzen, `git checkout <alt>`, `docker compose up -d --build`.
+> **Wichtig:** Ohne Backup kein Start: Migrationen laufen beim Start von `pb` und lassen sich nicht zurücknehmen. Zurückgehen heisst `pb` stoppen, `pb_data` durch die Kopie `pre-<neu>-von-<alt>-…` ersetzen, `git reset --hard <alt>`, `docker compose up -d --build`. Der Git-Tag `deployed` (nur auf dem Server) merkt sich, welcher Commit läuft; vor dem ersten Lauf einmal `git tag deployed <laufender Commit>`.
 
 </details>
 

@@ -17,7 +17,6 @@ interface AuthUser {
 interface AuthCtx {
   user: AuthUser | null;
   isEditor: boolean;
-  isFamilie: boolean;
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
@@ -125,7 +124,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const auth: AuthCtx = {
     user,
     isEditor: user?.rolle === "editor",
-    isFamilie: user?.rolle === "familie",
     isAuthenticated: !!user,
     loading,
     login,

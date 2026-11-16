@@ -223,7 +223,9 @@ export function SiteHeader({
             aria-label="Weitere Links"
             className="mt-3 shrink-0 border-t border-ink/[0.08] pt-2 sm:mt-auto"
           >
-            <ul className="-mx-2 flex flex-wrap gap-x-2">
+            {/* mx-3 + px-2 der Links = 20 px: Text auf derselben Linie wie der Inhalt im Lagerkasten
+                (p-2 + px-3) und die Symbole der Menüeinträge (px-5). */}
+            <ul className="mx-3 flex flex-wrap gap-x-2">
               {meta.map(([href, label]) => (
                 <li key={label}>
                   <Link

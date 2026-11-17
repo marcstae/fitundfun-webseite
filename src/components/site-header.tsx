@@ -16,7 +16,6 @@ import {
   X,
 } from "lucide-react";
 import { blattSchliessen, blattVersatz, cn } from "@/lib/utils";
-import { useAuth } from "@/components/providers";
 
 const NAV = [
   { href: "/lager", label: "Alle Lagerjahre", hint: "Alle Lager seit 2007", Icon: History },
@@ -44,18 +43,14 @@ export function SiteHeader({
   const zug = React.useRef<{ x: number; y: number; zeit: number; dy: number; aktiv: boolean } | null>(null);
   const zuletztGescrollt = React.useRef(0);
   const pathname = usePathname();
-  const { isEditor, logout } = useAuth();
   const isHome = pathname === "/";
   const lagerHref = aktuellesJahr ? `/lager/${aktuellesJahr}` : null;
   const isActive = (href: string) =>
     href === "/lager"
       ? pathname === "/lager" || (pathname.startsWith("/lager/") && pathname !== lagerHref)
       : pathname === href || pathname.startsWith(`${href}/`);
-  const meta: [string, string][] = [
-    isEditor
-      ? ["/admin", "Admin-Cockpit"]
-      : ["/login", "Admin-Login"], // nach dem Login immer ins Cockpit
-  ];
+  // Ohne Anmelde-System auf öffentlichen Seiten (B12): Angemeldete leitet /login direkt ins Cockpit.
+  const meta: [string, string][] = [["/login", "Admin-Login"]];
 
   // Zurück/Vor-Geste bei offenem Menü. Scroll-Lock macht Radix (RemoveScroll im Overlay).
   React.useEffect(() => {
@@ -305,20 +300,6 @@ export function SiteHeader({
                   </Link>
                 </li>
               ))}
-              {isEditor ? (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      logout();
-                    }}
-                    className={cn(META, "w-full text-left")}
-                  >
-                    Abmelden
-                  </button>
-                </li>
-              ) : null}
             </ul>
           </nav>
         </Dialog.Content>

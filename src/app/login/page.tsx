@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { useAuth } from "@/components/providers";
+import { Providers, useAuth } from "@/components/providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -111,7 +111,9 @@ export default function LoginPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-4 py-12 sm:px-6 sm:py-16">
       <React.Suspense fallback={<div className="h-80 animate-pulse rounded-[1.75rem] bg-white/70" />}>
-        <LoginForm />
+        <Providers>
+          <LoginForm />
+        </Providers>
       </React.Suspense>
     </div>
   );

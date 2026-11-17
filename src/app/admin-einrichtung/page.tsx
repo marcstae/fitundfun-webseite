@@ -4,16 +4,24 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminPasswortFormular } from "@/components/admin/account-settings";
-import { useAuth } from "@/components/providers";
+import { Providers, useAuth } from "@/components/providers";
 
 export default function AdminEinrichtungPage() {
+  return (
+    <Providers>
+      <Einrichtung />
+    </Providers>
+  );
+}
+
+function Einrichtung() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const router = useRouter();
   const justChanged = React.useRef(false);
+  // Ohne Anmeldung hierher gekommen: zum Login. Nach dem Speichern navigiert nachSpeichern selbst;
+  // eine zweite gleichzeitige Navigation lässt Next.js auf ein volles Neuladen ausweichen (Meldung weg).
   React.useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.replace(justChanged.current ? "/login?geaendert=1" : "/login");
-    }
+    if (!loading && !isAuthenticated && !justChanged.current) router.replace("/login");
   }, [loading, isAuthenticated, router]);
 
   if (loading || !user) {

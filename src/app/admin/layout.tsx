@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { Providers } from "@/components/providers";
 import { requireEditor } from "@/lib/admin-auth";
 
 export const metadata: Metadata = {
@@ -9,5 +10,9 @@ export const metadata: Metadata = {
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const editor = await requireEditor();
-  return <AdminShell email={editor.email}>{children}</AdminShell>;
+  return (
+    <Providers>
+      <AdminShell email={editor.email}>{children}</AdminShell>
+    </Providers>
+  );
 }

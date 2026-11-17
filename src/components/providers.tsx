@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Toaster } from "sonner";
 import type PocketBase from "pocketbase";
 import { usePathname, useRouter } from "next/navigation";
 import { pbBrowser } from "@/lib/pb";
@@ -16,7 +15,6 @@ interface AuthUser {
 
 interface AuthCtx {
   user: AuthUser | null;
-  isEditor: boolean;
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
@@ -115,7 +113,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const auth: AuthCtx = {
     user,
-    isEditor: user?.rolle === "editor",
     isAuthenticated: !!user,
     loading,
     login,
@@ -125,15 +122,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={auth}>
       {children}
-      <Toaster
-        containerAriaLabel="Benachrichtigungen"
-        position="bottom-center"
-        mobileOffset={{ bottom: 80 }}
-        toastOptions={{
-          style: { borderRadius: "12px", fontFamily: "var(--font-archivo)" },
-        }}
-        richColors
-      />
     </AuthContext.Provider>
   );
 }

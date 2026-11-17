@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Fredoka } from "next/font/google";
 import Script from "next/script";
+import { Toaster } from "sonner";
 import "./globals.css";
-import { Providers } from "@/components/providers";
 import { SiteChrome } from "@/components/site-chrome";
 import { getAktuellesLager, getEinstellungen } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
@@ -63,18 +63,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       style={akzent || akzentDunkel ? farben : undefined}
     >
       <body className="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-        <Providers>
-          <SiteChrome
-            aktuellesJahr={aktuellesLager?.jahr ?? null}
-            lagerZeitraum={
-              aktuellesLager?.datum_von && aktuellesLager.datum_bis
-                ? formatDateRange(aktuellesLager.datum_von, aktuellesLager.datum_bis)
-                : null
-            }
-          >
-            {children}
-          </SiteChrome>
-        </Providers>
+        <SiteChrome
+          aktuellesJahr={aktuellesLager?.jahr ?? null}
+          lagerZeitraum={
+            aktuellesLager?.datum_von && aktuellesLager.datum_bis
+              ? formatDateRange(aktuellesLager.datum_von, aktuellesLager.datum_bis)
+              : null
+          }
+        >
+          {children}
+        </SiteChrome>
+        {/* Im Root-Layout, nicht in Providers: Meldungen überstehen den Wechsel Cockpit ↔ Login. */}
+        <Toaster
+          containerAriaLabel="Benachrichtigungen"
+          position="bottom-center"
+          mobileOffset={{ bottom: 80 }}
+          toastOptions={{
+            style: { borderRadius: "12px", fontFamily: "var(--font-archivo)" },
+          }}
+          richColors
+        />
         {/* Besucherstatistik (Umami, ohne Cookies) nur auf der echten Domain, nicht lokal oder im CI.
             Cockpit und Admin-Login zählen nicht, Query-Strings werden weggelassen. */}
         {new URL(siteUrl()).hostname === "fitundfun.marcstaeuble.ch" && (

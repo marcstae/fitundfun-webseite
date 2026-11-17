@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type PocketBase from "pocketbase";
+import { ClientResponseError, type default as PocketBase } from "pocketbase";
 import { usePathname, useRouter } from "next/navigation";
 import { pbBrowser } from "@/lib/pb";
 import type { Rol } from "@/lib/pb-types";
@@ -71,8 +71,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
         } else {
           pb.authStore.clear();
         }
-      } catch {
-        pb.authStore.clear();
+      } catch (e) {
+        // Abmelden nur, wenn PocketBase das Token ablehnt. Ein abgebrochener Abruf (Seite wird gerade
+        // verlassen, z. B. gleich nach dem Wechsel Login → Cockpit), Netz- oder Serverfehler lassen die
+        // Anmeldung stehen; save() meldet sie trotzdem an onChange, damit user gesetzt ist.
+        if (e instanceof ClientResponseError && (e.status === 401 || e.status === 403)) pb.authStore.clear();
+        else pb.authStore.save(pb.authStore.token, pb.authStore.record);
       } finally {
         if (active) setLoading(false);
       }

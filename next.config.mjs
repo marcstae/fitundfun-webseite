@@ -35,6 +35,14 @@ const nextConfig = {
           { key: "Content-Security-Policy", value: csp },
         ],
       },
+      {
+        // Statisch zwischengespeicherte Seiten bekommen von Next «s-maxage=300, stale-while-revalidate=…».
+        // Browser werten stale-while-revalidate selbst aus und zeigen nach einer Änderung einmal die alte
+        // Seite aus dem eigenen Cache. no-cache: behalten, aber vor jeder Anzeige beim Server nachfragen.
+        // Dynamische Seiten (Lagerseite, Kontakt) schicken schon no-store und bleiben unberührt.
+        source: "/:seite(lager|lagerhaus)?",
+        headers: [{ key: "Cache-Control", value: "no-cache" }],
+      },
     ];
   },
 };
